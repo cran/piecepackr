@@ -15,7 +15,7 @@ graphics for other board game systems as well.
 API Intro
 ---------
 
-`grid.piece` is the core function that is used used to draw board game
+`grid.piece` is the core function that is used to draw board game
 components (by default
 [piecepack](http://www.ludism.org/ppwiki/HomePage) game components):
 
