@@ -1,6 +1,6 @@
 #' Grid shape grob utility functions
-#' 
-#' Utility functions that produce grobs of various shapes 
+#'
+#' Utility functions that produce grobs of various shapes
 #' or function that returns a function that produces a grob.
 #' These are usually wrappers of \code{polygonGrob} or \code{pathGrob}.
 #' @param name A character identifier (for grid)
@@ -9,8 +9,8 @@
 #'        graphical parameter settings.
 #' @param vp A \code{grid} viewport object (or NULL).
 #' @param n_vertices Number of vertices
-#' @param t Angle (in degrees) of first vertex of shape 
-#' @param r Radial distance (from 0 to 0.5) 
+#' @param t Angle (in degrees) of first vertex of shape
+#' @param r Radial distance (from 0 to 0.5)
 #' @examples
 #'   if(require("grid")) {
 #'       gp <- gpar(col="black", fill="yellow")
@@ -42,7 +42,7 @@
 #'       vp <- viewport(x=1/4, y=3/4, width=1/2, height=1/2)
 #'       grid.draw(concaveGrobFn(6, 270)(gp=gp, vp=vp))
 #'   }
-#' 
+#'
 #' @name grid_shape_grobs
 NULL
 
@@ -56,10 +56,9 @@ halma_xy <- function() {
     indices <- which(y >= y_cutoff)
     list(x = c(0,0, x[indices],1,1), y=c(0,0.3,y[indices],0.3,0))
 }
-# pyramid_xy <- function() { list(x = c(0, 0.5, 1), y = c(0, 1, 0)) }
-# kite_xy <- function() { list(x = c(0.5, 0, 0.5, 1, 0.5), 
-#                              y = c(0, 0.25, 1, 0.25, 0)) } 
-# rect_xy <- function() { list(x = c(0, 0, 1, 1), y=c(0, 1, 1, 0)) }
+pyramid_xy <- list(x = c(0, 0.5, 1), y = c(0, 1, 0))
+kite_xy <- list(x = c(0.5, 0, 0.5, 1), y = c(0, 0.25, 1, 0.25))
+# rect_xy <- function() { list(x = c(0, 0, 1, 1), y=c(0, 1, 1, 0)) } # nolint
 
 #' @rdname grid_shape_grobs
 #' @export
@@ -71,19 +70,17 @@ halmaGrob <- function(name=NULL, gp=gpar(), vp=NULL) {
 #' @rdname grid_shape_grobs
 #' @export
 pyramidGrob <- function(name=NULL, gp=gpar(), vp=NULL) {
-    polygonGrob(x = c(0, 0.5, 1), y = c(0, 1, 0), name=name, gp=gp, vp=vp)
+    polygonGrob(x = pyramid_xy$x, y = pyramid_xy$y, name=name, gp=gp, vp=vp)
 }
 
 #' @rdname grid_shape_grobs
 #' @export
 kiteGrob <- function(name=NULL, gp=gpar(), vp=NULL) {
-    x <- c(0.5, 0, 0.5, 1, 0.5)
-    y <- c(0, 0.25, 1, 0.25, 0)
-    polygonGrob(x, y, name=name, gp=gp, vp=vp)
+    polygonGrob(kite_xy$x, kite_xy$y, name=name, gp=gp, vp=vp)
 }
 
 polygonGrobFn <- function(x, y) {
-    function(name=NULL, gp=gpar(), vp=NULL) { polygonGrob(x, y, name=name, gp=gp, vp=vp) }
+    function(name=NULL, gp=gpar(), vp=NULL) polygonGrob(x, y, name=name, gp=gp, vp=vp)
 }
 
 convex_xy <- function(n_vertices, t) {
@@ -91,14 +88,14 @@ convex_xy <- function(n_vertices, t) {
     r <- 0.5
     x <- to_x(t, r) + 0.5
     y <- to_y(t, r) + 0.5
-    list(x=x, y=y)
+    list(x=utils::head(x, -1), y=utils::head(y, -1))
 }
 
 #' @rdname grid_shape_grobs
 #' @export
 convexGrobFn <- function(n_vertices, t) {
     xy <- convex_xy(n_vertices, t)
-    polygonGrobFn(xy$x, xy$y) 
+    polygonGrobFn(xy$x, xy$y)
 }
 
 concave_xy <- function(n_vertices, t, r=0.2) {
@@ -118,16 +115,27 @@ concave_xy <- function(n_vertices, t, r=0.2) {
 #' @export
 concaveGrobFn <- function(n_vertices, t, r=0.2) {
     xy <- concave_xy(n_vertices, t, r)
-    polygonGrobFn(xy$x, xy$y) 
+    polygonGrobFn(xy$x, xy$y)
 }
 
 splice <- function(x0, x1) {
     vec <- as.numeric()
-    for (ii in 1:length(x1)) {
+    for (ii in seq_along(x1)) {
         vec <- append(vec, x0[ii])
         vec <- append(vec, x1[ii])
     }
     append(vec, x0[ii+1])
+}
+
+halmaMatGrobFn <- function(width=0.2) {
+    width <- rep(width, length.out=2)
+    xy_out <- halma_xy()
+    xy_in <- unit_to_cartesian_coords(xy_out$x, xy_out$y,
+                                 height=1-width[1], width=1-2.5*width[2])
+    x <- c(xy_in$x, xy_out$x)
+    y <- c(xy_in$y, xy_out$y)
+    id <- rep(1:2, each=length(xy_out$x))
+    function(name=NULL, gp=gpar(), vp=NULL) pathGrob(x, y, id=id, rule="evenodd", name=name, gp=gp, vp=vp)
 }
 
 convexMatGrobFn <-  function(n_vertices, t=90, width=0.2) {
@@ -140,11 +148,11 @@ convexMatGrobFn <-  function(n_vertices, t=90, width=0.2) {
     x <- c(x_in, x_out)
     y <- c(y_in, y_out)
     id <- rep(1:2, each=n_vertices+1)
-    function(name=NULL, gp=gpar(), vp=NULL) { pathGrob(x, y, id=id, rule="evenodd", name=name, gp=gp, vp=vp) }
+    function(name=NULL, gp=gpar(), vp=NULL) pathGrob(x, y, id=id, rule="evenodd", name=name, gp=gp, vp=vp)
 }
 
 rectMatGrobFn <- function(width=0.2) {
-    width = rep(width, length.out=4)
+    width <- rep(width, length.out=4)
     x_out <- c(0, 1, 1, 0)
     y_out <- c(1, 1, 0, 0)
     x_in <- c(width[4], 1-width[2], 1-width[2], width[4])
@@ -152,5 +160,5 @@ rectMatGrobFn <- function(width=0.2) {
     x <- c(x_in, x_out)
     y <- c(y_in, y_out)
     id <- rep(1:2, each=4)
-    function(name=NULL, gp=gpar(), vp=NULL) { pathGrob(x, y, id=id, rule="evenodd", name=name, gp=gp, vp=vp) }
+    function(name=NULL, gp=gpar(), vp=NULL) pathGrob(x, y, id=id, rule="evenodd", name=name, gp=gp, vp=vp)
 }

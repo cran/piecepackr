@@ -1,6 +1,19 @@
 piecepackr: Board Game Graphics
 ===============================
 
+[![CRAN Status Badge](https://www.r-pkg.org/badges/version/piecepackr)](https://cran.r-project.org/package=piecepackr)
+
+[![Build Status](https://travis-ci.org/trevorld/piecepackr.png?branch=master)](https://travis-ci.org/trevorld/piecepackr)
+
+[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/trevorld/piecepackr?branch=master&svg=true)](https://ci.appveyor.com/project/trevorld/piecepackr)
+
+[![Coverage Status](https://img.shields.io/codecov/c/github/trevorld/piecepackr/master.svg)](https://codecov.io/github/trevorld/piecepackr?branch=master)
+
+[![Project Status: Active -- The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+
+::: {.contents}
+:::
+
 `piecepackr` is an [R](https://www.r-project.org/) package designed to
 make configurable board game graphics. It can be used with R\'s
 [grid](https://www.rdocumentation.org/packages/grid) graphics system to
@@ -96,16 +109,24 @@ save_piece_images(cfg)
 ```
 
 If you are comfortable using R data frames there is also `pmap_piece`
-which is wrapper for `grid.piece` that processes data frame input:
+which is a wrapper for `grid.piece` that processes data frame input. It
+accepts an optional `trans` argument for a function to pre-process the
+data frames, in particular if desiring to draw a 3D [oblique
+projection](https://trevorldavis.com/piecepackr/3d-projections.html) one
+can use the function `op_transform` to guess both the pieces\'
+z-coordinates and an appropriate re-ordering of the data frame given the
+desired angle of the oblique projection.
 
 ``` {.r}
+library("dplyr", warn.conflicts=FALSE)
 library("tibble")
-df_tiles <- tibble(piece_side="tile_back", x=0.5+c(3,1,3,1), y=0.5+c(3,3,1,1))
-df_coins <- tibble(piece_side="coin_back", x=rep(4:1, 4), y=rep(4:1, each=4),
+df_tiles <- tibble(piece_side="tile_back", x=0.5+c(3,1,3,1,1,1), y=0.5+c(3,3,1,1,1,1))
+df_coins <- tibble(piece_side="coin_back", x=rep(1:4, 4), y=rep(c(4,1), each=8),
                        suit=1:16%%2+rep(c(1,3), each=8),
-                       angle=rep(c(180,0), each=8), z=1/4+1/16)
-df <- dplyr::bind_rows(df_tiles, df_coins)
-pmap_piece(df, cfg=cfg, op_scale=0.5, default.units="in")
+                       angle=rep(c(180,0), each=8))
+df <- bind_rows(df_tiles, df_coins)
+cfg <- game_systems("dejavu")$piecepack
+pmap_piece(df, cfg=cfg, default.units="in", trans=op_transform, op_scale=0.5, op_angle=135)
 ```
 
 ![\'pmap\_piece\' lets you use data frames as
@@ -219,8 +240,14 @@ popViewport()
 Installation
 ------------
 
-To install the development version of `piecepackr` use the following
-commands in [R](https://www.r-project.org/):
+To install the last version released on CRAN use the following command
+in [R](https://www.r-project.org/):
+
+``` {.r}
+install.packages("piecepackr")
+```
+
+To install the development version use the following commands:
 
 ``` {.r}
 install.packages("remotes")
@@ -433,13 +460,14 @@ piecepack rulesets:
 1)  The `save_piece_images` function makes individual images of
     components. By default it makes them in the svg formats with
     rotations of 0 degrees but with configuration can also make them in
-    the bmp, jpeg, pdf, png, ps, and tiff formats as well as 90, 180, and 270
-    degree rotations. These can be directly inserted into your ruleset
-    or even used to build diagrams with the aid of a graphics editor
-    program. An example filename is `tile_face_s1_r5_t180.pdf` where
-    `tile` is the component, `face` is the side, `s1` indicates it was
-    the first suit, `r5` indicates it was the 5th rank, `t180` indicates
-    it was rotated 180 degrees, and `pdf` indicates it is a pdf image.
+    the bmp, jpeg, pdf, png, ps, and tiff formats as well as 90, 180,
+    and 270 degree rotations. These can be directly inserted into your
+    ruleset or even used to build diagrams with the aid of a graphics
+    editor program. An example filename is `tile_face_s1_r5_t180.pdf`
+    where `tile` is the component, `face` is the side, `s1` indicates it
+    was the first suit, `r5` indicates it was the 5th rank, `t180`
+    indicates it was rotated 180 degrees, and `pdf` indicates it is a
+    pdf image.
 2)  This R package can be directly used with the `grid` graphics library
     in R to make diagrams. The important function for diagram drawing
     exported by the `piecepack` R package is `grid.piece` (or

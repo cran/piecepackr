@@ -1,3 +1,31 @@
+piecepackr 1.2.0
+================
+
+New features
+------------
+
+* New function ``picturePieceGrobFn`` which returns a "grob" function that imports graphics
+  from files found in its ``directory`` argument (#152).
+* New function ``game_systems`` which returns a list of configuration objects
+  for multiple game systems (#157).
+* Helper functions ``to_subpack`` and ``to_hexpack`` which given a piecepack configuration
+  attempts to generate an appropriate matching (piecepack stackpack) subpack and hexpack (#161).
+* New function ``file2grob`` that imports a given image file as a grob.
+
+Bug fixes and minor improvements
+--------------------------------
+
+* Guesses made by ``op_transform`` for whether two pieces
+  overlap are now more accurate (#150).
+* Fixes bug in ``op_transform`` when computing bounding box for shapes 
+  when width and height are not equal.
+* Fixes bug in ``op_transform`` for inferring width/height of matchsticks 
+  and shape/depth of pyramids.
+* Fixes bug in printing ``pp_cfg`` objects when a custom grob function had been set.
+* Fixes bug in setting individual suit colors with configurations list styles like ``suit_color.s2="white"``
+* ``pp_cfg`` objects' ``get_suit_color`` function is now vectorized 
+  (and by default now returns the suit colors for each suit).
+
 piecepackr 1.1.1
 ================
 

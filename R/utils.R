@@ -3,7 +3,7 @@ get_embedded_font_helper <- function(font, char) {
     on.exit(unlink(file))
     grDevices::cairo_pdf(file)
     grid::grid.text(char, gp=grid::gpar(fontsize=72, fontfamily=font))
-    invisible(dev.off())
+    invisible(grDevices::dev.off())
 
     pf_output <- system2("pdffonts", file, stdout=TRUE)
     if (length(pf_output) == 2)
@@ -18,7 +18,8 @@ get_embedded_font_helper <- function(font, char) {
 #' \code{get_embedded_font} returns which font is actually embedded by \code{cairo_pdf}.
 #' \code{cleave} converts a delimiter separated string into a vector.
 #' \code{inch(x)} is equivalent to \code{unit(x, "in")}.
-#' \code{to_x}, \code{to_y}, \code{to_r}, \code{to_t} convert between polar coordinates (in degrees) and Cartesian coordinates.
+#' \code{to_x}, \code{to_y}, \code{to_r}, \code{to_t} convert between polar coordinates (in degrees)
+#' and Cartesian coordinates.
 #'
 #' @examples
 #'  to_x(90, 1)
@@ -28,7 +29,7 @@ get_embedded_font_helper <- function(font, char) {
 #'
 #'  cleave("0.5,0.2,0.4,0.5", float=TRUE)
 #'  cleave("black,darkred,#050EAA,,", color=TRUE)
-#'  
+#'
 #'  if (require("grid")) {
 #'      grid.rect(width=inch(1), height=inch(3), gp=gpar(fill="blue"))
 #'  }
@@ -37,16 +38,18 @@ get_embedded_font_helper <- function(font, char) {
 #'      fonts <- c("sans", "Sans Noto", "Noto Sans", "Noto Sans Symbols2")
 #'      get_embedded_font(fonts, chars)
 #'  }
-#' 
+#'
 #' @name pp_utils
 NULL
 
 #' @rdname pp_utils
 #' @param font A character vector of font(s) passed to the \code{fontfamily} argument of \code{grid::gpar}.
 #' @param char A character vector of character(s) to be embedded by \code{grid::grid.text}
-#' @return \code{get_embedded_font} returns character vector of fonts that were actually embedded by \code{cairo_pdf}.  \code{NA}'s means no embedded font detected. 
-#'        This either means that no font was found or that a color emoji font was found and instead of a font an image was embedded.
-#' @details \code{get_embedded_font} depends on \code{pdffonts} being on the system path (on many OSes found in a \code{poppler-utils} package).
+#' @return \code{get_embedded_font} returns character vector of fonts that were actually embedded by \code{cairo_pdf}.
+#'         \code{NA}'s means no embedded font detected: this either means that no font
+#'          was found or that a color emoji font was found and instead of a font an image was embedded.
+#' @details \code{get_embedded_font} depends on \code{pdffonts} being on the system path
+#'          (on many OSes found in a \code{poppler-utils} package).
 #' @export
 get_embedded_font <- function(font, char) {
     df <- expand.grid(char, font, stringsAsFactors=FALSE)
@@ -61,8 +64,7 @@ get_embedded_font <- function(font, char) {
 #' @rdname pp_utils
 #' @param inches Number representing number of inches
 #' @export
-inch <- function(inches) { unit(inches, "in") }
-
+inch <- function(inches) unit(inches, "in")
 
 get_n_pages_pdfinfo <- function(pdf_filename) {
     pdf_filename <- shQuote(normalizePath(pdf_filename))
@@ -92,23 +94,26 @@ has_gs <- function() {
 
 gs <- function() {
     cmd <- tools::find_gs_cmd()
-    if (cmd == "") 
+    if (cmd == "")
         stop("Can't find system dependency ghostscript on PATH")
     cmd
 }
+
+to_radians <- function(t) pi * t / 180
+to_degrees <- function(t) 180 * t / pi
 
 #' @rdname pp_utils
 #' @param t Polar angle in degrees
 #' @param r Radial distance
 #' @export
-to_x <- function(t, r) { 
-    r * cos(pi * t / 180) 
+to_x <- function(t, r) {
+    r * cos(to_radians(t))
 }
 
 #' @rdname pp_utils
 #' @export
 to_y <- function(t, r) {
-    r * sin(pi * t / 180)
+    r * sin(to_radians(t))
 }
 
 #' @rdname pp_utils
@@ -122,7 +127,7 @@ to_r <- function(x, y) {
 #' @rdname pp_utils
 #' @export
 to_t <- function(x, y) {
-    180 * atan2(y, x) / pi
+    to_degrees(atan2(y, x))
 }
 
 #' @rdname pp_utils
@@ -133,7 +138,8 @@ to_t <- function(x, y) {
 #' @export
 cleave <- function(s, sep=",", float=FALSE, color=FALSE) {
     vec <- stringr::str_split(s, sep)
-    if (length(vec)) vec <- vec[[1]]
+    if (length(vec))
+        vec <- vec[[1]]
     if (float) {
         as.numeric(vec)
     } else if (color) {
@@ -141,15 +147,47 @@ cleave <- function(s, sep=",", float=FALSE, color=FALSE) {
     } else {
         vec
     }
-} 
-col_cleave <- function(s, sep=",") { cleave(s, sep, color=TRUE) }
-numeric_cleave <- function(s, sep=",") { cleave(s, sep, float=TRUE) }
+}
+col_cleave <- function(s, sep=",") cleave(s, sep, color=TRUE)
+numeric_cleave <- function(s, sep=",") cleave(s, sep, float=TRUE)
 
 as_picture <- function(grob, width, height) {
     svg_file <- tempfile(fileext=".svg")
     on.exit(unlink(svg_file))
-    svg(svg_file, width=width, height=height)
+
+    current_dev <- grDevices::dev.cur()
+    if (current_dev > 1) on.exit(grDevices::dev.set(current_dev))
+    grDevices::svg(svg_file, width=width, height=height, bg="transparent")
     grid.draw(grob)
-    invisible(dev.off())
-    pictureGrob(readPicture(svg_file, warn=FALSE), expansion=0, clip="off")
+    invisible(grDevices::dev.off())
+    file2grob(svg_file)
 }
+
+#' @rdname pp_utils
+#' @param file Filename of image
+#' @param distort Logical value of whether one should preserve the aspect ratio
+#'                or distort to fit the area it is drawn in
+#' @export
+file2grob <- function(file, distort=TRUE) {
+    current_dev <- grDevices::dev.cur()
+    if (current_dev > 1) on.exit(grDevices::dev.set(current_dev))
+    format <- tools::file_ext(file)
+    if (format %in% c("svgz", "svg")) {
+        return(to_pictureGrob(grImport2::readPicture(file, warn=FALSE), distort))
+    } else if (format == "png") {
+        return(to_rasterGrob(grDevices::as.raster(png::readPNG(file)), distort))
+    } else if (format %in% c("jpg", "jpeg")) {
+        return(to_rasterGrob(grDevices::as.raster(jpeg::readJPEG(file)), distort))
+    } else {
+        return(to_rasterGrob(magick::image_read(file), distort))
+    }
+}
+
+to_rasterGrob <- function(obj, distort=TRUE) {
+    if (distort) {
+        rasterGrob(grDevices::as.raster(obj), height=unit(1, "npc"), width=unit(1, "npc"))
+    } else {
+        rasterGrob(grDevices::as.raster(obj))
+    }
+}
+to_pictureGrob <- function(obj, distort=TRUE) grImport2::pictureGrob(obj, expansion=0, clip="off", distort=distort)
