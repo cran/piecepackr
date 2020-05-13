@@ -5,6 +5,7 @@ test_that("pp_cfg works as expected", {
     expect_true("pp_cfg" %in% class(cfg_default))
     expect_equal(class(as.list(cfg_default)), "list")
     expect_output(print(cfg_default), "default cfg")
+    expect_warning(cfg_default$get_pictureGrob("tile_back", 1, 1))
 })
 
 context("save_print_and_play works as expected")
@@ -23,10 +24,13 @@ test_that("save_print_and_play works as expected", {
     pdf_deck_filename_5s <- file.path(pdf_deck_dir, "piecepack_deck_5s.pdf")
     on.exit(unlink(pdf_deck_filename_5s))
     cfg_5s <- list(suit_text="♥,★,♣,♦,♠,꩜", suit_color="darkred,gold,darkgreen,darkblue,black,grey")
+
     save_print_and_play(cfg_5s, pdf_deck_filename_5s, "A5", "all", "double-sided")
 
     save_print_and_play(cfg_default, pdf_deck_filename, "letter")
-    save_print_and_play(cfg_default, pdf_deck_filename_a4, "A4")
+
+    cfg_large_dice <- pp_cfg(list(title="default cfg", width.die = 0.7))
+    save_print_and_play(cfg_large_dice, pdf_deck_filename_a4, "A4", arrangement = "double-sided")
     save_print_and_play(cfg_default, pdf_deck_filename_a5, "A5")
 
     expect_error(save_print_and_play(cfg_default, tempfile(), "A6"), "Don't know how to handle paper A6")
@@ -34,7 +38,7 @@ test_that("save_print_and_play works as expected", {
 
     skip_if(!has_gs(), "Doesn't have ghostscript binary")
     expect_equal(get_n_pages(pdf_deck_filename), 7)
-    expect_equal(get_n_pages(pdf_deck_filename_a4), 7)
+    expect_equal(get_n_pages(pdf_deck_filename_a4), 10)
     expect_equal(get_n_pages(pdf_deck_filename_a5), 14)
     expect_equal(get_n_pages_gs(pdf_deck_filename), 7)
     skip_if(Sys.which("pdfinfo") == "", "Doesn't have pdfinfo binary")
@@ -73,6 +77,9 @@ test_that("save_piece_images works as expected", {
 
 context("grob_fn_helpers works as expected")
 test_that("grob_fn_helpers works as expected", {
+    expect_error(checkersGrob("blue", "circle"))
+    expect_error(hexlinesGrob("blue", "circle"))
+    skip_on_ci()
     expect_doppelganger("add_checkers", function() {
                     grid.draw(checkersGrob("purple", "rect"))
                     grid.draw(hexlinesGrob("yellow", "rect"))
@@ -84,12 +91,11 @@ test_that("grob_fn_helpers works as expected", {
     expect_doppelganger("add_checkers.convex8", function() {
                     grid.draw(checkersGrob("purple", "convex8"))
     })
-    expect_error(checkersGrob("blue", "circle"))
-    expect_error(hexlinesGrob("blue", "circle"))
 })
 
 context("no regressions in figures")
 test_that("no regressions in figures", {
+    skip_on_ci()
     dc <- function(..., cfg=cfg_default) {
         grid.piece(..., cfg=cfg)
     }
@@ -152,6 +158,9 @@ test_that("no regressions in figures", {
                                 function() dc("coin_face", rank=4, cfg=list(shape.coin="convex8")))
     expect_doppelganger("coin_face.r4concave8",
                                 function() dc("coin_face", rank=4, cfg=list(shape.coin="concave8", shape_r.coin=0.4)))
+    expect_doppelganger("coin_face.r4oval",
+                                function() dc("coin_face", rank=4, op_scale = 0.5,
+                                              cfg=list(shape.coin="oval", height.coin=1.3)))
     # die faces
     expect_doppelganger("die_face.s4.r1", function() dc("die_face", suit=4, rank=1))
     expect_doppelganger("die_face.s3.r2", function() dc("die_face", suit=3, rank=2))
@@ -173,7 +182,6 @@ test_that("no regressions in figures", {
     cfg <- list(shape.pawn="convex6", height.pawn=1, width.pawn=0.5)
     expect_doppelganger("pawn_face.irregular_convex",
                         function() dc("pawn_face", cfg=cfg, op_scale=0.5))
-
 
     # matchsticks
     expect_doppelganger("matchstick_face.s1.r1", function() dc("matchstick_face", suit=1, rank=1))
@@ -199,6 +207,7 @@ test_that("no regressions in figures", {
 
     cfg <- list(die_arrangement="opposites_sum_to_5")
     expect_doppelganger("die_layoutRF-opposites_sum_to_5", function() dc("die_layoutRF", suit=3, cfg=cfg))
+
     # 102
     expect_doppelganger("rankdie_layoutRF_suitasace", function() {
         dc("die_layoutRF", suit=6, cfg=list(use_suit_as_ace=TRUE))
@@ -237,23 +246,6 @@ test_that("no regressions in figures", {
     expect_error(game_systems("boobear"),
                  "Don't have a customized configuration for style boobear")
 
-    # icehouse pyramids
-    dft <- tibble(piece_side="tile_back", x=1.5, y=1.5, suit=NA, rank=NA, angle=NA)
-    dfp <- tibble(piece_side=c("pyramid_face", "pyramid_left", "pyramid_right", "pyramid_back"),
-                  x=c(1,2,2,1), y=c(2,2,1,1), suit=1:4, rank=c(2:4,4), angle=seq(90, 360, 90))
-    df1 <- rbind(dft, dfp)
-
-    dft <- tibble(piece_side="tile_back", x=3.5, y=3.5, suit=NA, rank=NA, angle=NA)
-    dfp <- tibble(piece_side="pyramid_top", x=2+c(1,2,2,1,1,2,2,2), y=2+c(2,2,1,1,1,1,1,1),
-                  suit=c(1:6,2,3), rank=c(2:4,4,2,3,2,1), angle=seq(0, 630, 90))
-    df2 <- rbind(dft, dfp)
-    df <- rbind(df1, df2)
-
-    systems <- game_systems("dejavu")
-    expect_doppelganger("icehouse_pieces",
-        function() pmap_piece(df, cfg=systems$icehouse_pieces, default.units="in")
-    )
-
     # piecepack pyramids
     expect_doppelganger("pyramid_face.s1.r6", function() dc("pyramid_face", suit=1, rank=6))
     expect_doppelganger("pyramid_left.s2.r5", function() dc("pyramid_left", suit=2, rank=5))
@@ -265,10 +257,15 @@ test_that("no regressions in figures", {
 
     skip_if_not(Sys.info()[["nodename"]] == "trevorld-Bonobo-Extreme")
     expect_doppelganger("pyramid_top.s4.r3", function() dc("pyramid_top", suit=4, rank=3))
+    expect_doppelganger("pyramid_top_op", function()
+        dc("pyramid_top", rank = 6, op_angle = 90, op_scale = 0.5, cfg = list(invert_colors = TRUE)))
+    expect_doppelganger("pyramid_face_op", function()
+        dc("pyramid_face", rank = 6, op_angle = 90, op_scale = 0.5, cfg = list(invert_colors = TRUE)))
 })
 
 context("oblique projection works")
 test_that("oblique projection works", {
+    skip_on_ci()
     dc <- function(..., cfg=cfg_default) {
         grid.piece(..., cfg=cfg, op_scale=0.5)
     }
@@ -292,5 +289,24 @@ test_that("oblique projection works", {
         g.p("coin_back", x=3, y=4, z=1/4+1/16, angle=180, cfg=cfg)
         g.p("coin_back", x=3, y=4, z=1/4+1/8+1/16, angle=180, cfg=cfg)
         g.p("coin_back", x=3, y=1, z=3/4+1/16, angle=90, cfg=cfg)
+    })
+})
+
+context("alpha and scale works")
+test_that("alpha and scale works", {
+    skip_on_ci()
+    expect_doppelganger("alpha_and_scale", function() {
+        cfg <- pp_cfg(list(shape.coin="convex6"))
+        df <- tibble(piece_side="coin_back",
+                     x=1:6, y=1, alpha=seq(0, 1, length.out=6),
+                     scale=seq(0, 1, length.out=6))
+        pmap_piece(df, default.units="in", cfg=cfg)
+    })
+    expect_doppelganger("alpha_and_scale_op", function() {
+        cfg <- pp_cfg(list(shape.coin="convex6"))
+        df <- tibble(piece_side="coin_back",
+                     x=1:6, y=1, alpha=seq(0, 1, length.out=6),
+                     scale=seq(0, 1, length.out=6))
+        pmap_piece(df, default.units="in", cfg=cfg, op_scale=0.5)
     })
 })

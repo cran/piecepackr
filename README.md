@@ -3,11 +3,11 @@ piecepackr: Board Game Graphics
 
 [![CRAN Status Badge](https://www.r-pkg.org/badges/version/piecepackr)](https://cran.r-project.org/package=piecepackr)
 
-[![Build Status](https://travis-ci.org/trevorld/piecepackr.png?branch=master)](https://travis-ci.org/trevorld/piecepackr)
+[![Build Status](https://travis-ci.org/piecepackr/piecepackr.png?branch=master)](https://travis-ci.org/piecepackr/piecepackr)
 
-[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/trevorld/piecepackr?branch=master&svg=true)](https://ci.appveyor.com/project/trevorld/piecepackr)
+[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/piecepackr/piecepackr?branch=master&svg=true)](https://ci.appveyor.com/project/piecepackr/piecepackr)
 
-[![Coverage Status](https://img.shields.io/codecov/c/github/trevorld/piecepackr/master.svg)](https://codecov.io/github/trevorld/piecepackr?branch=master)
+[![Coverage Status](https://img.shields.io/codecov/c/github/piecepackr/piecepackr/master.svg)](https://codecov.io/github/piecepackr/piecepackr?branch=master)
 
 [![Project Status: Active -- The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
@@ -15,22 +15,25 @@ piecepackr: Board Game Graphics
 :::
 
 `piecepackr` is an [R](https://www.r-project.org/) package designed to
-make configurable board game graphics. It can be used with R\'s
-[grid](https://www.rdocumentation.org/packages/grid) graphics system to
+make configurable board game graphics. It can be used with the
+[grid](https://www.rdocumentation.org/packages/grid),
+[rayrender](https://www.rdocumentation.org/packages/rayrender), and
+[rgl](https://www.rdocumentation.org/packages/rgl) graphics packages to
 make board game diagrams, board game animations, and custom [Print &
 Play
 layouts](https://trevorldavis.com/piecepackr/pages/print-and-play-pdfs.html).
-By default it is configured to make
-[piecepack](http://www.ludism.org/ppwiki/HomePage) game diagrams,
-animations, and \"Print & Play\" layouts but can be configured to make
-graphics for other board game systems as well.
+By default it is configured to make [piecepack](#piecepack) game
+diagrams, animations, and \"Print & Play\" layouts but can be configured
+to make graphics for other board game systems as well.
 
 API Intro
 ---------
 
-`grid.piece` is the core function that is used to draw board game
-components (by default
-[piecepack](http://www.ludism.org/ppwiki/HomePage) game components):
+### grid.piece
+
+`grid.piece` is the core function that can used to draw board game
+components (by default [piecepack](#piecepack) game components) using
+[grid](https://www.rdocumentation.org/packages/grid):
 
 ``` {.r}
 library("piecepackr")
@@ -47,6 +50,8 @@ g.p("coin_back", suit=2, x=3, y=1, angle=90)
 
 ![Piecepack diagram with default
 configuration](man/figures/README-intro1-1.png)
+
+### configuration lists
 
 One can use [lists to
 configure](https://trevorldavis.com/piecepackr/configuration-lists.html)
@@ -74,7 +79,9 @@ g.p("coin_back", suit=2, x=3, y=1, angle=90)
 ![Piecepack diagram with custom
 configuration](man/figures/README-config-1.png)
 
-`grid.piece` even has some support for drawing components with an
+### oblique 3D projection
+
+`grid.piece` even has some support for drawing 3D diagrams with an
 [oblique
 projection](https://trevorldavis.com/piecepackr/3d-projections.html):
 
@@ -99,6 +106,8 @@ g.p("coin_back", suit=2, x=3, y=1, z=3/4+1/8, angle=90)
 ![Piecepack diagram in an oblique
 projection](man/figures/README-proj-1.png)
 
+### save\_print\_and\_play and save\_piece\_images
+
 `save_print_and_play` makes a \"Print & Play\" pdf of a configured
 piecepack, `save_piece_images` makes individual images of each piecepack
 component:
@@ -108,10 +117,12 @@ save_print_and_play(cfg, "my_piecepack.pdf", size="letter")
 save_piece_images(cfg)
 ```
 
+### pmap\_piece
+
 If you are comfortable using R data frames there is also `pmap_piece`
-which is a wrapper for `grid.piece` that processes data frame input. It
-accepts an optional `trans` argument for a function to pre-process the
-data frames, in particular if desiring to draw a 3D [oblique
+that processes data frame input. It accepts an optional `trans` argument
+for a function to pre-process the data frames, in particular if desiring
+to draw a 3D [oblique
 projection](https://trevorldavis.com/piecepackr/3d-projections.html) one
 can use the function `op_transform` to guess both the pieces\'
 z-coordinates and an appropriate re-ordering of the data frame given the
@@ -132,6 +143,37 @@ pmap_piece(df, cfg=cfg, default.units="in", trans=op_transform, op_scale=0.5, op
 ![\'pmap\_piece\' lets you use data frames as
 input](man/figures/README-pmap-1.png)
 
+### piece3d (rgl)
+
+`piece3d` draws pieces using `rgl` graphics.
+
+``` {.r}
+library("ppgames")
+df <- ppgames::df_four_field_kono()
+envir <- piecepackr::game_systems("dejavu3d")
+library("rgl")
+pmap_piece(df, piece3d, trans=op_transform, envir = envir, scale = 0.98, res = 150)
+```
+
+![rgl render](https://trevorldavis.com/share/piecepack/rgl_snapshot.png)
+
+### piece (rayrender)
+
+`piece` creates `rayrender` objects.
+
+``` {.r}
+library("ppgames")
+df <- ppgames::df_four_field_kono()
+envir <- piecepackr::game_systems("dejavu3d")
+library("rayrender")
+l <- pmap_piece(df, piece, trans=op_transform, envir = envir, scale = 0.98, res = 150)
+scene <- do.call(dplyr::bind_rows, l)
+render_scene(scene, lookat = c(2.5, 2.5, 0), lookfrom = c(0, -2, 13))
+```
+
+![rayrender
+render](https://trevorldavis.com/share/piecepack/3d_render.png)
+
 A slightly longer [intro to piecepackr\'s
 API](https://trevorldavis.com/piecepackr/intro-to-piecepackrs-api.html)
 plus several [piecepackr
@@ -143,14 +185,99 @@ website](https://trevorldavis.com/piecepackr/) as well as some
 pre-configured [Print & Play
 PDFs](https://trevorldavis.com/piecepackr/pages/print-and-play-pdfs.html).
 More API documentation is also available in the package\'s [man
-pages](https://rdrr.io/github/trevorld/piecepackr/man/).
+pages](https://rdrr.io/github/piecepackr/piecepackr/man/).
 
-Tak Example
------------
+Game Systems
+------------
 
-Although the game of [Tak](https://en.wikipedia.org/wiki/Tak_(game)) can
-be played with a piecepack stackpack here we\'ll show an example of
-configuring piecepackr to draw more traditional Tak game pieces.
+The function `game_systems` returns configurations for multiple public
+domain game systems.
+
+### Checkers
+
+`game_systems` returns a `checkers1` and `checkers2` configuration which
+has checkered and lined \"boards\" with matching checker \"bits\" in
+various sizes and colors.
+
+``` {.r}
+df_board <- tibble(piece_side = "board_face", suit = 3, rank = 8,
+               x = 4.5, y = 4.5)
+df_w <- tibble(piece_side = "bit_face", suit = 6, rank = 1,
+               x = rep(1:8, 2), y = rep(1:2, each=8))
+df_b <- tibble(piece_side = "bit_face", suit = 1, rank = 1,
+               x = rep(1:8, 2), y = rep(7:8, each=8))
+df <- rbind(df_board, df_w, df_b)
+df$cfg <- "checkers1"
+pmap_piece(df, envir=game_systems(), default.units="in", trans=op_transform, op_scale=0.5)
+```
+
+![Starting position for Dan Troyka\'s abstract game
+\"Breakthrough\"](man/figures/README-breakthrough-1.png)
+
+### Traditional 6-sided dice
+
+`game_systems` returns a `dice` configuration which can make standard
+6-sided dice in six colors.
+
+### Double-12 dominoes
+
+`game_systems` returns seven different configurations for double-12
+dominoes:
+
+1)  `dominoes`
+2)  `dominoes_black`
+3)  `dominoes_blue`
+4)  `dominoes_green`
+5)  `dominoes_red`
+6)  `dominoes_white` (identical to `dominoes`)
+7)  `dominoes_yellow`
+
+``` {.r}
+library("tibble")
+
+envir <- game_systems("dejavu")
+
+df_dominoes <- tibble(piece_side = "tile_face", x=rep(4:1, 3), y=rep(2*3:1, each=4), suit=1:12, rank=1:12+1,
+                      cfg = paste0("dominoes_", rep(c("black", "red", "green", "blue", "yellow", "white"), 2)))
+df_tiles <- tibble(piece_side = "tile_back", x=5.5, y=c(2,4,6), suit=1:3, rank=1:3, cfg="piecepack")
+df_dice <- tibble(piece_side = "die_face", x=6, y=0.5+1:6, suit=1:6, rank=1:6, cfg="dice")
+df_coins1 <- tibble(piece_side = "coin_back", x=5, y=0.5+1:4, suit=1:4, rank=1:4, cfg="piecepack")
+df_coins2 <- tibble(piece_side = "coin_face", x=5, y=0.5+5:6, suit=1:2, rank=1:2, cfg="piecepack")
+df <- rbind(df_dominoes, df_tiles, df_dice, df_coins1, df_coins2)
+
+pmap_piece(df, default.units="in", envir=envir, op_scale=0.5, trans=op_transform)
+```
+
+![Double-12 dominoes and standard dice in a variety of
+colors](man/figures/README-dominoes-1.png)
+
+### Piecepack
+
+`game_systems` returns three different [piecepack](#piecepack)
+configurations:
+
+1)  `piecepack`
+2)  `playing_cards_expansion`
+3)  `dual_piecepacks_expansion`
+
+Plus a configuration for a `subpack` aka \"mini\" piecepack and a
+`hexpack` configuration.
+
+The piecepack configurations also contain common piecepack accessories
+like piecepack pyramids, piecepack matchsticks, and piecepack saucers.
+
+### Looney Pyramids
+
+Configurations for the proprietary Looney Pyramids aka Icehouse Pieces
+game system by Andrew Looney can be found in the companion R package
+`piecenikr`: <https://github.com/piecepackr/piecenikr>
+
+### Tak Example
+
+Here we\'ll show an example of configuring piecepackr to draw diagrams
+for the abstract board game
+[Tak](https://en.wikipedia.org/wiki/Tak_(game)) (designed by James
+Ernest and Patrick Rothfuss).
 
 Since one often plays Tak on differently sized boards one common Tak
 board design is to have boards made with colored cells arranged in rings
@@ -187,27 +314,26 @@ Tak pieces with it.
 ``` {.r}
 cfg <- pp_cfg(list(suit_text=",,,", suit_color="white,tan4,", invert_colors=TRUE,
             ps_text="", dm_text="",
-            width.tile=6, height.tile=6, depth.tile=1/4,
-            grob_fn.tile=grobTakBoard,
-            width.coin=0.6, height.coin=0.6, depth.coin=1/4, shape.coin="rect",
-            width.saucer=0.6, height.saucer=1/4, depth.saucer=0.6, 
-            shape.saucer="rect", mat_width.saucer=0,
+            width.board=6, height.board=6, depth.board=1/4,
+            grob_fn.board=grobTakBoard,
+            width.r1.bit=0.6, height.r1.bit=0.6, depth.r1.bit=1/4, shape.r1.bit="rect",
+            width.r2.bit=0.6, height.r2.bit=1/4, depth.r2.bit=0.6, shape.r2.bit="rect", 
             width.pawn=0.5, height.pawn=0.5, depth.pawn=0.8, shape.pawn="circle",
             edge_color="white,tan4", border_lex=2,
-            edge_color.tile="tan", border_color.tile="black"))
+            edge_color.board="tan", border_color.board="black"))
 g.p <- function(...) { 
     grid.piece(..., op_scale=0.7, op_angle=45, cfg=cfg, default.units="in")
 }
 draw_tak_board <- function(x, y) { 
-    g.p("tile_back", x=x+0.5, y=y+0.5) 
+    g.p("board_back", x=x+0.5, y=y+0.5) 
 }
 draw_flat_stone <- function(x, y, suit=1) { 
     z <- 1/4*seq(along=suit)+1/8
-    g.p("coin_back", x=x+0.5, y=y+0.5, z=z, suit=suit)
+    g.p("bit_back", x=x+0.5, y=y+0.5, z=z, suit=suit, rank=1)
 }
 draw_standing_stone <- function(x, y, suit=1, n_beneath=0, angle=0) {
     z <- (n_beneath+1)*1/4+0.3
-    g.p("saucer_face", x=x+0.5, y=y+0.5, z=z, suit=suit, angle=angle)
+    g.p("bit_back", x=x+0.5, y=y+0.5, z=z, suit=suit, rank=2, angle=angle)
 }
 draw_capstone <- function(x, y, suit=1, n_beneath=0) {
     z <- (n_beneath+1)*1/4+0.4
@@ -251,7 +377,7 @@ To install the development version use the following commands:
 
 ``` {.r}
 install.packages("remotes")
-remotes::install_github("trevorld/piecepackr")
+remotes::install_github("piecepackr/piecepackr")
 ```
 
 The default piecepackr configuration should work out on the box on most
@@ -349,8 +475,8 @@ Although one can use the API to make layouts with components of
 different sizes the default print-and-play pdf\'s draw components of the
 following size which (except for the pawns and non-standard \"pawn
 belts\") matches the traditional [Mesomorph piecepack
-dimensions](http://www.piecepack.org/Anatomy.html) if one uses the
-default component shapes and sizes:
+dimensions](https://web.archive.org/web/20191222010028/http://www.piecepack.org/Anatomy.html)
+if one uses the default component shapes and sizes:
 
 -   tiles (default \"rect\") are drawn into a 2\" by 2\" square
 -   coins (default \"circle\") are drawn into a ¾\" by ¾\" square
@@ -473,7 +599,7 @@ piecepack rulesets:
     exported by the `piecepack` R package is `grid.piece` (or
     alternatives like `pmap_piece`) which draws piecepack components to
     the graphics device. The
-    [ppgames](https://github.com/trevorld/ppgames) R package has code
+    [ppgames](https://github.com/piecepackr/ppgames) R package has code
     for several [game diagram
     examples](https://trevorldavis.com/piecepackr/tag/ppgames.html). One
     can also use this package to [make

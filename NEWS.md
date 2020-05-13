@@ -1,4 +1,60 @@
-piecepackr 1.2.0
+piecepackr 1.3.1
+================
+
+New features
+------------
+
+* Graphic functions now support more game pieces:
+  - ``board_face``, ``board_back`` for representing boards (#153).
+  - ``card_face``, ``card_back`` for representing cards (#124).
+  - ``bit_face``, ``bit_back`` for representing miscellaneous game pieces (#155).
+* Function ``game_systems`` now returns more game systems:
+  - ``dice``: Normal six-sided pipped dice in six color schemes (#166).
+  - ``checkers1``, ``checkers2``: Checkered boards and checkers.  ``checkers1`` has 1" cells and ``checkers2`` has 2" cells (#168).
+  - ``dominoes``, ``dominoes_black``, ``dominoes_blue``, ``dominoes_green``, ``dominoes_red``, ``dominoes_white``, ``dominoes_yellow``: Traditional Double-12 pipped dominoes in various color schemes (#159).  
+  - ``playing_cards``, ``playing_cards_colored``, ``playing_cards_tarot`` (#170): 
+    + ``playing cards`` is a traditional (French-suited) deck of (Poker) playing cards.
+    + ``playing_cards_colored`` has five suits: red hearts, black spades, green clubs, blue diamonds, and yellow stars.
+    + ``playing_cards_tarot`` is a (French Bourgeois) tarot deck with four suits (hearts, spades, clubs, diamonds) with 14 ranks (including knights) plus 22 trump cards (1-21 plus an "excuse").
+* New function ``save_piece_obj`` for writing Waveform OBJ files (and associated MTL files and png textures) (#189, #190).
+  Note support for dice and pawns are currently rather crude.
+* New function ``piece3d`` for making graphics with the ``rgl`` package (#76).
+* New function ``piece`` for making ``rayrender`` objects.
+
+Bug fixes and minor improvements
+--------------------------------
+
+* Configuration lists now support an "oval" shape (#182).
+* Improved drawing of oblique projection edges for "concave" polygons (stars) 
+  and non-regular "convex" polygons (#174).
+* Improved drawing of pyramids in the 3D oblique projection (#172).
+* Fixes bug in ``op_transform`` when sorting tile faces rotated in various directions (#163).
+* ``op_transform`` now accepts new argument ``pt_thickness``for improved handling of stacked pyramid (tops).
+* The ``edge_color`` for dice, pawns, and pyramids now defaults to the background color of ``piece_side``.
+* The ``edge_color`` for matchsticks now defaults to the background color of the ``matchstick_back``.
+* Font sizes and locations of piecepack matchsticks in ``game_systems`` made more "standard".
+* ``pmap_piece`` now supports an ``.f`` function to specify the function to apply to the rows of the data frame.
+  By default it uses the (backwards-compatible) ``pieceGrob``.
+* ``pp_cfg()$get_depth()`` now has better depth calculation for pyramid faces (representing laid down pyramids).
+* ``pp_cfg`` now supports a new ``op_grob_fn`` style indicating which function to draw pieces with 
+  when drawing with a 3D oblique projection in ``grid``.  The older ``shadow_fn`` style alternative is now deprecated.
+* ``grid.piece`` (and ``pieceGrob``) now support a ``scale`` and ``alpha`` argument (#201).
+
+Deprecated features
+-------------------
+
+The following ``pp_cfg`` R6 class public method is now deprecated:
+    * ``get_pictureGrob``.  Use ``get_grob(piece_type, suit, rank, type="picture")`` instead.
+The following ``pp_cfg`` "style" is now deprecated:
+    * ``shadow_fn``.  Use the new ``op_grob_fn`` instead.
+
+Breaking changes
+----------------
+
+* The function ``game_systems`` no longer returns an ``icehouse_pieces`` configuration.
+  Configurations for Looney Pyramids can be found at https://github.com/piecepackr/piecenikr
+
+piecepackr 1.2.1
 ================
 
 New features
@@ -7,7 +63,27 @@ New features
 * New function ``picturePieceGrobFn`` which returns a "grob" function that imports graphics
   from files found in its ``directory`` argument (#152).
 * New function ``game_systems`` which returns a list of configuration objects
-  for multiple game systems (#157).
+  for multiple game systems (#157):
+
+  - ``dual_piecepacks_expansion``: A companion piecepack with a special suit scheme.
+                 See https://trevorldavis.com/piecepackr/dual-piecepacks-pnp.html.
+  - ``hexpack``: A hexagonal extrapolation of the piecepack designed by Nathan Morse and Daniel Wilcox.
+                  See https://boardgamegeek.com/boardgameexpansion/35424/hexpack.
+  - ``piecepack``: A public domain game system invented by James "Kyle" Droscha.
+     See http://www.ludism.org/ppwiki.
+     Configuration also contains the following piecepack accessories:
+
+       + ``piecepack matchstick``s: A public domain accessory developed by Dan Burkey.
+                                   See http://www.ludism.org/ppwiki/PiecepackMatchsticks.
+       + ``piecepack pyramids``: A public domain accessory developed by Tim Schutz.
+                                See http://www.ludism.org/ppwiki/PiecepackPyramids.
+       + ``piecepack saucers``: A public domain accessory developed by Karol M. Boyle at Mesomorph Games.
+                                See https://web.archive.org/web/20190719155827/http://www.piecepack.org/Accessories.html
+  - ``playing_cards_expansion``: A piecepack with the standard "French" playing card suits.
+                                  See http://www.ludism.org/ppwiki/PlayingCardsExpansion.
+  - ``subpack``: A "mini" piecepack.  Designed to be used with the ``piecepack`` to make piecepack
+                 "stackpack" diagrams.  See http://www.ludism.org/ppwiki/StackPack.
+   
 * Helper functions ``to_subpack`` and ``to_hexpack`` which given a piecepack configuration
   attempts to generate an appropriate matching (piecepack stackpack) subpack and hexpack (#161).
 * New function ``file2grob`` that imports a given image file as a grob.

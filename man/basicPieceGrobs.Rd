@@ -19,11 +19,9 @@ previewLayoutGrob(piece_side, suit, rank, cfg = pp_cfg())
 \arguments{
 \item{piece_side}{A string with piece and side separated by a underscore e.g. "coin_face"}
 
-\item{suit}{Number of suit (highest rank starting from 1).
-The number above the total number of suits is the neutral "unsuit".
-and the next number above that is "no suits".}
+\item{suit}{Number of suit (starting from 1).}
 
-\item{rank}{Number of rank (lowest rank starting from 1)}
+\item{rank}{Number of rank (starting from 1)}
 
 \item{cfg}{Piecepack configuration list or \code{pp_cfg} object.}
 
@@ -36,7 +34,7 @@ function returned by \code{picturePieceGrobFn} should import.}
 \description{
 \code{basicPieceGrob}, \code{pyramidTopGrob}, and \code{previewLayoutGrob}
  are the default \dQuote{grob} functions that \code{grid.piece} uses
-to create \code{grid} #' graphical \code{grob} objects.  \code{picturePieceGrobFn}
+to create \code{grid} graphical \code{grob} objects.  \code{picturePieceGrobFn}
 is a function that returns a \dQuote{grob} function that imports graphics from files
 found in its \code{directory} argument.
 }

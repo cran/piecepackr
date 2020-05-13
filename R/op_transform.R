@@ -52,6 +52,9 @@ gdh <- function(piece_side, cfg, ..., suit=1, rank=1) cfg$get_depth(piece_side, 
 #'        or a character vector of \code{pp_cfg} objects
 #' @param envir Environment (or named list) containing configuration list(s).
 #' @param op_angle Intended oblique projection angle (used for re-sorting)
+#' @param pt_thickness Thickness of pyramid tip i.e. value to add to the z-value of a pyramid top
+#'                  if it is a (weakly) smaller ranked pyramid (top)
+#'                  placed on top of a larger ranked pyramid (top).
 #' @return A tibble with extra columns added
 #'         and re-sorted rows
 #' @examples
@@ -62,53 +65,43 @@ gdh <- function(piece_side, cfg, ..., suit=1, rank=1) cfg$get_depth(piece_side, 
 #'            op_scale=0.5, default.units="in")
 #'
 #' @export
-op_transform <- function(df, ..., cfg=pp_cfg(), envir=NULL, op_angle=45) {
-    df <- add_3d_info(df, cfg, envir)
-    df <- op_sort(df, op_angle)
+op_transform <- function(df, ..., cfg=pp_cfg(), envir=NULL, op_angle=45, pt_thickness = 0.01) {
+    df <- add_3d_info(df, cfg = cfg, envir = envir, pt_thickness = pt_thickness)
+    df <- op_sort(df, op_angle = op_angle)
     df
 }
 
-add_3d_info <- function(df, cfg=pp_cfg(), envir=NULL) {
+add_3d_info <- function(df, ..., cfg=pp_cfg(), envir=NULL, pt_thickness = 0.01) {
     # Do more stuff if units aren't in inches?
     df <- add_cfg(df, cfg, envir)
     df <- add_measurements(df)
     df <- add_bounding_box(df)
-    df <- add_z(df)
+    df <- add_z(df, pt_thickness = pt_thickness)
     df <- add_field(df, "zt", df$z + 0.5*df$depth)
     df <- add_field(df, "zb", df$z - 0.5*df$depth)
     df
 }
 
-op_sort <- function(df, op_angle=45) {
+op_sort <- function(df, ..., op_angle=45) {
     op_angle <- op_angle %% 360
     if ((0 <= op_angle) && (op_angle < 90)) {
-        df <- df[order(df$zt, -df$yb, -df$xl),]
+        df <- df[order(df$zt, -df$yb, -df$xl), ]
     } else if ((90 <= op_angle) && (op_angle < 180)) {
-        df <- df[order(df$zt, -df$yb, df$xr),]
+        df <- df[order(df$zt, -df$yb, df$xr), ]
     } else if ((180 <= op_angle) && (op_angle < 270)) {
-        df <- df[order(df$zt, df$yt, df$xr),]
+        df <- df[order(df$zt, df$yt, df$xr), ]
     } else {
-        df <- df[order(df$zt, df$yt, -df$xl),]
+        df <- df[order(df$zt, df$yt, -df$xl), ]
     }
     df
 }
 
-unit_to_cartesian_coords <- function(x, y, x0=0.5, y0=0.5, width=1, height=1, angle=0) {
-    # re-center to origin and re-scale by width/height
-    x <- width * (x - 0.5)
-    y <- height * (y - 0.5)
-    # rotate and re-center to (x0, y0)
-    xr <- x0 + x * cos(to_radians(angle)) - y * sin(to_radians(angle))
-    yr <- y0 + x * sin(to_radians(angle)) + y * cos(to_radians(angle))
-    list(x=xr, y=yr)
-}
-
 # Axis-Aligned Bounding Box (AABB)
 add_bounding_box <- function(df) {
-    ll <- unit_to_cartesian_coords(0, 0, df$x, df$y, df$width, df$height, df$angle)
-    ul <- unit_to_cartesian_coords(0, 1, df$x, df$y, df$width, df$height, df$angle)
-    ur <- unit_to_cartesian_coords(1, 1, df$x, df$y, df$width, df$height, df$angle)
-    lr <- unit_to_cartesian_coords(1, 0, df$x, df$y, df$width, df$height, df$angle)
+    ll <- Point$new(0, 0)$npc_to_in(df$x, df$y, df$width, df$height, df$angle)
+    ul <- Point$new(0, 1)$npc_to_in(df$x, df$y, df$width, df$height, df$angle)
+    ur <- Point$new(1, 1)$npc_to_in(df$x, df$y, df$width, df$height, df$angle)
+    lr <- Point$new(1, 0)$npc_to_in(df$x, df$y, df$width, df$height, df$angle)
     df$xll <- ll$x
     df$yll <- ll$y
     df$xul <- ul$x
@@ -117,12 +110,14 @@ add_bounding_box <- function(df) {
     df$ylr <- lr$y
     df$xur <- ur$x
     df$yur <- ur$y
-    df$xl <- pmin(df$xll, df$xul, df$xur, df$xlr)
-    df$xr <- pmax(df$xll, df$xul, df$xur, df$xlr)
-    df$yb <- pmin(df$yll, df$yul, df$yur, df$ylr)
-    df$yt <- pmax(df$yll, df$yul, df$yur, df$ylr)
+    df$xl <- op_round(pmin(df$xll, df$xul, df$xur, df$xlr))
+    df$xr <- op_round(pmax(df$xll, df$xul, df$xur, df$xlr))
+    df$yb <- op_round(pmin(df$yll, df$yul, df$yur, df$ylr))
+    df$yt <- op_round(pmax(df$yll, df$yul, df$yur, df$ylr))
     df
 }
+
+op_round <- function(x) round(x, 9)
 
 do_ranges_overlap <- function(l1, r1, l2, r2) {
     (less_than_equal(l1, l2) & less_than(l2, r1)) |
@@ -137,15 +132,15 @@ which_AABB_overlap <- function(dfi, dfs) {
 less_than <- function(x, y) 1e-6 < y - x # in case of trigonometric precision issues
 less_than_equal <- function(x, y) 0 < y - x + 1e-6 # in case of trigonometric precision issues
 
-add_z <- function(df) {
+add_z <- function(df, pt_thickness = 0.01) {
     shapes <- get_shapes(df)
     zp <- 0.5*df$depth
-    for (ii in seq(length.out=nrow(df))) {
-        dfi <- df[ii,]
-        dfs <- df[0:(ii-1),]
-        for (jj in which_AABB_overlap(dfi, dfs)) {
-            if (do_shapes_overlap(shapes[[ii]], shapes[[jj]])) {
-                zp[ii] <- as.numeric(zp[jj] + 0.5*df[jj,"depth"] + 0.5*df[ii,"depth"])
+    for (i in seq(length.out=nrow(df))) {
+        dfi <- df[i, ]
+        dfs <- df[0:(i-1), ]
+        for (j in which_AABB_overlap(dfi, dfs)) {
+            if (do_shapes_overlap(shapes[[i]], shapes[[j]])) {
+                zp[i] <- compute_z(df, zp, i, j, pt_thickness)
                 break
             }
         }
@@ -153,13 +148,27 @@ add_z <- function(df) {
     df <- add_field(df, "z", zp)
     df
 }
-
-# plot_polygon <- function(o) grid.newpage(); grid.polygon(x=o$x, y=o$y, default.units="in") # nolint
+# @param df Data frame
+# @param zp Depths
+# @param i Index of top piece
+# @param j Index of top overlapping piece underneath
+# @param pt_thickness Thickness of tip of pyramid
+compute_z <- function(df, zp, i, j, pt_thickness = 0.01) {
+    if (all(df$piece_side[c(i,j)] == "pyramid_top")) {
+        if (df$rank[i] <= df$rank[j]) { # top piece is (weakly) smaller
+            zp[j] + 0.5 * df$depth[j] + pt_thickness - 0.5 * df$depth[i]
+        } else { # top piece is (strictly) bigger
+            zp[j] - 0.5 * df$depth[j] + 0.5 * df$depth[i]
+        }
+    } else {
+        zp[j] + 0.5 * df$depth[j] + 0.5 * df$depth[i]
+    }
+}
 
 get_shapes <- function(df) {
     shapes <- vector("list", nrow(df))
     for (ii in seq(length.out=nrow(df))) {
-        dfi <- df[ii,]
+        dfi <- df[ii, ]
         cfg <- df$cfg[[ii]]
         piece_side <- df$piece_side[ii]
         suit <- ifelse(has_name(df, "suit"), df$suit[ii], NA)
@@ -180,9 +189,8 @@ get_shapes <- function(df) {
             } else {
                 stop(paste("Don't know how to bound", opt$shape))
             }
-            xy_c <- unit_to_cartesian_coords(xy_u$x, xy_u$y, x0=dfi$x, y0=dfi$y,
-                                                    width=dfi$width, height=dfi$height, angle=dfi$angle)
-            shapes[[ii]] <- ConvexPolygon$new(x=xy_c$x, y=xy_c$y)
+            xy_c <- Point$new(xy_u)$npc_to_in(dfi$x, dfi$y, dfi$width, dfi$height, dfi$angle)
+            shapes[[ii]] <- ConvexPolygon$new(xy_c)
         }
     }
     shapes

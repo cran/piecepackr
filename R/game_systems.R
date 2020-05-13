@@ -2,55 +2,129 @@
 #'
 #' \code{game_systems} returns a list of \code{pp_cfg} objects
 #' representing several game systems.
+#' \code{to_subpack} and \code{to_hexpack} will attempt to generate matching (piecepack stackpack)
+#'      subpack and (piecepack) hexpack \code{pp_cfg} R6 objects respectively given a piecepack configuration.
 #'
-#' Contains the following game systems:\itemize{
-#' \item{icehouse pieces}
-#' \item{piecepack plus several piecepack accessories/expansions:\itemize{
-#'   \item{piecepack matchsticks}
-#'   \item{piecepack pyramids}
-#'   \item{piecepack saucers}
-#'   \item{hexpack}
-#'   \item{playing cards expansion}
-#'   \item{dual piecepacks expansion}
-#'   \item{(stackpack) subpack aka mini piecepack}
-#' }}}
+#' Contains the following game systems:\describe{
+#' \item{checkers1, checkers2}{Checkers and checkered boards in six color schemes.
+#'       Checkers are represented a piecepackr \dQuote{bit}.  The \dQuote{board} \dQuote{face} is a checkered board
+#'       and the \dQuote{back} is a lined board.
+#'       Color is controlled by suit and number of rows/columns by rank.
+#'       \code{checkers1} has one inch squares and \code{checkers2} has two inch squares.}
+#' \item{dice}{Traditional six-sided pipped dice in six color schemes (color controlled by their suit).}
+#' \item{dominoes, dominoes_black, dominoes_blue, dominoes_green, dominoes_red, dominoes_white, dominoes_yellow}{
+#'      Traditional pipped dominoes in six color schemes (\code{dominoes} and \code{dominoes_white} are the same).
+#'      In each color scheme the number of pips on the \dQuote{top} of the domino is
+#'      controlled by their \dQuote{rank} and on the \dQuote{bottom} by their \dQuote{suit}.}
+#' \item{dual_piecepacks_expansion}{A companion piecepack with a special suit scheme.
+#'               See \url{https://trevorldavis.com/piecepackr/dual-piecepacks-pnp.html}.}
+#' \item{hexpack}{A hexagonal extrapolation of the piecepack designed by Nathan Morse and Daniel Wilcox.
+#'                See \url{https://boardgamegeek.com/boardgameexpansion/35424/hexpack}.}
+#' \item{piecepack}{A public domain game system invented by James "Kyle" Droscha.
+#'   See \url{http://www.ludism.org/ppwiki}.
+#'   Configuration also contains the following piecepack accessories:\describe{
+#'     \item{piecepack dice cards}{An accessory proposed by John Braley.
+#'                                 See \url{http://www.ludism.org/ppwiki/PiecepackDiceCards}.}
+#'     \item{piecepack matchsticks}{A public domain accessory developed by Dan Burkey.
+#'                                 See \url{http://www.ludism.org/ppwiki/PiecepackMatchsticks}.}
+#'     \item{piecepack pyramids}{A public domain accessory developed by Tim Schutz.
+#'                              See \url{http://www.ludism.org/ppwiki/PiecepackPyramids}.}
+#'     \item{piecepack saucers}{A public domain accessory developed by Karol M. Boyle at Mesomorph Games.
+#'              See \url{https://web.archive.org/web/20190719155827/http://www.piecepack.org/Accessories.html}.}
+#'   }}
+#' \item{playing_cards, playing_cards_colored, playing_cards_tarot}{
+#'       Poker-sized \code{card} components for various playing card decks:\describe{
+#'        \item{playing_cards}{A traditional deck of playing cards with 4 suits
+#'            and 13 ranks (A, 2-10, J, Q, K) plus a 14th "Joker" rank.}
+#'        \item{playing_cards_colored}{Like \code{playing_cards} but with five colored suits:
+#'            red hearts, black spades, green clubs, blue diamonds, and yellow stars.}
+#'        \item{playing_cards_tarot}{A (French Bourgeois) deck of tarot playing cards:
+#'            first four suits are hearts, spades, clubs, and diamonds with
+#'            14 ranks (ace through jack, knight, queen, king) plus a
+#'            fifth "suit" of 22 trump cards (1-21 plus an "excuse").}}}
+#' \item{playing_cards_expansion}{A piecepack with the standard ``French'' playing card suits.
+#'                                See \url{http://www.ludism.org/ppwiki/PlayingCardsExpansion}.}
+#' \item{subpack}{A mini piecepack.  Designed to be used with the \code{piecepack} to make piecepack
+#'               ``stackpack'' diagrams.  See \url{http://www.ludism.org/ppwiki/StackPack}.}
+#' }
 #' @param style If \code{NULL} (the default) uses suit glyphs from the default \dQuote{sans} font.
 #'        If \code{"dejavu"} it will use suit glyphs from the "DejaVu Sans" font (must be installed on the system).
+#' @param cfg List of configuration options
 #' @examples
 #'        cfgs <- game_systems()
 #'        names(cfgs)
 #'
+#'     if (require("grid")) {
+#'        # standard dice
+#'        grid.newpage()
+#'        grid.piece("die_face", x=1:6, default.units="in", rank=1:6, suit=1:6,
+#'                   op_scale=0.5, cfg=cfgs$dice)
+#'
+#'        # dominoes
+#'        grid.newpage()
+#'        colors <- c("black", "red", "green", "blue", "yellow", "white")
+#'        cfg <- paste0("dominoes_", rep(colors, 2))
+#'        grid.piece("tile_face", x=rep(4:1, 3), y=rep(2*3:1, each=4), suit=1:12, rank=1:12+1,
+#'                   cfg=cfg, default.units="in", envir=cfgs, op_scale=0.5)
+#'
+#'        # various piecepack expansions
+#'        grid.newpage()
 #'        df_tiles <- data.frame(piece_side="tile_back", x=0.5+c(3,1,3,1), y=0.5+c(3,3,1,1),
 #'                               suit=NA, angle=NA, z=NA, stringsAsFactors=FALSE)
+#'        df_coins <- data.frame(piece_side="coin_back", x=rep(4:1, 4), y=rep(4:1, each=4),
+#'                               suit=c(1,2,1,2,2,1,2,1,4,3,4,3,3,4,3,4),
+#'                               angle=rep(c(180,0), each=8), z=1/4+1/16, stringsAsFactors=FALSE)
+#'        df <- rbind(df_tiles, df_coins)
+#'        pmap_piece(df, cfg = cfgs$piecepack, op_scale=0.5, default.units="in")
+#'
+#'        grid.newpage()
 #'        df_coins <- data.frame(piece_side="coin_back", x=rep(4:1, 4), y=rep(4:1, each=4),
 #'                               suit=c(1,4,1,4,4,1,4,1,2,3,2,3,3,2,3,2),
 #'                               angle=rep(c(180,0), each=8), z=1/4+1/16, stringsAsFactors=FALSE)
 #'        df <- rbind(df_tiles, df_coins)
-#'        df$cfg <- "playing_cards_expansion"
+#'        pmap_piece(df, cfg = cfgs$playing_cards_expansion, op_scale=0.5, default.units="in")
 #'
-#'        pmap_piece(df, envir=cfgs, op_scale=0.5, default.units="in")
+#'        grid.newpage()
+#'        pmap_piece(df, cfg = cfgs$dual_piecepacks_expansion, op_scale=0.5, default.units="in")
+#'     }
 #' @seealso \code{\link{pp_cfg}} for information about the \code{pp_cfg} objects returned by \code{game_systems}.
 #' @export
 game_systems <- function(style=NULL) {
     if (is.null(style)) {
         piecepack_suits <- list(suit_text="\u263c,\u25d8,\u0238,\u03ee,\u2202")
         pce_suit_text <- "\u2665,\u2660,\u2663,\u2666,\u2202"
+        pc_suit_text <- list(suit_text="\u2665,\u2660,\u2663,\u2666,*",
+                             suit_cex.s5=1.3)
     } else if (style == "dejavu") {
         piecepack_suits <- list(suit_text="\u2742,\u25d0,\u265b,\u269c,\u0ed1",
                                 suit_cex.s2=0.9, dm_cex.coin=0.5, fontfamily="DejaVu Sans")
         pce_suit_text <- "\u2665,\u2660,\u2663,\u2666,\u0ed1"
+        pc_suit_text <- list(suit_text="\u2665,\u2660,\u2663,\u2666,\u2605")
+    } else if (style == "dejavu3d") {
+        piecepack_suits <- list(suit_text="\u2742,\u25d0,\u265b,\u269c,\u0ed1",
+                                suit_color.s4 = "#0072B2",
+                                invert_colors.pawn = TRUE,
+                                invert_colors.die = TRUE,
+                                background_color="burlywood", border_color="transparent",
+                                mat_color.tile_back = "burlywood", width.tile = 2,
+                                edge_color.tile = "black", edge_color.coin = "black",
+                                suit_cex.s2=0.9, dm_cex.coin=0.5, fontfamily="DejaVu Sans")
+        pce_suit_text <- "\u2665,\u2660,\u2663,\u2666,\u0ed1"
+        pc_suit_text <- list(suit_text="\u2665,\u2660,\u2663,\u2666,\u2605")
     } else {
         stop(paste("Don't have a customized configuration for style", style))
     }
     piecepack_base <- list(border_color="black", border_lex=4, depth.coin=0.25,
-                          mat_color.tile_back="white", mat_width.tile_back=0.05, suit_color.unsuited="black",
-                          rank_text=",a,2,3,4,5", use_suit_as_ace=TRUE)
+                           invert_colors.matchstick = TRUE, ps_cex.r2.matchstick = 0.7,
+                           dm_r.r1.matchstick = 0, dm_cex.r1.matchstick = 1.5, suit_color.s2.matchstick = "grey30",
+                           mat_color.tile_back="white", mat_width.tile_back=0.05, suit_color.unsuited="black",
+                           invert_colors.bit = TRUE,
+                           rank_text=",a,2,3,4,5", use_suit_as_ace=TRUE)
     piecepack <- c(piecepack_suits, piecepack_base)
 
     playing_cards_expansion <- piecepack
     playing_cards_expansion$suit_text <- pce_suit_text
     playing_cards_expansion$suit_color <- "#D55E00,#000000,#000000,#D55E00,#000000"
-
 
     hexpack <- c(piecepack, list(shape.tile="convex6", border_lex=3,
                                  shape_t.tile="60",  dm_t.tile_face=-90,
@@ -64,26 +138,144 @@ game_systems <- function(style=NULL) {
     dual_piecepacks_expansion <- c(piecepack, dpe_base)
     dual_piecepacks_expansion$suit_text <- pce_suit_text
 
-    icehouse_pieces <- list(n_ranks=4, n_suits=6,
-                        width.r1.pyramid=11/32, width.r2.pyramid=9/16,
-                        width.r3.pyramid=25/32, width.r4.pyramid=1,
-                        height.r1.pyramid=5/8, height.r2.pyramid=1,
-                        height.r3.pyramid=1.375, height.r4.pyramid=1.75,
-                        rank_text=",\u25cf,\u25cf\u25cf,\u25cf\u25cf\u25cf",
-                        suit_color="#D55E00,#808080,#009E73,#56B4E9,#E69F00,#808080",
-                        border_color.pyramid="#D55E00,#808080,#009E73,#56B4E9,#E69F00,#808080",
-                        background_color.pyramid="#D55E0080,#000000,#009E7380,#56B4E980,#E69F0080,#FFFFFF",
-                        border_lex.pyramid=4, grob_fn.pyramid=icehousePyramidGrob)
+    dice <- pp_cfg(list(n_suits = 6, n_ranks = 6,
+                        rank_text = "1,2,3,4,5,6",
+                        width.die = 16 / 25.4, # 16 mm dice most common
+                        suit_color = cb_suit_colors_impure,
+                        background_color = "white,white,white,white,black,black",
+                        invert_colors = TRUE,
+                        # border_color = "black", border_lex = 4, mat_width.s2 = 0.05, mat_color.s2 = "white",
+                        border_color = "black", border_lex = 4,
+                        # border_color = "black", border_color.s2 = "grey30", border_lex = 4,
+                        # border_color = "black", border_color.s2 = "white", border_lex = 4,
+                        grob_fn.card = cardGrobFn(type = "circle"),
+                        grob_fn.die = pippedGrobFn(0, FALSE)
+                        ))
+    dice$has_piecepack <- FALSE
+    dice$has_dice <- TRUE
 
-    list(dual_piecepacks_expansion=pp_cfg(dual_piecepacks_expansion),
+    playing_cards_list <- list(n_ranks = 14,
+                                 rank_text = "A,2,3,4,5,6,7,8,9,10,J,Q,K,\n\n\n\nJ\nO\nK\nE\nR",
+                                 grob_fn.card = cardGrobFn(),
+                                 grob_fn.r11.card = cardGrobFn(-11),
+                                 grob_fn.r12.card = cardGrobFn(-12),
+                                 grob_fn.r13.card = cardGrobFn(-13),
+                                 grob_fn.r14.card = cardGrobFn(-14),
+                                 suit_text.r14 = "",
+                                 border_color = "black", border_lex = 4)
+    playing_cards_list$n_suits <- 4
+    playing_cards_list$suit_color <- "#D55E00,#000000,#000000,#D55E00,#E59F00"
+
+    playing_cards <- pp_cfg(c(playing_cards_list, pc_suit_text))
+    playing_cards$has_piecepack <- FALSE
+    playing_cards$has_cards <- TRUE
+
+    playing_cards_colored <- c(playing_cards_list, pc_suit_text)
+    playing_cards_colored$n_suits <- 5
+    playing_cards_colored$suit_color <- cb_suit_colors_pure
+
+    playing_cards_colored <- pp_cfg(playing_cards_colored)
+    playing_cards_colored$has_piecepack <- FALSE
+    playing_cards_colored$has_cards <- TRUE
+
+    playing_cards_tarot <- playing_cards_list
+    playing_cards_tarot$rank_text <- "A,2,3,4,5,6,7,8,9,10,J,C,Q,K"
+    fool_text <- ifelse(is.null(style), "*", "\u2605")
+    playing_cards_tarot$rank_text.s5 <- paste(c(1:21, fool_text), collapse = ",")
+    playing_cards_tarot$n_suits <- 5
+    playing_cards_tarot$n_ranks <- 22
+
+    tarot_suit_text <- "\u2665,\u2660,\u2663,\u2666,"
+    playing_cards_tarot$suit_text <- tarot_suit_text
+    playing_cards_tarot$suit_text.r14 <- tarot_suit_text
+    playing_cards_tarot$suit_color <- "#D55E00,#000000,#000000,#D55E00,#000000"
+    for (i in 15:22) {
+        playing_cards_tarot[[paste0("grob_fn.r", i, ".card")]] <- cardGrobFn(-i)
+    }
+    playing_cards_tarot <- pp_cfg(playing_cards_tarot)
+    playing_cards_tarot$has_piecepack <- FALSE
+    playing_cards_tarot$has_cards <- TRUE
+
+    list(checkers1 = checkers(1),
+         checkers2 = checkers(2),
+         dice = dice,
+         dominoes = dominoes("white", "black", "black"),
+         # dominoes_black = dominoes("black", "white", "grey30"),
+         dominoes_black = dominoes("grey30", "white", "black"),
+         # dominoes_black = dominoes("black", "white", "black", "0.025,0.050"),
+         dominoes_blue = dominoes("#56B4E9", "white", "black"),
+         dominoes_green = dominoes("#009E73", "white", "black"),
+         dominoes_red = dominoes("#D55E00", "white", "black"),
+         dominoes_white = dominoes("white", "black", "black"),
+         dominoes_yellow = dominoes("#E69F00", "black", "black"),
+         dual_piecepacks_expansion=pp_cfg(dual_piecepacks_expansion),
          hexpack=to_hexpack(piecepack),
-         icehouse_pieces=pp_cfg(icehouse_pieces),
          piecepack=pp_cfg(piecepack),
+         playing_cards = playing_cards,
+         playing_cards_colored = playing_cards_colored,
+         playing_cards_tarot = playing_cards_tarot,
          playing_cards_expansion=pp_cfg(playing_cards_expansion),
          subpack=to_subpack(piecepack))
 }
 
-#' @rdname pp_cfg
+cb_suit_colors_impure <- "#D55E00,grey30,#009E73,#56B4E9,#E69F00,#FFFFFF"
+cb_suit_colors_pure <- "#D55E00,#000000,#009E73,#56B4E9,#E69F00,#FFFFFF"
+
+
+
+dominoes <- function(background_color = "white", suit_color = "black", border_color = "black", mat_width = 0) {
+    dominoes <- pp_cfg(list(n_suits = 13, n_ranks = 13,
+                            width.tile = 1,
+                            height.tile = 2,
+                            depth.tile = 0.25, # 3/8 professional, 1/2 jumbo
+                            width.die = 16 / 25.4,
+                            suit_color = suit_color, background_color = background_color,
+                            mat_width = mat_width, mat_color = suit_color,
+                            border_color = border_color, border_lex = 4,
+                            grob_fn.die = pippedGrobFn(0, FALSE),
+                            grob_fn.card = cardGrobFn(-1, type = "circle"),
+                            gridline_color.tile_back = "transparent",
+                            gridline_color.tile_face = suit_color,
+                            gridline_lex.tile_face = 6,
+                            grob_fn.tile_face = dominoGrobFn(-1, FALSE)
+                            ))
+    dominoes$has_piecepack <- FALSE
+    dominoes$has_dice <- TRUE
+    dominoes$has_tiles <- TRUE
+    dominoes
+}
+
+checkers <- function(cell_width = 1) {
+    checkers <- list(n_suits = 6, n_ranks = 12,
+                     width.board = 8 * cell_width,
+                     height.board = 8 * cell_width,
+                     width.bit = 0.75 * cell_width, invert_colors.bit = TRUE,
+                     ps_text.bit = "", dm_text.bit = "",
+                     grob_fn.r1.board_face = checkeredBoardGrobFn(8, 8),
+                     grob_fn.r1.board_back = linedBoardGrobFn(8, 8),
+                     gridline_color.board_face = cb_suit_colors_impure,
+                     gridline_color.board_back = cb_suit_colors_pure,
+                     gridline_lex.board = 4,
+                     edge_color.board = "white",
+                     suit_color = cb_suit_colors_impure,
+                     background_color = "white",
+                     gridline_color.s6.board_face = "grey80",
+                     gridline_color.s6.board_back = "grey80",
+                     border_color = "black", border_lex = 4)
+    for (i in seq(2, 12)) {
+        checkers[[paste0("width.r", i, ".board")]] <- i * cell_width
+        checkers[[paste0("height.r", i, ".board")]] <- i * cell_width
+        checkers[[paste0("grob_fn.r", i, ".board_face")]] <- checkeredBoardGrobFn(i, i)
+        checkers[[paste0("grob_fn.r", i, ".board_back")]] <- linedBoardGrobFn(i, i)
+    }
+    checkers <- pp_cfg(checkers)
+    checkers$has_piecepack <- FALSE
+    checkers$has_boards <- TRUE
+    checkers$has_bits <- TRUE
+    checkers
+}
+
+#' @rdname game_systems
 #' @export
 to_hexpack <- function(cfg=pp_cfg()) {
     cfg <- as_pp_cfg(cfg)
@@ -96,10 +288,9 @@ to_hexpack <- function(cfg=pp_cfg()) {
     hexpack$height.tile <- 4/sqrt(3)
     hexpack$shape.coin <- "convex3"
     pp_cfg(hexpack)
-
 }
 
-#' @rdname pp_cfg
+#' @rdname game_systems
 #' @export
 to_subpack <- function(cfg=pp_cfg()) {
     cfg <- as_pp_cfg(cfg)
@@ -112,27 +303,4 @@ to_subpack <- function(cfg=pp_cfg()) {
     subpack$width.saucer <- 0.4*cfg$get_width("saucer")
     subpack$cex <- 0.4
     pp_cfg(subpack)
-}
-
-icehousePyramidGrob <- function(piece_side, suit, rank, cfg=pp_cfg()) {
-    cfg <- as_pp_cfg(cfg)
-    opt <- cfg$get_piece_opt(piece_side, suit, rank)
-
-    shape_fn <- get_shape_grob_fn(opt$shape, opt$shape_t, opt$shape_r)
-
-    # Background
-    background_grob <- shape_fn(gp=gpar(col=NA, fill=opt$background_color))
-
-    # Circles
-    gp_c <- gpar(fill=opt$ps_color, col=opt$ps_color)
-    c1_grob <- circleGrob(x=unit(0.5, "npc"), y=unit(0.48, "cm"), r=unit(0.12, "cm"), gp=gp_c)
-    c2_grob <- circleGrob(x=unit(0.5, "npc")-unit(0.38, "cm"), y=unit(0.48, "cm"), r=unit(0.12, "cm"), gp=gp_c)
-    c3_grob <- circleGrob(x=unit(0.5, "npc")-unit(0.76, "cm"), y=unit(0.48, "cm"), r=unit(0.12, "cm"), gp=gp_c)
-    c_grob <- switch(rank, nullGrob(), c1_grob, gList(c1_grob, c2_grob), gList(c1_grob, c2_grob, c3_grob))
-
-    # Border
-    border_grob <- shape_fn(gp=gpar(col=opt$border_color, fill=NA, lex=opt$border_lex))
-    gl <- gList(background_grob, c_grob, border_grob)
-
-    gTree(children=gl, name=piece_side)
 }

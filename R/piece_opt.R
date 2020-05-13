@@ -2,6 +2,25 @@ get_piece <- function(piece_side) {
     cleave(piece_side, "_")[1]
 }
 
+has_suit <- function(cs) {
+    !(cs %in% c("tile_back", "saucer_back", "coin_face", "card_back"))
+}
+has_rank <- function(cs) {
+    !(cs %in% c("tile_back", "coin_back", "suitdie_face",
+                "pawn_face", "pawn_back", "belt_face",
+                "saucer_face", "saucer_back"))
+}
+
+PYRAMID_WIDTHS <- 2:8 * 1/8
+PYRAMID_HEIGHTS <- 1.538842 * PYRAMID_WIDTHS
+PYRAMID_DIAGONALS <- sqrt(PYRAMID_HEIGHTS^2 + (0.5*PYRAMID_WIDTHS)^2)
+PYRAMID_LAYOUT_WIDTHS <- PYRAMID_HEIGHTS
+PYRAMID_LAYOUT_HEIGHTS <- 2*PYRAMID_DIAGONALS
+W <- 3/16
+S <- 1
+MATCHSTICK_WIDTHS <- c(2*W, rep(W, 5))
+MATCHSTICK_HEIGHTS <- c(2*W, S-W, sqrt(2)*S-W, 2*S-W, sqrt(5*S^2)-W, 2*sqrt(2)*S-W)
+
 # nolint start
 # piece_side="pawn_face"
 # suit=0
@@ -97,7 +116,8 @@ styles <- c(paste(c("ps", "dm"),
                   sep="_"),
             "use_suit_as_ace", "fontfamily", "fontface", "cex", "n_ranks", "n_suits",
             "coin_arrangement", "die_arrangement",
-            "width", "height", "depth", "grob_fn", "shadow_fn",
+            "width", "height", "depth",
+            "grob_fn", "op_grob_fn", "shadow_fn",
             "title", "description", "credit", "copyright")
 is_legit_style <- function(style) {
     style %in% styles
@@ -108,8 +128,8 @@ is_legit_rank <- function(rank) {
 is_legit_suit <- function(suit) {
     (suit %in% c("suited", "unsuited")) || grepl("s[[:digit:]]", suit)
 }
-pieces <- c(paste0(rep(c("tile", "coin", "pawn", "saucer", "matchstick", "pyramid"), 3),
-                   rep(c("", "_face", "_back"), each=6)),
+pieces <- c(paste0(rep(c("tile", "coin", "pawn", "saucer", "matchstick", "pyramid", "bit", "board", "card"), 3),
+                   rep(c("", "_face", "_back"), each=9)),
             "die", "belt", "die_face", "belt_face", "pyramid_left", "pyramid_right")
 is_legit_piece <- function(piece) {
     piece %in% pieces
@@ -119,6 +139,8 @@ warn_cfg <- function(cfg) {
         if (!is_legit_cfg_style(nn)) {
             warning(paste(nn, "is not a recognized configuration"))
         }
+        if (grepl("shadow_fn", nn))
+            warning("'shadow_fn' style is deprecated, use 'op_grob_fn' instead")
     }
 }
 
@@ -169,6 +191,12 @@ get_shape <- function(piece_side, suit, rank, cfg) {
                coin_back = "circle",
                coin_face = "circle",
                die_face = "rect",
+               board_face = "rect",
+               board_back = "rect",
+               bit_face = "circle",
+               bit_back = "circle",
+               card_face = "rect",
+               card_back = "rect",
                matchstick_back = "rect",
                matchstick_face = "rect",
                pawn_face = "halma",
@@ -288,7 +316,7 @@ get_dm_symbols <- function(piece_side, suit=0, rank=0, cfg=list()) {
         } else if (piece_side %in% c("pawn_face", "pyramid_face")) {
             dm_symbols <- "\u0298\u0298"
         } else if (piece_side %in% c("suitdie_face", "pawn_back",
-                                         "belt_face", "tile_back", "matchstick_back",
+                                         "belt_face", "tile_back", "matchstick_back", "card_back",
                                          "pyramid_left", "pyramid_right", "pyramid_back")) {
             dm_symbols <- ""
         } else {
@@ -331,13 +359,11 @@ get_suit_color <- function(piece_side, suit, rank, cfg) {
         scol
 }
 get_gridline_color <- function(piece_side, suit, rank, cfg) {
-    if (piece_side == "tile_back") {
-        default <- c(rep("transparent", get_n_suits(cfg)),
-                     get_suit_color(piece_side, get_i_unsuit(cfg), rank, cfg))
-    } else {
-        default <- "transparent"
-    }
-    default <- paste(default, collapse=",")
+    default <- switch(piece_side,
+                      tile_back = get_suit_color(piece_side, get_i_unsuit(cfg), rank, cfg),
+                      board_face = get_suit_color(piece_side, suit, rank, cfg),
+                      board_back = get_suit_color(piece_side, suit, rank, cfg),
+                      "transparent")
     colors <- get_style_element("gridline_color", piece_side, cfg, default, suit, rank)
     colors <- col_cleave(colors)
     colors <- expand_suit_elements(colors, "gridline_colors", piece_side, cfg)
@@ -377,15 +403,16 @@ get_mat_width <- function(piece_side, suit, rank, cfg) {
 }
 
 get_edge_color <- function(piece_side, suit, rank, cfg) {
-    neutral_col <- get_background_color_helper("tile_back", suit=get_i_unsuit(cfg), rank=0, cfg)
-    suit_col <- get_suit_color_helper("pawn_face", suit=suit, rank=0, cfg)
+    background_color <- get_background_color(piece_side, suit=suit, rank=rank, cfg)
+    neutral_col <- get_background_color("tile_back", suit=get_i_unsuit(cfg), rank=0, cfg)
 
     piece <- get_piece(piece_side)
     default <- switch(piece,
-                    pawn = suit_col,
-                    die = suit_col,
-                    matchstick = suit_col,
-                    pyramid = suit_col,
+                    bit = background_color,
+                    pawn = background_color,
+                    die = background_color,
+                    matchstick = get_background_color("matchstick_back", suit=suit, rank=rank, cfg),
+                    pyramid = background_color,
                     neutral_col)
     colors <- get_style_element("edge_color", piece_side, cfg, default, suit, rank)
     colors <- col_cleave(colors)
@@ -528,6 +555,7 @@ get_suit_fontsize <- function(piece_side, suit, rank, cfg) {
                  "coin_back" = 34,
                  "pawn_face" = 28,
                  "pawn_back" = 28,
+                 "bit_back" = 34,
                  "saucer_back" = 28,
                  "saucer_face" = 28,
                  "suitdie_face" = 32,
@@ -543,6 +571,7 @@ get_dm_fontsize <- function(piece_side, suit, rank, cfg) {
                  "pawn_face" = 12,
                  "pawn_back" = 12,
                  "pyramid_face" = 12 * (rank+1) / 8,
+                 "card_face" = 32,
                  12)
     get_style_element("dm_fontsize", piece_side, cfg, default, suit, rank)
 }
@@ -552,17 +581,21 @@ get_rank_fontsize <- function(piece_side, suit, rank, cfg) {
                  "die_face" = 20,
                  "coin_face" = 28,
                  "tile_face" = 72,
+                 "bit_face" = 28,
                  "pyramid_left"  = 60 * (rank+1) / 8,
                  "pyramid_right" = 60 * (rank+1) / 8,
+                 "card_face" = 28,
                  20)
     get_style_element("rank_fontsize", piece_side, cfg, default, suit, rank)
 }
 
 
 get_ps_element <- function(piece_side, suit_element, rank_element, neither_element=NA) {
-    if (piece_side %in% c("coin_face", "die_face", "tile_face", "pyramid_left", "pyramid_right", "matchstick_face")) {
+    if (piece_side %in% c("coin_face", "die_face", "tile_face",
+                          "pyramid_left", "pyramid_right", "matchstick_face",
+                          "bit_face", "card_face")) {
         rank_element
-    } else if (piece_side %in% c("tile_back", "matchstick_back")) {
+    } else if (piece_side %in% c("tile_back", "matchstick_back", "card_back")) {
         neither_element
     } else {
         suit_element
@@ -646,6 +679,10 @@ get_piece_opt_helper <- function(piece_side, suit, rank, cfg) {
     ps_x <- to_x(ps_t, ps_r) + 0.5
     ps_y <- to_y(ps_t, ps_r) + 0.5
 
+    # Extra info
+    rank_text <- get_rank_symbol(piece_side, suit, rank, cfg)
+    suit_text <- get_suit_symbol(piece_side, suit, rank, cfg)
+
     list(shape=shape, shape_r=shape_r, shape_t=shape_t,
          background_color=background_color,
          border_color=border_color, border_lex=border_lex, edge_color=edge_color,
@@ -658,5 +695,6 @@ get_piece_opt_helper <- function(piece_side, suit, rank, cfg) {
          ps_color=ps_color, ps_text=ps_text,
          ps_fontsize=ps_fontsize,
          ps_fontfamily=ps_fontfamily, ps_fontface=ps_fontface,
-         ps_x=ps_x, ps_y=ps_y)
+         ps_x=ps_x, ps_y=ps_y,
+         rank_text=rank_text, suit_text=suit_text)
 }

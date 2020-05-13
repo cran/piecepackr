@@ -1,18 +1,14 @@
-#' Draw piecepack pieces using grid
+#' Draw board game pieces using grid
 #'
-#' \code{grid.piece} draws a piecepack pieces onto the graphics device.
+#' \code{grid.piece} draws board game pieces onto the graphics device.
 #' \code{pieceGrob} is its \code{grid} \code{grob} counterpart.
-#' \code{pmap_piece} operates on the rows of a data frame
-#'     applying \code{pieceGrob} to each row.
 #'
 #' @param piece_side A string with piece and side separated by a underscore e.g. "coin_face"
 #' @param cfg Piecepack configuration list or \code{pp_cfg} object,
 #'        a list of \code{pp_cfg} objects,
 #'        or a character vector of \code{pp_cfg} objects
-#' @param suit Number of suit (highest rank starting from 1).
-#'        The number above the total number of suits is the neutral "unsuit".
-#'        and the next number above that is "no suits".
-#' @param rank Number of rank (lowest rank starting from 1)
+#' @param suit Number of suit (starting from 1).
+#' @param rank Number of rank (starting from 1)
 #' @param x Where to place piece on x axis of viewport
 #' @param y Where to place piece on y axis of viewport
 #' @param z z-coordinate of the piece.  Has no effect if \code{op_scale} is \code{0}.
@@ -39,17 +35,13 @@
 #'        graphical parameter settings.
 #' @param draw A logical value indicating whether graphics output should be produced.
 #' @param vp A \code{grid} viewport object (or NULL).
-#' @param .l A list of vectors, such as a data frame. The length of \code{.l}
-#'           determines the number of arguments that \code{grid.piece_wrapper}
-#'           will be called  with. List names will be used if present.
-#' @param ... Extra arguments to pass to \code{pieceGrob}.
-#' @param trans Function to modify \code{.l} before drawing.
-#'        Default (\code{NULL}) is to not modify \code{.l}.  \code{op_transform}
-#'        can help with using an oblique projection (i.e. \code{op_scale} over 0).
+#' @param ... Ignored.
+#' @param scale Multiplicative scaling factor to apply to width, height, and depth.
+#' @param alpha Alpha channel for transparency.
 #' @return A \code{grob} object.  If \code{draw} is \code{TRUE} then as a side effect
 #'         will also draw it to the graphics device.
 #' @examples
-#'   if (require("grid")) {
+#'    if (require("grid")) {
 #'        draw_pp_diagram <- function(cfg=pp_cfg(), op_scale=0) {
 #'            g.p <- function(...) {
 #'                grid.piece(..., op_scale=op_scale, cfg=cfg, default.units="in")
@@ -82,87 +74,20 @@
 #'                           edge_color.coin="tan", edge_color.tile="tan")
 #'        cfg <- pp_cfg(c(cfg, cfg3d))
 #'        draw_pp_diagram(cfg=pp_cfg(cfg), op_scale=0.5)
+#'    }
 #'
-#'        # pmap_piece lets you use data frame input
-#'        grid.newpage()
-#'        df_tiles <- data.frame(piece_side="tile_back", x=0.5+c(3,1,3,1), y=0.5+c(3,3,1,1),
-#'                               suit=NA, angle=NA, z=NA, stringsAsFactors=FALSE)
-#'        df_coins <- data.frame(piece_side="coin_back", x=rep(4:1, 4), y=rep(4:1, each=4),
-#'                               suit=1:16%%2+rep(c(1,3), each=8),
-#'                               angle=rep(c(180,0), each=8), z=1/4+1/16, stringsAsFactors=FALSE)
-#'        df <- rbind(df_tiles, df_coins)
-#'        pmap_piece(df, cfg=cfg, op_scale=0.5, default.units="in")
-#'   }
+#' @seealso \code{\link{pmap_piece}} which applies \code{pieceGrob}
+#'      over rows of a data frame.
 #' @name grid.piece
 NULL
-
-default_cfg_envir <- function(cfg=NULL, envir=NULL) {
-    if (is.null(cfg) && is.null(envir)) {
-        cfg <- pp_cfg()
-        envir <- game_systems()
-    } else if (is.null(cfg)) { # and !is.null(envir)
-        if (has_name(envir, "piecepack")) {
-            cfg <- envir[["piecepack"]]
-        } else {
-            cfg <- pp_cfg()
-        }
-    } else if (is.null(envir)) { # and !is.null(cfg)
-        cfg <- get_cfg(cfg)
-        envir <- game_systems()
-        envir[["piecepack"]] <- cfg
-    }
-    list(cfg=cfg, envir=envir)
-}
-
-#' @rdname grid.piece
-#' @export
-pmap_piece <- function(.l, ..., cfg=NULL, envir=NULL, trans=NULL,
-                       draw=TRUE, name=NULL, gp=NULL, vp=NULL) {
-    ce <- default_cfg_envir(cfg, envir)
-    cfg <- ce$cfg
-    envir <- ce$envir
-
-    if (is.function(trans)) {
-        .l <- trans(.l, ..., cfg=cfg, envir=envir)
-    }
-    if (has_name(.l, "cfg")) {
-        ll <- purrr::pmap(.l, pieceGrob_wrapper, ..., envir=envir, draw=FALSE)
-    } else {
-        ll <- purrr::pmap(.l, pieceGrob_wrapper, ..., cfg=cfg, envir=envir, draw=FALSE)
-    }
-    grob <- gTree(children=as.gList(ll), name=name, gp=gp, vp=vp)
-    if (draw) {
-        grid.draw(grob)
-    } else {
-        grob
-    }
-}
-
-as.gList <- function(ll) {
-    gl <- gList()
-    for (ii in seq(ll)) {
-        gl[[ii]] <- ll[[ii]]
-    }
-    gl
-}
-
-pieceGrob_wrapper <- function(piece_side="tile_back", suit=NA, rank=NA, cfg=pp_cfg(),
-                           x=unit(0.5, "npc"), y=unit(0.5, "npc"), z=NA,
-                           angle=NA, use_pictureGrob=FALSE,
-                           width=NA, height=NA, depth=NA,
-                           op_scale=0, op_angle=45,
-                           default.units="npc", envir=NULL, ...) {
-    pieceGrob(piece_side, suit, rank, cfg, x, y, z,
-                   angle, use_pictureGrob, width, height, depth,
-                   op_scale, op_angle, default.units, envir)
-}
 
 pieceGrobHelper <- function(piece_side="tile_back", suit=NA, rank=NA, cfg=pp_cfg(),
                            x=unit(0.5, "npc"), y=unit(0.5, "npc"), z=NA,
                            angle=0, use_pictureGrob=FALSE,
                            width=NA, height=NA, depth=NA,
                            op_scale=0, op_angle=45,
-                           default.units = "npc") {
+                           default.units = "npc", scale=1, alpha=1) {
+    if (scale == 0 || alpha == 0) return(nullGrob())
     cfg <- as_pp_cfg(cfg)
     suit <- ifelse(has_suit(piece_side), ifelse(is.na(suit), 1, suit), cfg$i_unsuit)
     suit <- ifelse(suit > cfg$i_unsuit+1, cfg$i_unsuit+1, suit)
@@ -178,32 +103,23 @@ pieceGrobHelper <- function(piece_side="tile_back", suit=NA, rank=NA, cfg=pp_cfg
     if (!is.unit(width)) width <- unit(width, default.units)
     if (!is.unit(height)) height <- unit(height, default.units)
     if (!is.unit(depth)) depth <- unit(depth, default.units)
-    if (use_pictureGrob)
-        grob <- cfg$get_pictureGrob(piece_side, suit, rank)
-    else
-        grob <- cfg$get_grob(piece_side, suit, rank)
+    width <- scale * width
+    height <- scale * height
+    depth <- scale * depth
+    angle <- angle %% 360
+    op_angle <- op_angle %% 360
+    grob_type <- ifelse(use_pictureGrob, "picture", "normal")
     if (op_scale < 0.01) {
+        grob <- cfg$get_grob(piece_side, suit, rank, grob_type)
         cvp <- viewport(x, y, width, height, angle=angle)
         grobTree(grob, vp=cvp)
     } else {
-        xp <- op_x(x, y, z+0.5*depth, op_angle, op_scale)
-        yp <- op_y(x, y, z+0.5*depth, op_angle, op_scale)
-        cvp <- viewport(xp, yp, width, height, angle=angle)
-        grob <- grobTree(grob, vp=cvp)
-        shadow_fn <- cfg$get_shadow_fn(piece_side, suit, rank)
-        shadow <- shadow_fn(piece_side, suit, rank, cfg,
-                            x, y, z, angle, width, height, depth,
-                            op_scale, op_angle, default.units)
-        grobTree(shadow, grob)
+        grob <- cfg$get_op_grob(piece_side, suit, rank,
+                            x, y, z, angle, grob_type,
+                            width, height, depth,
+                            op_scale, op_angle)
+        grobTree(grob)
     }
-}
-
-op_x <- function(x, y, z, op_angle=45, op_scale=0) {
-    x + op_scale * z* cos((op_angle) * 2 * pi / 360)
-
-}
-op_y <- function(x, y, z, op_angle=45, op_scale=0) {
-    y + op_scale * z * sin((op_angle) * 2 * pi / 360)
 }
 
 #' @rdname grid.piece
@@ -215,7 +131,7 @@ pieceGrob <- function(piece_side="tile_back", suit=NA, rank=NA,
                          width=NA, height=NA, depth=NA,
                          op_scale=0, op_angle=45,
                          default.units = "npc", envir=NULL,
-                         name=NULL, gp=NULL, vp=NULL) {
+                         name=NULL, gp=NULL, vp=NULL, ..., scale=1, alpha=1) {
 
     nn <- max(lengths(list(piece_side, suit, rank, x, y, z, angle, use_pictureGrob, width, height, depth)))
     piece_side <- rep(piece_side, length.out=nn)
@@ -234,11 +150,21 @@ pieceGrob <- function(piece_side="tile_back", suit=NA, rank=NA,
     cfg <- rep(c(cfg), length.out=nn)
 
     gl <- gList()
-    for (ii in seq(nn)) {
-        gl[[ii]] <- pieceGrobHelper(piece_side[ii], suit[ii], rank[ii], cfg[[ii]],
-                                        x[ii], y[ii], z[ii], angle[ii], use_pictureGrob[ii],
-                                        width[ii], height[ii], depth[ii],
-                                        op_scale, op_angle, default.units)
+    for (i in seq(nn)) {
+        gl[[i]] <- pieceGrobHelper(piece_side[i], suit[i], rank[i], cfg[[i]],
+                                        x[i], y[i], z[i], angle[i], use_pictureGrob[i],
+                                        width[i], height[i], depth[i],
+                                        op_scale, op_angle, default.units,
+                                        scale=scale, alpha=alpha)
+    }
+    if (scale != 1) {
+        if (is.null(gp)) gp <- gpar()
+        if (is.null(gp$cex)) gp$cex <- scale else gp$cex <- scale * gp$cex
+        if (is.null(gp$lex)) gp$lex <- scale else gp$lex <- scale * gp$lex
+    }
+    if (alpha != 1) {
+        if (is.null(gp)) gp <- gpar()
+        if (is.null(gp$alpha)) gp$alpha <- alpha else gp$alpha <- alpha * gp$alpha
     }
     gTree(children=gl, name=name, gp=gp, vp=vp)
 }
@@ -275,11 +201,13 @@ grid.piece <- function(piece_side="tile_back", suit=NA, rank=NA, cfg=list(),
                            width=NA, height=NA, depth=NA,
                            op_scale=0, op_angle=45,
                            default.units = "npc", envir=NULL,
-                           name=NULL, gp=NULL, draw=TRUE, vp=NULL) {
+                           name=NULL, gp=NULL, draw=TRUE, vp=NULL, ...,
+                           scale=1, alpha=1) {
     grob <- pieceGrob(piece_side, suit, rank, cfg,
                           x, y, z, angle, use_pictureGrob, width, height, depth,
                           op_scale, op_angle, default.units,
-                          envir, name, gp, vp)
+                          envir, name, gp, vp,
+                          scale=scale, alpha=alpha)
     if (draw) {
         grid.draw(grob)
     } else {
