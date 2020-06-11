@@ -1,3 +1,31 @@
+piecepackr 1.4.1
+================
+
+New features
+------------
+
+* ``save_piece_obj``, ``piece3d`` and ``piece`` now have support for 3D rotations of pieces (#188)
+  using an axis-angle representation parameterized by arguments ``angle``, ``axis_x``, and ``axis_y``.
+* New functions ``AA_to_R`` and ``R_to_AA`` convert back and forth between the axis-angle representation
+  used by ``piecepackr`` and 3D rotation matrices (post-multiplied).
+* New functions ``R_x``, ``R_y``, and ``R_z`` create simple 3D rotation matrices (post-multiplied) for 
+  rotations around the x, y, and z axes.
+* Newly exported geometry helper functions ``to_degrees`` and ``to_radians`` convert back and forth between
+  degrees and radians.
+
+Bug fixes and minor improvements
+--------------------------------
+
+* ``pp_cfg`` now supports new ``obj_fn``, ``rayrender_fn``, and ``rgl_fn`` styles
+  allowing further piece customization within the 3D graphics functions
+  ``save_piece_obj``, ``piece``, and ``piece3d`` respectively (#200).
+* ``piece3d`` now supports user manually setting the piece's ``rgl`` "material" ``textype`` argument.
+  When textures with alpha transparency are not needed then setting ``textype``
+  to ``"rgb"`` avoids a rglWebGL rendering bug (#187).
+* Utility function ``get_shape_grob_fn`` now has a ``back`` argument to indicate 
+  we are drawing the back of the shape and should reflect it across a vertical axis (#218).
+* Some bug fixes and enhancements in the OBJ export for certain shapes (#207, #208, #215).
+
 piecepackr 1.3.1
 ================
 

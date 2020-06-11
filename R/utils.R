@@ -7,7 +7,7 @@ get_embedded_font_helper <- function(font, char) {
 
     pf_output <- system2("pdffonts", file, stdout=TRUE)
     if (length(pf_output) == 2)
-        embedded_font <- NA
+        embedded_font <- NA # probably some color emoji font used
     else
         embedded_font <- gsub(".*\\+(.*)", "\\1", strsplit(pf_output[3], " +")[[1]][1])
     embedded_font
@@ -18,9 +18,6 @@ get_embedded_font_helper <- function(font, char) {
 #' \code{get_embedded_font} returns which font is actually embedded by \code{cairo_pdf}.
 #' \code{cleave} converts a delimiter separated string into a vector.
 #' \code{inch(x)} is equivalent to \code{unit(x, "in")}.
-#' \code{to_x}, \code{to_y}, \code{to_r}, \code{to_t} convert between polar coordinates (in degrees)
-#' and Cartesian coordinates.
-#'
 #' @examples
 #'  to_x(90, 1)
 #'  to_y(180, 0.5)
@@ -52,6 +49,10 @@ NULL
 #'          (on many OSes found in a \code{poppler-utils} package).
 #' @export
 get_embedded_font <- function(font, char) {
+    if (Sys.which("pdffonts") == "") {
+        stop("'get_embedded_font' depends on 'pdffonts' being on the system path. ",
+             " On many OSes it is found in a 'poppler-utils' package.")
+    }
     df <- expand.grid(char, font, stringsAsFactors=FALSE)
     names(df) <- c("char", "requested_font")
     df$embedded_font <- NA
@@ -97,37 +98,6 @@ gs <- function() {
     if (cmd == "")
         stop("Can't find system dependency ghostscript on PATH")
     cmd
-}
-
-to_radians <- function(t) pi * t / 180
-to_degrees <- function(t) 180 * t / pi
-
-#' @rdname pp_utils
-#' @param t Polar angle in degrees
-#' @param r Radial distance
-#' @export
-to_x <- function(t, r) {
-    r * cos(to_radians(t))
-}
-
-#' @rdname pp_utils
-#' @export
-to_y <- function(t, r) {
-    r * sin(to_radians(t))
-}
-
-#' @rdname pp_utils
-#' @param x Cartesian x coordinate
-#' @param y Cartesian y coordinate
-#' @export
-to_r <- function(x, y) {
-    sqrt(x^2 + y^2)
-}
-
-#' @rdname pp_utils
-#' @export
-to_t <- function(x, y) {
-    to_degrees(atan2(y, x))
 }
 
 #' @rdname pp_utils

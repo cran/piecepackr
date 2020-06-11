@@ -17,7 +17,7 @@ piecepackr: Board Game Graphics
 `piecepackr` is an [R](https://www.r-project.org/) package designed to
 make configurable board game graphics. It can be used with the
 [grid](https://www.rdocumentation.org/packages/grid),
-[rayrender](https://www.rdocumentation.org/packages/rayrender), and
+[rayrender](https://www.rayrender.net/), and
 [rgl](https://www.rdocumentation.org/packages/rgl) graphics packages to
 make board game diagrams, board game animations, and custom [Print &
 Play
@@ -149,13 +149,16 @@ input](man/figures/README-pmap-1.png)
 
 ``` {.r}
 library("ppgames")
-df <- ppgames::df_four_field_kono()
-envir <- piecepackr::game_systems("dejavu3d")
 library("rgl")
+invisible(rgl::open3d())
+rgl::view3d(phi=-30, zoom = 0.8)
+
+df <- ppgames::df_four_field_kono()
+envir <- game_systems("dejavu3d")
 pmap_piece(df, piece3d, trans=op_transform, envir = envir, scale = 0.98, res = 150)
 ```
 
-![rgl render](https://trevorldavis.com/share/piecepack/rgl_snapshot.png)
+![rgl render](man/figures/README-rgl_snapshot.png)
 
 ### piece (rayrender)
 
@@ -163,16 +166,17 @@ pmap_piece(df, piece3d, trans=op_transform, envir = envir, scale = 0.98, res = 1
 
 ``` {.r}
 library("ppgames")
-df <- ppgames::df_four_field_kono()
-envir <- piecepackr::game_systems("dejavu3d")
 library("rayrender")
+df <- ppgames::df_four_field_kono()
+envir <- game_systems("dejavu3d")
 l <- pmap_piece(df, piece, trans=op_transform, envir = envir, scale = 0.98, res = 150)
-scene <- do.call(dplyr::bind_rows, l)
-render_scene(scene, lookat = c(2.5, 2.5, 0), lookfrom = c(0, -2, 13))
+scene <- Reduce(rayrender::add_object, l)
+rayrender::render_scene(scene, lookat = c(2.5, 2.5, 0), lookfrom = c(0, -2, 13))
 ```
 
-![rayrender
-render](https://trevorldavis.com/share/piecepack/3d_render.png)
+![3D render with rayrender package](man/figures/README-rayrender-1.png)
+
+### Further documentation
 
 A slightly longer [intro to piecepackr\'s
 API](https://trevorldavis.com/piecepackr/intro-to-piecepackrs-api.html)
@@ -184,8 +188,8 @@ available at piecepackr\'s [companion
 website](https://trevorldavis.com/piecepackr/) as well as some
 pre-configured [Print & Play
 PDFs](https://trevorldavis.com/piecepackr/pages/print-and-play-pdfs.html).
-More API documentation is also available in the package\'s [man
-pages](https://rdrr.io/github/piecepackr/piecepackr/man/).
+More API documentation is also available in the package\'s built-in [man
+pages](https://trevorldavis.com/R/piecepackr/reference/index.html).
 
 Game Systems
 ------------
@@ -552,31 +556,41 @@ the undesired fonts that `fontconfig` chooses over your requested fonts:
     ## Make some piecepacks
     $ sudo mv ~/NotoColorEmoji.ttf /usr/share/fonts/truetype/noto/
 
-Also as a sanity check use the command-line tool `fc-match` to make sure
-you specified your font correctly in the first place (i.e.
-`fc-match "Noto Sans"` on my system returns \"Noto Sans\" but
-`fc-match "Sans Noto"` returns \"DejaVu Sans\" and not \"Noto Sans\" as
-one may have expected). To help determine which fonts are actually being
-embedded you can use the `get_embedded_font` function:
+Also as a sanity check use the command-line tool `fc-match` (or the R
+function `systemfonts::match_font`) to make sure you specified your font
+correctly in the first place (i.e. `fc-match "Noto Sans"` on my system
+returns \"Noto Sans\" but `fc-match "Sans Noto"` returns \"DejaVu Sans\"
+and not \"Noto Sans\" as one may have expected). To help determine which
+fonts are actually being embedded you can use the `get_embedded_font`
+helper function:
 
 ``` {.r}
 fonts <- c('Noto Sans Symbols2', 'Noto Emoji', 'sans')
 chars <- c('♥', '♠', '♣', '♦', '🌞' ,'🌜' ,'꩜')
 get_embedded_font(fonts, chars)
+#     char      requested_font            embedded_font
+# 1      ♥ Noto Sans Symbols2 NotoSansSymbols2-Regular
+# 2      ♠ Noto Sans Symbols2 NotoSansSymbols2-Regular
+# 3      ♣ Noto Sans Symbols2 NotoSansSymbols2-Regular
+# 4      ♦ Noto Sans Symbols2 NotoSansSymbols2-Regular
+# 5       🌞Noto Sans Symbols2                NotoEmoji
+# 6       🌜Noto Sans Symbols2                NotoEmoji
+# 7      ꩜ Noto Sans Symbols2     NotoSansCham-Regular
+# 8      ♥         Noto Emoji                NotoEmoji
+# 9      ♠         Noto Emoji                NotoEmoji
+# 10     ♣         Noto Emoji                NotoEmoji
+# 11     ♦         Noto Emoji                NotoEmoji
+# 12      🌞        Noto Emoji                NotoEmoji
+# 13      🌜        Noto Emoji                NotoEmoji
+# 14     ꩜         Noto Emoji     NotoSansCham-Regular
+# 15     ♥               sans                    Arimo
+# 16     ♠               sans                    Arimo
+# 17     ♣               sans                    Arimo
+# 18     ♦               sans                    Arimo
+# 19      🌞              sans                NotoEmoji
+# 20      🌜              sans                NotoEmoji
+# 21     ꩜               sans     NotoSansCham-Regular
 ```
-
-    requested_font            embedded_font char
-
-> 1 Noto Sans Symbols2 NotoSansSymbols2-Regular ♥ 2 Noto Sans Symbols2
-> NotoSansSymbols2-Regular ♠ 3 Noto Sans Symbols2
-> NotoSansSymbols2-Regular ♣ 4 Noto Sans Symbols2
-> NotoSansSymbols2-Regular ♦ 5 Noto Sans Symbols2 NotoEmoji 🌞 6 Noto
-> Sans Symbols2 NotoEmoji 🌜 7 Noto Sans Symbols2 NotoSansCham-Regular ꩜
-> 8 Noto Emoji NotoEmoji ♥ 9 Noto Emoji NotoEmoji ♠ 10 Noto Emoji
-> NotoEmoji ♣ 11 Noto Emoji NotoEmoji ♦ 12 Noto Emoji NotoEmoji 🌞 13
-> Noto Emoji NotoEmoji 🌜 14 Noto Emoji NotoSansCham-Regular ꩜ 15 sans
-> Arimo ♥ 16 sans Arimo ♠ 17 sans Arimo ♣ 18 sans Arimo ♦ 19 sans
-> NotoEmoji 🌞 20 sans NotoEmoji 🌜 21 sans NotoSansCham-Regular ꩜
 
 ### How do I use this package in piecepack rulesets?
 

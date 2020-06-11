@@ -24,7 +24,8 @@ piece3d(
   res = 72,
   alpha = 1,
   lit = FALSE,
-  shininess = 50
+  shininess = 50,
+  textype = "rgba"
 )
 }
 \arguments{
@@ -46,9 +47,9 @@ or a character vector of \code{pp_cfg} objects}
 
 \item{angle}{Angle (on xy plane) to draw piece at}
 
-\item{axis_x}{Ignored for now.}
+\item{axis_x}{First coordinate of the axis unit vector.}
 
-\item{axis_y}{Ignored for now.}
+\item{axis_y}{Second coordinate of the axis unit vector.}
 
 \item{width}{Width of piece}
 
@@ -66,9 +67,13 @@ or a character vector of \code{pp_cfg} objects}
 
 \item{alpha}{Alpha channel for transparency.}
 
-\item{lit}{logical, specifying if rgl lighting calculation should take place}
+\item{lit}{logical, specifying if rgl lighting calculation should take place.}
 
-\item{shininess}{Properties for rgl lighting calculation}
+\item{shininess}{Properties for rgl lighting calculation.}
+
+\item{textype}{Use \code{"rgba"} when png texture (may) have alpha transparency.
+Use \code{"rgb"} when sure texture will not have alpha transparency
+(in particular \code{rgl}'s WebGL export will likely work better).}
 }
 \value{
 A numeric vector of rgl object IDs.
@@ -85,4 +90,9 @@ if ((Sys.getenv("TRAVIS") == "") && require("rgl")) {
     piece3d("saucer_back", suit = 1, cfg = cfg, x = 2, y = 2, z=-2)
     piece3d("pawn_face", suit = 2, cfg = cfg, x = 1, y = 1, z = 2)
 }
+}
+\seealso{
+See \code{\link[rgl]{rgl-package}} for more information about the \code{rgl} package.
+         See \code{\link[rgl:material]{rgl.material}} for more info about setting \code{rgl} material properties.
+         See \code{\link{geometry_utils}} for a discussion of the 3D rotation parameterization.
 }
