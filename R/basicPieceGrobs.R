@@ -49,34 +49,37 @@
 basicPieceGrob <- function(piece_side, suit, rank, cfg=pp_cfg()) {
     cfg <- as_pp_cfg(cfg)
     opt <- cfg$get_piece_opt(piece_side, suit, rank)
+    gTree(opt=opt, name=NULL, gp=gpar(), vp=NULL, cl="basic_piece_side")
+}
 
-    reflect <- grepl("back", piece_side)
-    shape_fn <- get_shape_grob_fn(opt$shape, opt$shape_t, opt$shape_r, reflect)
+#' @export
+makeContent.basic_piece_side <- function(x) {
+    opt <- x$opt
+    shape <- pp_shape(opt$shape, opt$shape_t, opt$shape_r, opt$back)
 
     # Background
-    background_grob <- shape_fn(gp=gpar(col=NA, fill=opt$background_color))
+    background_grob <- shape$shape(gp=gpar(col=NA, fill=opt$background_color), name = "background")
 
-    # Gridlines, Mat
-    gl_grob <- gridlinesGrob(opt$gridline_color, opt$shape, opt$shape_t, opt$gridline_lex)
-
-    mat_grob <- matGrob(opt$mat_color, opt$shape, opt$shape_t, opt$mat_width)
+    gl_grob <- shape$gridlines(gp = gpar(col = opt$gridline_color, lex = opt$gridline_lex), name = "gridlines")
+    mat_grob <- shape$mat(opt$mat_width, gp = gpar(fill = opt$mat_color), name = "mat")
 
     # Primary symbol
     gp_ps <- gpar(col=opt$ps_color, fontsize=opt$ps_fontsize,
                   fontfamily=opt$ps_fontfamily, fontface=opt$ps_fontface)
-    ps_grob <- textGrob(opt$ps_text, x=opt$ps_x, y=opt$ps_y, gp=gp_ps, hjust = 0.5, vjust = 0.5)
+    ps_grob <- textGrob(opt$ps_text, x=opt$ps_x, y=opt$ps_y, hjust = 0.5, vjust = 0.5,
+                        gp = gp_ps, name = "primary_symbol")
 
     # Directional mark
     gp_dm <- gpar(col=opt$dm_color, fontsize=opt$dm_fontsize,
                   fontfamily=opt$dm_fontfamily, fontface=opt$ps_fontface)
-    dm_grob <- textGrob(opt$dm_text, x=opt$dm_x, y=opt$dm_y, gp=gp_dm, hjust = 0.5, vjust = 0.5)
+    dm_grob <- textGrob(opt$dm_text, x=opt$dm_x, y=opt$dm_y, hjust = 0.5, vjust = 0.5,
+                        gp = gp_dm, name = "directional_mark")
 
-    # Border
-    border_grob <- shape_fn(gp=gpar(col=opt$border_color, fill=NA, lex=opt$border_lex))
-    gl <- gList(background_grob, gl_grob, mat_grob, ps_grob,
-                dm_grob, border_grob)
+    gp_border <- gpar(col=opt$border_color, fill=NA, lex=opt$border_lex)
+    border_grob <- shape$shape(gp=gp_border, name = "border")
+    gl <- gList(background_grob, gl_grob, mat_grob, ps_grob, dm_grob, border_grob)
 
-    gTree(children=gl, name=piece_side)
+    setChildren(x, gl)
 }
 
 #' @rdname basicPieceGrobs
@@ -125,7 +128,7 @@ pyramidTopGrob <- function(piece_side, suit, rank, cfg=pp_cfg()) {
                     x=0.25, width=1.0, height=0.5, angle=-90, name="left")
     g4 <- pieceGrob("pyramid_right", suit, rank, cfg, use_pictureGrob=TRUE,
                     x=0.75, width=1.0, height=0.5, angle= 90, name="right")
-    gTree(children=gList(g3, g4, g1, g2), name="pyramid_top")
+    grobTree(g3, g4, g1, g2, cl="pyramid_top")
 }
 
 #' @rdname basicPieceGrobs
@@ -182,7 +185,7 @@ previewLayoutGrob <- function(piece_side, suit, rank, cfg=pp_cfg()) {
                    preview_width-2*d_width, 0.5*t_width,
                    default.units="in", name="suitrankdie")
 
-    gTree(children=gl, name="preview_layout")
+    gTree(children=gl, cl="preview_layout")
 }
 
 dieLayoutGrobRF <- function(piece_side, suit, rank, cfg) {
@@ -215,16 +218,7 @@ x_die_layoutRF <- c(1/4, 2/4, 2/4, 3/4, 3/4, 4/4) - 1/8
 x_die_layoutLF <- c(4/4, 3/4, 3/4, 2/4, 2/4, 1/4) - 1/8
 y_die_layout <- c(1/3, 1/3, 2/3, 2/3, 3/3, 3/3) - 1/6
 
-piecepackDieGrob <- function(suit, cfg, flip=FALSE,
-                             arrangement=cfg$die_arrangement) {
-    cfg <- as_pp_cfg(cfg)
-    angle <- rep(c(0, -90), 3)
-    if (flip) {
-        x <- x_die_layoutLF
-        angle <- -angle
-    } else {
-        x <- x_die_layoutRF
-    }
+get_die_face_info <- function(suit, arrangement = "counter_down") { #### also angle #175
     suit <- rep(suit, length.out=6)
     if (arrangement == "opposites_sum_to_5") {
         rank <- c(1, 2, 3, 6, 5, 4)
@@ -235,13 +229,27 @@ piecepackDieGrob <- function(suit, cfg, flip=FALSE,
     } else {
         rank <- 1:6
     }
+    list(rank = rank, suit = suit)
+}
+
+piecepackDieGrob <- function(suit, cfg, flip=FALSE,
+                             arrangement=cfg$die_arrangement) {
+    cfg <- as_pp_cfg(cfg)
+    angle <- rep(c(0, -90), 3)
+    if (flip) {
+        x <- x_die_layoutLF
+        angle <- -angle
+    } else {
+        x <- x_die_layoutRF
+    }
+    rs <- get_die_face_info(suit, arrangement)
     gl <- gList()
     for (ii in 1:6) {
-        gl[[ii]] <- pieceGrob("die_face", suit[ii], rank[ii], cfg,
+        gl[[ii]] <- pieceGrob("die_face", rs$suit[ii], rs$rank[ii], cfg,
                             x=x[ii], y=y_die_layout[ii],
                             width=1/4, height=1/3, angle=angle[ii])
     }
-    gTree(children=gl)
+    gTree(children=gl, name="die_layout")
 }
 
 suitdieGrob <- function(cfg, flip=FALSE) {
@@ -258,7 +266,7 @@ suitdieGrob <- function(cfg, flip=FALSE) {
         vp <- viewport(x=x[ii], y=y_die_layout[ii], angle=angle[ii])
         gl[[ii]] <- pieceGrob("suitdie_face", suit[ii], NA, cfg, vp=vp)
     }
-    gTree(children=gl)
+    gTree(children=gl, name="suitdie_layout")
 }
 
 get_suit_die_suits <- function(cfg) {
@@ -313,5 +321,5 @@ pyramidLayoutGrob <- function(piece_side, suit, rank, cfg) {
             gl[[ii]] <- grob
         }
     })
-    gTree(children=gl)
+    gTree(children=gl, name="pyramid_layout")
 }

@@ -41,11 +41,9 @@ can help with using an oblique projection (i.e. \code{op_scale} over 0).}
 
 \item{name}{A character identifier (for grid)}
 
-\item{gp}{An object of class ‘gpar’, typically the output from a call
-to the function ‘gpar’.  This is basically a list of
-graphical parameter settings.}
+\item{gp}{An object of class \code{'gpar'}.}
 
-\item{vp}{A \code{grid} viewport object (or NULL).}
+\item{vp}{A \code{grid} viewport object (or \code{NULL}).}
 }
 \description{
 \code{pmap_piece} operates on the rows of a data frame
@@ -59,6 +57,9 @@ graphical parameter settings.}
    \item{If the output of \code{.f} is a grid grob object then \code{pmap_piece}
          will return a \code{gTree} object with
          specified \code{name}, \code{gp}, and \code{vp} values and if \code{draw} is true draw it.}
+   \item{If \code{.l} lacks a \code{name} column or if \code{name} column is non-unique
+         attempts to generate a reasonable new default \code{name} column
+         and use that to name the return \code{gTree} children  or \code{list} values.}
  }
 }
 \examples{

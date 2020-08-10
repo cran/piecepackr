@@ -5,18 +5,20 @@
 #' @inheritParams save_piece_obj
 #' @param lit logical, specifying if rgl lighting calculation should take place.
 #' @param shininess Properties for rgl lighting calculation.
-#' @param textype Use \code{"rgba"} when png texture (may) have alpha transparency.
+#' @param textype Use \code{"rgba"} when sure texture will have alpha transparency.
 #'                Use \code{"rgb"} when sure texture will not have alpha transparency
 #'                (in particular \code{rgl}'s WebGL export will likely work better).
+#'                If \code{NA} we will read the texture and figure out a reasonable value.
 #' @return A numeric vector of rgl object IDs.
 #' @examples
 #' if ((Sys.getenv("TRAVIS") == "") && require("rgl")) {
 #'     open3d()
-#'     cfg <- pp_cfg()
-#'     piece3d("tile_face", suit = 3, rank = 3, cfg = cfg, x = 0, y = 0, z = 0)
-#'     piece3d("coin_back", suit = 4, rank = 2, cfg = cfg, x = 2, y = 0, z = 0)
-#'     piece3d("saucer_back", suit = 1, cfg = cfg, x = 2, y = 2, z=-2)
-#'     piece3d("pawn_face", suit = 2, cfg = cfg, x = 1, y = 1, z = 2)
+#'     cfg <- game_systems("sans3d")$piecepack
+#'     piece3d("tile_back", suit = 3, rank = 3, cfg = cfg, x = 0, y = 0, z = 0)
+#'     piece3d("coin_back", suit = 4, rank = 2, cfg = cfg, x = 0.5, y = 0.5, z = 0.25)
+#'     piece3d("pawn_top", suit = 1, cfg = cfg, x = -0.5, y = 0.5, z = 0.6)
+#'     piece3d("die_face", suit = 3, cfg = cfg, x = -0.5, y = -0.5, z = 0.375)
+#'     piece3d("pyramid_top", suit = 2, rank = 3, cfg = cfg, x = 1.5, y = 0.0, z = 0.)
 #' }
 #' @export
 #' @seealso See \code{\link[rgl]{rgl-package}} for more information about the \code{rgl} package.
@@ -28,11 +30,9 @@ piece3d <- function(piece_side = "tile_back", suit = NA, rank = NA, cfg = pp_cfg
                            width = NA, height = NA, depth = NA,
                            envir = NULL, ..., scale = 1, res = 72,
                            alpha = 1.0, lit = FALSE,
-                           shininess = 50.0, textype = "rgba") {
-    if (!requireNamespace("rgl", quietly = TRUE)) {
-        stop("You need to install the suggested package rgl to use 'piece3d'.",
-             "Use 'install.packages(\"rgl\")'")
-    }
+                           shininess = 50.0, textype = NA) {
+    assert_suggested("rgl")
+
     nn <- max(lengths(list(piece_side, suit, rank, x, y, z, angle, axis_x, axis_y, width, height, depth)))
     piece_side <- rep(piece_side, length.out = nn)
     suit <- rep(suit, length.out = nn)
@@ -73,13 +73,17 @@ rgl_piece_helper <- function(piece_side = "tile_back", suit = NA, rank = NA, cfg
                            width = NA, height = NA, depth = NA,
                            scale = 1, res = 72,
                            alpha = 1, lit = FALSE,
-                           shininess = 50.0, textype = "rgba") {
+                           shininess = 50.0, textype = NA) {
     if (scale == 0 || alpha == 0) return(invisible(numeric(0)))
     obj <- save_piece_obj(piece_side, suit, rank, cfg,
                         x = x, y = y, z = z,
                         angle = angle, axis_x = axis_x, axis_y = axis_y,
                         width = width, height = height, depth = depth,
                         scale = scale, res = res)
+    if (is.na(textype)) {
+        r <- png::readPNG(obj$png)
+        textype <- ifelse(dim(r)[3] > 3 && mean(r[,,4]) < 0.999, "rgba", "rgb")
+    }
     material <- list(color = "white", alpha = alpha,
                      lit = lit, shininess = shininess,
                      front = "filled", back = "filled",

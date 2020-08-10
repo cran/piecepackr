@@ -1,5 +1,8 @@
 get_piece <- function(piece_side) {
-    cleave(piece_side, "_")[1]
+    strsplit(piece_side, "_")[[1]][1]
+}
+get_side <- function(piece_side) {
+    strsplit(piece_side, "_")[[1]][2]
 }
 
 has_suit <- function(cs) {
@@ -88,7 +91,7 @@ is_legit_cfg_style <- function(cfg_style) {
     # style.suit.piece
     # style.rank.piece
     # style.suit.rank.piece
-    ss <- cleave(cfg_style, sep="\\.")
+    ss <- cleave2(cfg_style, sep="\\.")
     if (!is_legit_style(ss[1])) return(FALSE)
     if (length(ss) == 2) {
         return(is_legit_suit(ss[2]) || is_legit_rank(ss[2]) || is_legit_piece(ss[2]))
@@ -180,7 +183,14 @@ get_shape_t <- function(piece_side, suit, rank, cfg) {
 }
 
 get_shape_r <- function(piece_side, suit, rank, cfg) {
-    r <- numeric_cleave(get_style_element("shape_r", piece_side, cfg, 0.2, suit, rank))
+    shape <- get_shape(piece_side, suit, rank, cfg)
+    piece <- get_piece(piece_side)
+    default <- switch(shape,
+                      roundrect = switch(piece,
+                                         tile = 0.12,
+                                         0.06),
+                      0.2)
+    r <- numeric_cleave(get_style_element("shape_r", piece_side, cfg, default, suit, rank))
     r <- expand_suit_elements(r, "shape_r", piece_side, cfg)
     r[suit]
 }
@@ -325,7 +335,7 @@ get_dm_symbols <- function(piece_side, suit=0, rank=0, cfg=list()) {
         }
     }
     default <- paste(default, collapse=",")
-    dm_symbols <- cleave(get_style_element("dm_text", piece_side, cfg, default, suit, rank))
+    dm_symbols <- cleave2(get_style_element("dm_text", piece_side, cfg, default, suit, rank))
     dm_symbols <- expand_suit_elements(dm_symbols, "suit_symbols", piece_side, cfg)
     dm_symbols
 }
@@ -427,14 +437,14 @@ get_suit_symbol <- function(piece_side, suit, rank, cfg) {
 
 get_rank_symbols <- function(piece_side=NA, suit=0, rank=0, cfg=list(), expand=TRUE) {
     default <- "n,a,2,3,4,5"
-    rank_symbols <- cleave(get_style_element("rank_text", piece_side, cfg, default, suit, rank))
+    rank_symbols <- cleave2(get_style_element("rank_text", piece_side, cfg, default, suit, rank))
     if (expand)
         rank_symbols <- expand_rank_elements(rank_symbols, "rank_symbols", piece_side, cfg)
     rank_symbols
 }
 get_suit_symbols <- function(piece_side=NA, suit=0, rank=0, cfg=list(), expand=TRUE) {
     default <- "\u2665,\u2660,\u2663,\u2666,\u263c"
-    suit_symbols <- cleave(get_style_element("suit_text", piece_side, cfg, default, suit, rank))
+    suit_symbols <- cleave2(get_style_element("suit_text", piece_side, cfg, default, suit, rank))
     if (expand)
         suit_symbols <- expand_suit_elements(suit_symbols, "suit_symbols", piece_side, cfg)
     suit_symbols
@@ -491,7 +501,7 @@ get_rank_fontfamily <- function(piece_side, suit, rank, cfg) {
     if (use_suit_as_ace(piece_side, suit, rank, cfg)) {
         get_suit_fontfamily(piece_side, suit,  rank, cfg)
     } else {
-        fontfamilies <- cleave(get_style_element("rank_fontfamily", piece_side, cfg, get_fontfamily(cfg), suit, rank))
+        fontfamilies <- cleave2(get_style_element("rank_fontfamily", piece_side, cfg, get_fontfamily(cfg), suit, rank))
         expand_rank_elements(fontfamilies, "font", piece_side, cfg)[rank]
     }
 }
@@ -499,19 +509,19 @@ get_rank_fontface <- function(piece_side, suit, rank, cfg) {
     if (use_suit_as_ace(piece_side, suit, rank, cfg)) {
         get_suit_fontface(piece_side, suit,  rank, cfg)
     } else {
-        fontfaces <- cleave(get_style_element("rank_fontface", piece_side, cfg, get_fontface(cfg), suit, rank))
+        fontfaces <- cleave2(get_style_element("rank_fontface", piece_side, cfg, get_fontface(cfg), suit, rank))
         expand_rank_elements(fontfaces, "fontface", piece_side, cfg)[rank]
     }
 }
 get_suit_fonts <- function(piece_side, suit, rank, cfg) {
-    fonts <- cleave(get_style_element("suit_fontfamily", piece_side, cfg, get_fontfamily(cfg), suit, rank))
+    fonts <- cleave2(get_style_element("suit_fontfamily", piece_side, cfg, get_fontfamily(cfg), suit, rank))
     expand_suit_elements(fonts, "font", piece_side, cfg)
 }
 get_suit_fontfamily <- function(piece_side, suit, rank, cfg) {
     get_suit_fonts(piece_side, suit, rank, cfg)[suit]
 }
 get_suit_fontface <- function(piece_side, suit, rank, cfg) {
-    fontfaces <- cleave(get_style_element("suit_fontface", piece_side, cfg, get_fontface(cfg), suit, rank))
+    fontfaces <- cleave2(get_style_element("suit_fontface", piece_side, cfg, get_fontface(cfg), suit, rank))
     expand_suit_elements(fontfaces, "fontface", piece_side, cfg)[suit]
 }
 get_suit_cex <- function(piece_side, suit, rank, cfg) {
@@ -528,7 +538,7 @@ get_dm_fontface <- function(piece_side, suit, rank, cfg) {
     } else {
         default <- get_fontface(cfg)
     }
-    fonts <- cleave(get_style_element("dm_fontface", piece_side, cfg, default))
+    fonts <- cleave2(get_style_element("dm_fontface", piece_side, cfg, default))
     expand_suit_elements(fonts, "fontface", piece_side, cfg)[suit]
 }
 get_dm_fontfamily <- function(piece_side, suit, rank, cfg) {
@@ -537,7 +547,7 @@ get_dm_fontfamily <- function(piece_side, suit, rank, cfg) {
     } else {
         default <- get_fontfamily(cfg)
     }
-    fonts <- cleave(get_style_element("dm_fontfamily", piece_side, cfg, default))
+    fonts <- cleave2(get_style_element("dm_fontfamily", piece_side, cfg, default))
     expand_suit_elements(fonts, "font", piece_side, cfg)[suit]
 }
 get_dm_cex <- function(piece_side, suit, rank, cfg) {
@@ -642,6 +652,7 @@ get_piece_opt_helper <- function(piece_side, suit, rank, cfg) {
     shape <- get_shape(piece_side, suit, rank, cfg)
     shape_r <- get_shape_r(piece_side, suit, rank, cfg)
     shape_t <- get_shape_t(piece_side, suit, rank, cfg)
+    back <- grepl("back", piece_side)
 
     # Additional colors
     background_color <- get_background_color(piece_side, suit, rank, cfg)
@@ -684,18 +695,30 @@ get_piece_opt_helper <- function(piece_side, suit, rank, cfg) {
     rank_text <- get_rank_symbol(piece_side, suit, rank, cfg)
     suit_text <- get_suit_symbol(piece_side, suit, rank, cfg)
 
-    list(shape=shape, shape_r=shape_r, shape_t=shape_t,
-         background_color=background_color,
-         border_color=border_color, border_lex=border_lex, edge_color=edge_color,
-         gridline_color=gridline_color, gridline_lex=gridline_lex,
-         mat_color=mat_color, mat_width=mat_width,
-         dm_color=dm_color, dm_text=dm_text,
-         dm_fontsize=dm_fontsize,
-         dm_fontfamily=dm_fontfamily, dm_fontface=dm_fontface,
-         dm_x=dm_x, dm_y=dm_y,
-         ps_color=ps_color, ps_text=ps_text,
-         ps_fontsize=ps_fontsize,
-         ps_fontfamily=ps_fontfamily, ps_fontface=ps_fontface,
-         ps_x=ps_x, ps_y=ps_y,
-         rank_text=rank_text, suit_text=suit_text)
+    opt <- list(shape=shape, shape_r=shape_r, shape_t=shape_t, back=back,
+                background_color=background_color, edge_color=edge_color,
+                border_color=border_color, border_lex=border_lex,
+                gridline_color=gridline_color, gridline_lex=gridline_lex,
+                mat_color=mat_color, mat_width=mat_width,
+                dm_color=dm_color, dm_text=dm_text,
+                dm_fontsize=dm_fontsize,
+                dm_fontfamily=dm_fontfamily, dm_fontface=dm_fontface,
+                dm_x=dm_x, dm_y=dm_y,
+                ps_color=ps_color, ps_text=ps_text,
+                ps_fontsize=ps_fontsize,
+                ps_fontfamily=ps_fontfamily, ps_fontface=ps_fontface,
+                ps_x=ps_x, ps_y=ps_y,
+                rank_text=rank_text, suit_text=suit_text)
+    opt$bleed_color <- get_bleed_color(opt)
+    opt
+}
+
+get_bleed_color <- function(opt) {
+    if (!is_color_invisible(opt$border_color) && !nigh(opt$border_lex, 0))
+        return(opt$border_color)
+    if (!is_color_invisible(opt$mat_color) && !nigh(opt$mat_width, 0))
+        return(opt$mat_color)
+    if (!is_color_invisible(opt$background_color))
+        return(opt$background_color)
+    return("transparent")
 }

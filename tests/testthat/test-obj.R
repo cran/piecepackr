@@ -24,7 +24,8 @@ test_that("rgl works", {
     skip_on_os("mac")
     library("rgl")
     rgl.open()
-    piece3d("tile_face", cfg = cfg)
+    df <- tibble::tibble(piece_side = "tile_face", scale = c(1, 0))
+    pmap_piece(df, piece3d, cfg=cfg)
     f <- tempfile(fileext = ".png")
     rgl.snapshot(f)
     expect_true(file.exists(f))
@@ -42,4 +43,6 @@ test_that("rayrender works", {
     dev.off()
     expect_true(file.exists(f))
     unlink(f)
+
+    expect_null(piece("coin_face", x=-1:1, rank=1:3, cfg = cfg, scale = 0))
 })

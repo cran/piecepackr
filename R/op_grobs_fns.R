@@ -6,18 +6,68 @@ basicOpGrob <- function(piece_side, suit, rank, cfg=pp_cfg(),
             grob <- cfg$get_grob(piece_side, suit, rank, type)
             xy_p <- op_xy(x, y, z+0.5*depth, op_angle, op_scale)
             cvp <- viewport(xy_p$x, xy_p$y, width, height, angle=angle)
-            grob <- grobTree(grob, vp=cvp)
+            grob <- grid::editGrob(grob, name="piece_side", vp=cvp)
+
             shadow_fn <- cfg$get_shadow_fn(piece_side, suit, rank)
-            shadow <- shadow_fn(piece_side, suit, rank, cfg,
+            edge <- shadow_fn(piece_side, suit, rank, cfg,
                                 x, y, z, angle, width, height, depth,
                                 op_scale, op_angle)
-            grobTree(shadow, grob)
+            edge <- grid::editGrob(edge, name="other_faces")
+
+            grobTree(edge, grob, cl="basic_projected_piece")
 }
 
 op_xy <- function(x, y, z, op_angle=45, op_scale=0) {
     x <- x + op_scale * z * cos(to_radians(op_angle))
     y <- y + op_scale * z * sin(to_radians(op_angle))
     list(x=x, y=y)
+}
+
+## edge-side grobs aka "shadow" effect
+basicShadowGrob <- function(piece_side, suit, rank, cfg=pp_cfg(),
+                            x=unit(0.5, "npc"), y=unit(0.5, "npc"), z=unit(0, "npc"),
+                            angle=0, width=NA, height=NA, depth=NA,
+                            op_scale=0, op_angle=45) {
+    cfg <- as_pp_cfg(cfg)
+    opt <- cfg$get_piece_opt(piece_side, suit, rank)
+    piece <- get_piece(piece_side)
+    side <- ifelse(opt$back, "back", "face") #### allow limited 3D rotation
+
+    x <- as.numeric(convertX(x, "in"))
+    y <- as.numeric(convertY(y, "in"))
+    z <- as.numeric(convertX(z, "in"))
+    width <- as.numeric(convertX(width, "in"))
+    height <- as.numeric(convertY(height, "in"))
+    depth <- as.numeric(convertX(depth, "in"))
+
+    shape <- pp_shape(opt$shape, opt$shape_t, opt$shape_r, opt$back)
+    R <- side_R(side) %*% AA_to_R(angle, axis_x = 0, axis_y = 0)
+    whd <- get_scaling_factors(side, width, height, depth)
+    pc <- Point3D$new(x, y, z)
+    token <- Token2S$new(shape, whd, pc, R)
+
+    gl <- gList()
+    # opposite side
+    opp_side <- ifelse(opt$back, "face", "back")
+    #### Improved oblique projection 3D effect for dice #173
+    opp_piece_side <- if (piece == "die") piece_side else paste0(piece, "_", opp_side)
+    opp_opt <- cfg$get_piece_opt(opp_piece_side, suit, rank)
+    gp_opp <- gpar(col=opp_opt$border_color, fill=opp_opt$background_color, lex=opp_opt$border_lex)
+    xyz_opp <- if (opt$back) token$xyz_face else token$xyz_back
+    xy_opp <- xyz_opp$project_op(op_angle, op_scale)
+
+    grob_opposite <- polygonGrob(x = xy_opp$x, y = xy_opp$y, default.units = "in",
+                          gp = gp_opp, name="opposite_piece_side")
+
+    # edges
+    edges <- token$op_edges(op_angle)
+    for (i in seq_along(edges)) {
+        name <- paste0("edge", i)
+        gl[[i]] <- edges[[i]]$op_grob(op_angle, op_scale, name=name)
+    }
+    gp_edge <- gpar(col=opt$border_color, fill=opt$edge_color, lex=opt$border_lex)
+    grob_edge <- gTree(children=gl, gp=gp_edge, name="token_edges")
+    grobTree(grob_opposite, grob_edge)
 }
 
 basicPyramidTop <- function(piece_side, suit, rank, cfg=pp_cfg(),
@@ -50,7 +100,7 @@ basicPyramidTop <- function(piece_side, suit, rank, cfg=pp_cfg(),
         gl[[i]] <- polygonGrob(x = exy$x, y = exy$y, gp = gp, default.units = "in")
     }
     # Check angle and op_angle and if possible draw one of the pyramid faces
-    if ((angle - op_angle) %% 90 == 0) {
+    if (nigh((angle - op_angle) %% 90, 0)) {
         base_mid <- exy[1]$midpoint(exy[2])
         xy_mid <- base_mid$midpoint(exy[3])
         vheight <- base_mid$distance_to(exy[3])
@@ -58,7 +108,7 @@ basicPyramidTop <- function(piece_side, suit, rank, cfg=pp_cfg(),
                        width = width, height = vheight)
         gl[[4]] <- grobTree(cfg$get_grob(df$edge[i], suit, rank, "picture"), vp = vp)
     }
-    gl
+    gTree(children=gl, cl="projected_pyramid_top")
 }
 
 basicPyramidSide <- function(piece_side, suit, rank, cfg=pp_cfg(),
@@ -139,7 +189,8 @@ basicPyramidSide <- function(piece_side, suit, rank, cfg=pp_cfg(),
     gl[[4]] <- polygonGrob(x = exy$x, y = exy$y, gp = gp, default.units = "in")
 
     # Check angle and op_angle and if possible draw one of the pyramid faces
-    if (((op_angle - angle) %% 360 %in% c(90, 270)) && angle %% 90 == 0) {
+    diff_angle <- (op_angle - angle) %% 360
+    if ((nigh(diff_angle, 90) || nigh(diff_angle, 270)) && nigh(angle %% 90, 0)) {
         base_mid <- exy[2]$midpoint(exy[3])
         xy_mid <- base_mid$midpoint(exy[1])
         vheight <- base_mid$distance_to(exy[1])
@@ -148,79 +199,5 @@ basicPyramidSide <- function(piece_side, suit, rank, cfg=pp_cfg(),
         gl[[4]] <- grobTree(cfg$get_grob(piece_side, suit, rank, "picture"), vp = vp)
     }
 
-    gl
-}
-
-basicShadowGrob <- function(piece_side, suit, rank, cfg=pp_cfg(),
-                            x=unit(0.5, "npc"), y=unit(0.5, "npc"), z=unit(0, "npc"),
-                            angle=0, width=NA, height=NA, depth=NA,
-                            op_scale=0, op_angle=45) {
-    cfg <- as_pp_cfg(cfg)
-    opt <- cfg$get_piece_opt(piece_side, suit, rank)
-
-    x <- as.numeric(convertX(x, "in"))
-    y <- as.numeric(convertY(y, "in"))
-    z <- as.numeric(convertX(z, "in"))
-    width <- as.numeric(convertX(width, "in"))
-    height <- as.numeric(convertY(height, "in"))
-    depth <- as.numeric(convertX(depth, "in"))
-
-    shape <- opt$shape
-    if (shape == "circle") {
-        circleShadowGrob(opt, x, y, z, angle, width, height, depth, op_scale, op_angle)
-    } else if (shape %in% c("halma", "oval")) {
-        genericShadowGrob(opt, x, y, z, angle, width, height, depth, op_scale, op_angle)
-    } else {
-        polygonShadowGrob(opt, x, y, z, angle, width, height, depth, op_scale, op_angle)
-    }
-}
-
-genericShadowGrob <- function(opt, x, y, z, angle, width, height, depth, op_scale, op_angle) {
-    shape_fn <- get_shape_grob_fn(opt$shape, opt$shape_t, opt$shape_r)
-    n_shadows <- max(round(100*depth), 3)
-    zs <- z + depth * seq(-0.5, 0.5, length.out = n_shadows)
-    xy_p <- Point3D$new(x, y, zs)$project_op(op_angle, op_scale)
-    gl <- gList()
-    vp <- viewport(xy_p$x[1], xy_p$y[1], width, height, angle=angle, default.units = "in")
-    gp <- gpar(col=opt$border_color, fill=opt$edge_color, lex=opt$border_lex)
-    gl[[1]] <- shape_fn(gp=gp, vp=vp)
-    gps <- gpar(col=NA, fill=opt$edge_color)
-    for (ii in 2:n_shadows) {
-        vps <- viewport(xy_p$x[ii], xy_p$y[ii], width, height, angle=angle, default.units = "in")
-        gl[[ii]] <- shape_fn(gp=gps, vp=vps)
-    }
-    return(gl)
-}
-
-circleShadowGrob <- function(opt, x, y, z, angle, width, height, depth, op_scale, op_angle) {
-    n_points <- 36
-    thetas <- seq(op_angle+90, op_angle+270, length.out=n_points)
-    r <- min(0.5*width, 0.5*height)
-
-    xy_c <- Point2D$new(x, y)$translate_polar(thetas, r)
-    xy_l <- Point3D$new(xy_c, z = z - 0.5 * depth)$project_op(op_angle, op_scale)
-    xy_u <- Point3D$new(xy_c, z = z + 0.5 * depth)$project_op(op_angle, op_scale)
-
-    x <- c(xy_l$x, rev(xy_u$x))
-    y <- c(xy_l$y, rev(xy_u$y))
-    gp <- gpar(col=opt$border_color, fill=opt$edge_color, lex=opt$border_lex)
-    polygonGrob(x=x, y=y, default.units="in", gp=gp)
-}
-
-polygonShadowGrob <- function(opt, x, y, z, angle, width, height, depth, op_scale, op_angle) {
-    xy <- get_shape_xy(opt$shape, opt$shape_t, opt$shape_r)
-    xy_c <- Point2D$new(xy)$npc_to_in(x, y, width, height, angle)
-    p <- Polygon$new(xy_c)
-    fm <- p$op_edges(op_angle)$face_matrix(z, depth)
-    e <- Point3D$new(fm[, 1], fm[, 2], fm[, 3])$project_op(op_angle, op_scale)
-
-    gp <- gpar(col=opt$border_color, fill=opt$edge_color, lex=opt$border_lex)
-    gl <- gList()
-    for (i in seq(nrow(fm) / 4)) {
-        index <- 4 * (i-1) + 1
-        xf <- e$x[index:(index+3)]
-        yf <- e$y[index:(index+3)]
-        gl[[i]] <- polygonGrob(x=xf, y=yf, default.units="in", gp=gp)
-    }
-    gl
+    gTree(children=gl, cl="projected_pyramid_side")
 }

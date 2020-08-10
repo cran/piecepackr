@@ -1,11 +1,25 @@
 library("vdiffr")
 cfg_default <- pp_cfg(list(title="default cfg"))
+cfg_3d <- game_systems("sans3d")$piecepack
 context("test pp_cfg")
 test_that("pp_cfg works as expected", {
     expect_true("pp_cfg" %in% class(cfg_default))
     expect_equal(class(as.list(cfg_default)), "list")
     expect_output(print(cfg_default), "default cfg")
     expect_warning(cfg_default$get_pictureGrob("tile_back", 1, 1))
+})
+
+test_that("update_names works as expected", {
+    df <- tibble(x = 1:4, name = 1:4)
+    expect_equal(update_name(df)$name, as.character(1:4))
+    df <- tibble(x = 1:4, id = 1:4)
+    expect_equal(update_name(df)$name, paste0("piece.", 1:4))
+    df <- tibble(x = 1:4)
+    expect_equal(update_name(df)$name, paste0("piece.", 1:4))
+    df <- tibble(x = 1:4, name = 1)
+    expect_warning(update_name(df)$name, "the name column in .l is not unique, generating new name column")
+    df <- tibble(x = 1:4, id = 1)
+    expect_warning(update_name(df)$name, "the id column in .l is not unique, generating new name column")
 })
 
 context("save_print_and_play works as expected")
@@ -56,13 +70,13 @@ test_that("save_piece_images works as expected", {
     }
 
     expect_error(save_piece_images(cfg_default, directory), paste("does not exist"))
-    expect_error(pieceGrob("tile_back", cfg=cfg), "Couldn't find suitable")
+    expect_error(grid.piece("tile_back", cfg=cfg), "Couldn't find suitable")
     dir.create(directory)
 
     save_piece_images(cfg_default, directory, format="svgz", angle=c(0,90))
     expect_equal(length(list.files(directory)), 496)
 
-    skip_if_not(Sys.info()[["nodename"]] == "trevorld-Bonobo-Extreme")
+    skip_if_not(Sys.info()[["nodename"]] == "stoic-sloth")
     expect_doppelganger("diagram_op_ppgf", function() {
         g.p("tile_back", x=0.5+c(3,1,3,1), y=0.5+c(3,3,1,1), cfg=cfg)
         g.p("tile_back", x=0.5+3, y=0.5+1, z=1/4+1/8, cfg=cfg)
@@ -72,24 +86,6 @@ test_that("save_piece_images works as expected", {
         g.p("coin_face", x=3, y=4, z=1/4+1/16, angle=180, cfg=cfg)
         g.p("coin_back", x=3, y=4, z=1/4+1/8+1/16, angle=180, cfg=cfg)
         g.p("coin_back", x=3, y=1, z=3/4+1/16, angle=90, cfg=cfg)
-    })
-})
-
-context("grob_fn_helpers works as expected")
-test_that("grob_fn_helpers works as expected", {
-    expect_error(checkersGrob("blue", "circle"))
-    expect_error(hexlinesGrob("blue", "circle"))
-    skip_on_ci()
-    expect_doppelganger("add_checkers", function() {
-                    grid.draw(checkersGrob("purple", "rect"))
-                    grid.draw(hexlinesGrob("yellow", "rect"))
-    })
-    expect_doppelganger("add_checkers.transparent", function() {
-                    grid.draw(checkersGrob("transparent", "rect"))
-                    grid.draw(hexlinesGrob("transparent", "rect"))
-    })
-    expect_doppelganger("add_checkers.convex8", function() {
-                    grid.draw(checkersGrob("purple", "convex8"))
     })
 })
 
@@ -232,14 +228,14 @@ test_that("no regressions in figures", {
                           })
     expect_doppelganger("draw_components.default", function() {
                                     pushViewport(viewport(width=inch(4), height=inch(4)))
-                                    pmap_piece(df)
+                                    pmap_piece(df, envir=list())
                           })
 
     # errors
     expect_error(dce("coin_face", rank = 3, cfg=list(gridline_color = "grey")),
                  "Don't know how to add grid lines to shape circle")
-    expect_error(dce("coin_face", rank = 3, cfg=list(shape = "meeple")),
-                 "Don't know how to draw shape meeple")
+    expect_error(dce("coin_face", rank = 3, cfg=list(shape = "megahex")),
+                 "Don't recognize shape label megahex")
     expect_error(dce("coin_face", rank = 3, cfg=list(mat_width=0.2, mat_color="green", shape="kite")),
                  "Don't know how to add mat to shape kite")
     expect_error(cfg_default$get_width("boo_back"), "Don't know width of piece boo")
@@ -255,7 +251,7 @@ test_that("no regressions in figures", {
     cfg <- list(invert_colors.suited=TRUE, grob_fn="basicPieceGrob")
     expect_doppelganger("pyramid_layout.s3.r4", function() dc("pyramid_layout", cfg=cfg, suit=3, rank=4))
 
-    skip_if_not(Sys.info()[["nodename"]] == "trevorld-Bonobo-Extreme")
+    skip_if_not(Sys.info()[["nodename"]] == "stoic-sloth")
     expect_doppelganger("pyramid_top.s4.r3", function() dc("pyramid_top", suit=4, rank=3))
     expect_doppelganger("pyramid_top_op", function()
         dc("pyramid_top", rank = 6, op_angle = 90, op_scale = 0.5, cfg = list(invert_colors = TRUE)))
@@ -270,8 +266,9 @@ test_that("oblique projection works", {
         grid.piece(..., cfg=cfg, op_scale=0.5)
     }
     expect_doppelganger("tile_face_op", function() dc("tile_face"))
+    expect_doppelganger("tile_face_op_roundrect", function() dc("tile_face", cfg=list(shape.tile="roundrect")))
     expect_doppelganger("coin_face_op", function() dc("coin_face"))
-    expect_doppelganger("pawn_face_op", function() dc("pawn_face"))
+    expect_doppelganger("pawn_face_op", function() dc("pawn_face", cfg=cfg_3d))
     expect_doppelganger("matchstick_face_op", function() dc("matchstick_face"))
     expect_doppelganger("pyramid_face_op", function() dc("pyramid_face"))
     expect_doppelganger("die_face_op", function() dc("die_face"))
@@ -290,6 +287,20 @@ test_that("oblique projection works", {
         g.p("coin_back", x=3, y=4, z=1/4+1/8+1/16, angle=180, cfg=cfg)
         g.p("coin_back", x=3, y=1, z=3/4+1/16, angle=90, cfg=cfg)
     })
+
+    cfg <- pp_cfg(list(depth.pawn = 10/25.4, width.pawn=16/25.4, height.pawn=16/25.4,
+                       dm_cex.pawn=0.5, shape.pawn="meeple", invert_colors.pawn=TRUE))
+    expect_doppelganger("meeple", function() {
+        g.p("pawn_face", x=2, y=3, cfg=cfg, op_angle=90)
+        g.p("pawn_face", x=3, y=3, cfg=cfg, op_angle=45)
+        g.p("pawn_face", x=3, y=2, cfg=cfg, op_angle=0)
+        g.p("pawn_face", x=3, y=1, cfg=cfg, op_angle=-45)
+        g.p("pawn_face", x=2, y=1, cfg=cfg, op_angle=-90)
+        g.p("pawn_face", x=1, y=1, cfg=cfg, op_angle=-135)
+        g.p("pawn_face", x=1, y=2, cfg=cfg, op_angle=180)
+        g.p("pawn_face", x=1, y=3, cfg=cfg, op_angle=135)
+        g.p("coin_face", x=2, y=2, cfg=cfg, op_angle=0, angle=190)
+    })
 })
 
 context("alpha and scale works")
@@ -307,6 +318,7 @@ test_that("alpha and scale works", {
         df <- tibble(piece_side="coin_back",
                      x=1:6, y=1, alpha=seq(0, 1, length.out=6),
                      scale=seq(0, 1, length.out=6))
-        pmap_piece(df, default.units="in", cfg=cfg, op_scale=0.5)
+        g <- pmap_piece(df, default.units="in", cfg=cfg, op_scale=0.5)
+        grid.draw(pp_shape()$polyclip(g, "minus", gp=gpar(fill="yellow")))
     })
 })

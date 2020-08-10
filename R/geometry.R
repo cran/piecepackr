@@ -47,7 +47,7 @@ Point2D <- R6Class("point2d",
                                    self$translate(-0.5, -0.5)$dilate(w, h)$rotate(t)$translate(x, y)
                                },
                                plot = function(gp = gpar()) {
-                                   grid.points(x=self$x, y=self$y, default.units="in", gp = gpar())
+                                   grid.points(x=self$x, y=self$y, default.units="in", gp = gp)
                                }
                                ))
 #' @export
@@ -91,15 +91,24 @@ Point3D <- R6Class("point3d",
                                      self$y <- rep(y, length.out = n)
                                      self$z <- rep(z, length.out = n)
                                  },
+                                 distance_to = function(p) {
+                                     sqrt((p$x - self$x)^2 + (p$y - self$y)^2 + (p$z  - self$z)^2)
+                                 },
                                  project_op = function(angle, scale) {
                                    x <- self$x + scale * self$z * cos(to_radians(angle))
                                    y <- self$y + scale * self$z * sin(to_radians(angle))
                                    Point2D$new(x, y)
                                  },
                                  dilate = function(width = 1, height = width, depth = width) {
-                                     x <- width * self$x
-                                     y <- height * self$y
-                                     z <- depth * self$z
+                                     if (is.list(width)) {
+                                         x <- width$width * self$x
+                                         y <- width$height * self$y
+                                         z <- width$depth * self$z
+                                     } else {
+                                         x <- width * self$x
+                                         y <- height * self$y
+                                         z <- depth * self$z
+                                     }
                                      Point3D$new(x, y, z)
                                  },
                                  # rotation matrix 'R' is post-multiplied...
@@ -123,8 +132,13 @@ Point3D <- R6Class("point3d",
                                          z <- z
                                      }
                                     Point3D$new(self$x + xt, self$y + y, self$z + z)
-                                 }
-                                 )
+                                 }),
+                   active = list(c = function() {
+                                     Point3D$new(mean(self$x), mean(self$y), mean(self$z))
+                                 },
+                                 width = function() {
+                                     2 * max(self$distance_to(self$c))
+                                 })
 )
 #' @export
 `[.point3d` <- function(x, i) Point3D$new(x$x[i], x$y[i], x$z[i])
@@ -162,7 +176,6 @@ Circle <- R6Class("circle",
                       c(center - self$r, center + self$r)
                   }))
 
-
 Polygon <- R6Class("polygon",
     public = list(vertices=NULL, edges=NULL, normals=NULL,
                initialize = function(x=c(0, 0.5, 1, 0.5), y=c(0.5, 1, 0.5, 0)) {
@@ -175,7 +188,7 @@ Polygon <- R6Class("polygon",
                    self$normals <- self$edges$orthogonal
                },
                plot = function(gp = gpar()) {
-                   grid.polygon(x=self$x, y=self$y, default.units="in", gp = gpar())
+                   grid.polygon(x=self$x, y=self$y, default.units="in", gp = gp)
                },
                project = function(v) {
                    n <- length(self$x)
@@ -289,7 +302,6 @@ do_shapes_overlap <- function(s1, s2) {
     }
 }
 
-
 # Axis-angle representation to rotation matrix
 # https://en.wikipedia.org/wiki/Axis-angle_representation
 # Because we do rotation matrix post-multiplication instead of pre-multiplication we usually need to multiply angles
@@ -297,11 +309,21 @@ do_shapes_overlap <- function(s1, s2) {
 
 #' @rdname geometry_utils
 #' @inheritParams save_piece_obj
+#' @param axis_z Third coordinate of the axis unit vector (usually inferred).
 #' @param angle Angle in degrees (counter-clockwise)
 #' @param ... Ignored
 #' @export
-AA_to_R <- function(angle = 0, axis_x = 0, axis_y = 0, ...) {
-    axis_z <- sqrt(1 - axis_x^2 - axis_y^2)
+AA_to_R <- function(angle = 0, axis_x = 0, axis_y = 0, axis_z = NA, ...) {
+    if (is.na(axis_z)) {
+        axis_z <- sqrt(1 - axis_x^2 - axis_y^2)
+    } else {
+        norm <- sqrt(axis_x^2 + axis_y^2 + axis_z^2)
+        if (!nigh(norm, 1)) {
+            axis_x <- axis_x / norm
+            axis_y <- axis_y / norm
+            axis_z <- axis_z / norm
+        }
+    }
     e <- c(axis_x, axis_y, axis_z)
     I <- diag(3)
     K <- cross_matrix(e)
@@ -327,16 +349,42 @@ cross_matrix <- function(v) {
 # trace of a (square) matrix
 trace <- function(m) sum(diag(m))
 
+# Name 'nigh' to avoid potential conflict with 'dplyr::near()'
+nigh <- function(x, y, tolerance = 1e-6) {
+    if (length(y) < length(x)) y <- rep(y, length.out=length(x))
+    isTRUE(all.equal(x, y, tolerance = tolerance))
+}
+
+# more robust handling of arccosine input
+arccos <- function(x) {
+    if (nigh(x, 1) && x > 1) x <- 1
+    if (nigh(x, -1) && x < -1) x <- -1
+    acos(x)
+}
+
 # Rotation matrix to Axis-angle representation
 # https://en.wikipedia.org/wiki/Axis-angle_representation
-
 #' @param R 3D rotation matrix (post-multiplied)
 #' @rdname geometry_utils
 #' @export
 R_to_AA <- function(R = diag(3)) {
-    t <- acos(0.5 * (trace(R) - 1))
-    if (isTRUE(all.equal(sin(-t), 0))) {
+    t <- arccos(0.5 * (trace(R) - 1))
+    if (nigh(R, diag(3))) { # no rotation
+        t <- 0
         e <- c(0, 0, 1)
+    } else if (nigh(t, pi)) { # 180 degree rotation
+        t <- pi
+        B <- 0.5 * (R + diag(3))
+        e <- sqrt(diag(B))
+        sB <- sign(B)
+        if (nigh(sB, ppn)) {
+            e[3] <- -e[3]
+            t <- -pi
+        } else if (nigh(sB, pnp)) {
+            e[2] <- -e[2]
+        } else if (nigh(sB, npp)) {
+            e[1] <- -e[1]
+        }
     } else {
         e <- numeric(3)
         e[1] <- R[3,2] - R[2,3]
@@ -344,8 +392,27 @@ R_to_AA <- function(R = diag(3)) {
         e[3] <- R[2,1] - R[1,2]
         e <- e / (2 * sin(-t))
     }
+    if (e[3] < 0) { # Force z-axis element positive
+        e <- -e
+        t <- -t
+    }
     list(angle = to_degrees(t), axis_x = e[1], axis_y = e[2], axis_z = e[3])
 }
+
+# Sign matrices for "B" matrix used to tell signs for axis unit vector (up to sign ambiguity) when angle = 180 degrees
+# signs for ppp and nnn don't need to be changed
+# ppn and npp
+ppn <- matrix(c(1, 1, -1,
+                1, 1, -1,
+                -1, -1, 1), ncol = 3, byrow = TRUE)
+# pnp and npn
+pnp <- matrix(c(1, -1, 1,
+                -1, 1, -1,
+                1, -1, 1), ncol = 3, byrow = TRUE)
+# pnn and npp
+npp <- matrix(c(1, -1, -1,
+                -1, 1, 1,
+                -1, 1, 1), ncol = 3, byrow = TRUE)
 
 # Basic 3D rotation matrices
 # https://en.wikipedia.org/wiki/Rotation_matrix#In_three_dimensions

@@ -509,7 +509,7 @@ printer.
 ### What are the possible color options?
 
 You can specify colors either by [RGB hex color
-codes](http://www.color-hex.com/) or [R color
+codes](https://www.color-hex.com/) or [R color
 strings](http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf).
 \"transparent\" is a color option which does what you\'d expect it to
 (if used for something other than the background color will render the
@@ -521,7 +521,7 @@ element effectively invisible). **Warning:** you shouldn\'t mix
 There are a couple of approaches one can take:
 
 1.  Take them and put them into a font.
-    [FontForge](https://fontforge.github.io/en-US/) is a popular
+    [FontForge](https://fontforge.org/en-US/) is a popular
     open-source program suitable for this task.
     [fontcustom](https://github.com/FontCustom/fontcustom) is a popular
     command-line wrapper around FontForge. You may need to convert your
