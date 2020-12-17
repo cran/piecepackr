@@ -2,7 +2,7 @@ Encoding: UTF-8
 Package: piecepackr
 Type: Package
 Title: Board Game Graphics
-Version: 1.6.2
+Version: 1.6.3
 Description: Functions to make board game graphics.  By default makes game diagrams, animations, and "Print & Play" layouts for the 'piecepack' <https://www.ludism.org/ppwiki> but can be configured to make graphics for other board game systems.
 Authors@R: c(person("Trevor L", "Davis", role=c("aut", "cre"), email="trevor.l.davis@gmail.com"),
              person("Delapouite <https://delapouite.com/>", role="dtc",
@@ -20,11 +20,11 @@ Suggests: magick, rayrender (>= 0.5.8), rgl (>= 0.100.46), testthat,
 SystemRequirements: ghostscript
 RoxygenNote: 7.1.1
 NeedsCompilation: no
-Packaged: 2020-12-17 16:40:11 UTC; trevorld
+Packaged: 2020-12-17 18:10:51 UTC; trevorld
 Author: Trevor L Davis [aut, cre],
   Delapouite <https://delapouite.com/> [dtc] (Meeple shape extracted from
     "Meeple icon" <https://game-icons.net/1x1/delapouite/meeple.html> /
     "CC BY 3.0" <https://creativecommons.org/licenses/by/3.0/>)
 Maintainer: Trevor L Davis <trevor.l.davis@gmail.com>
 Repository: CRAN
-Date/Publication: 2020-12-17 17:30:02 UTC
+Date/Publication: 2020-12-17 22:50:03 UTC

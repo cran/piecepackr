@@ -1,7 +1,7 @@
-eaccb6d1685a455e1208768775a18925 *DESCRIPTION
+984053381a3a53e780ee9574564f9bb4 *DESCRIPTION
 788023533e89fe8b13b35ec63f123253 *NAMESPACE
-8bbb271f5a235a663ca6b0347811a524 *NEWS.md
-cc76c3a83b7b22d460595e4c33eb5144 *R/basicPieceGrobs.R
+118747fb8be2a422e2bac3494a310f3f *NEWS.md
+85288c97806786fc4a4d791b2152d8d4 *R/basicPieceGrobs.R
 e7e81e436337d7f753149ae48cf6dfcd *R/boards.R
 e384420198ab8907a55e42bacb6dad11 *R/game_systems.R
 56128883787ddc9febbd2c5379c44030 *R/geometry.R
@@ -167,7 +167,7 @@ af00e09acc4565787f260f528c0c63b8 *tests/figs/pp-shape-works-as-expected/polyclip
 aeef536afa90428a18696926c3711b0b *tests/figs/save-piece-images-works-as-expected/diagram-op-ppgf.svg
 896bef18f1ba9790f6d9916e19bc1577 *tests/run-all.R
 0943c4e16184a9698112e2800d0ac15e *tests/testthat/test-deprecated.R
-dcb030388e0e38a9fa215de692166e57 *tests/testthat/test-draw_component.R
+f007f2c458dd5dcf92c0ae66e17d6b86 *tests/testthat/test-draw_component.R
 7f557528707c9af24c347a670ff1ac5c *tests/testthat/test-game_systems.R
 09f6b0e15f014d18fd984e340a0a432f *tests/testthat/test-obj.R
 2ea1bafdb2a19d1a3b3057afdaa4e5c3 *tests/testthat/test-op_transform.R
