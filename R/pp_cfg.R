@@ -84,6 +84,25 @@ opt_cache_key <- function(piece_side, suit, rank, type) {
     paste(piece_side, suit, rank, type, sep=".")
 }
 
+get_n_suits <- function(cfg=list()) {
+    if (is.null(cfg[["n_suits"]])) {
+        length(get_suit_symbols(cfg=cfg, expand=FALSE)) - 1
+    } else {
+        cfg[["n_suits"]]
+    }
+}
+
+get_n_ranks <- function(cfg=list()) {
+    if (is.null(cfg[["n_ranks"]])) {
+        length(get_rank_symbols(cfg=cfg, expand=FALSE))
+    } else {
+        cfg[["n_ranks"]]
+    }
+}
+
+get_i_unsuit <- function(cfg=list()) get_n_suits(cfg) + 1
+
+
 #' @import R6
 Config <- R6Class("pp_cfg",
     public = list(
@@ -398,13 +417,13 @@ Config <- R6Class("pp_cfg",
                 obj_fn <- private$cache[[key]]
             } else {
                 if (grepl("tile|coin|pawn|matchstick|bit|board|card|saucer", piece_side)) {
-                    default_fn <- write_2s_obj
+                    default_fn <- save_2s_obj
                 } else if (grepl("die", piece_side)) {
-                    default_fn <- write_die_obj
+                    default_fn <- save_die_obj
                 } else if (piece_side == "pyramid_top") {
-                    default_fn <- write_pt_obj
+                    default_fn <- save_pt_obj
                 } else if (grepl("pyramid", piece_side)) {
-                    default_fn <- write_ps_obj
+                    default_fn <- save_ps_obj
                 } else {
                     default_fn <- NULL
                 }

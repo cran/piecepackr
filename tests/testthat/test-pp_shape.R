@@ -1,16 +1,19 @@
 library("grid")
-library("vdiffr")
 context("pp_shape() works as expected")
 test_that("pp_shape() works as expected", {
     circle <- pp_shape("circle")
+    current_dev <- grDevices::dev.cur()
+    pdf_file <- tempfile(fileext = ".pdf")
     expect_error({
-        pdf_file <- tempfile(fileext = ".pdf")
-        on.exit(unlink(pdf_file))
         pdf(pdf_file)
-        on.exit(dev.off())
         grid.draw(circle$hexlines(gp=gpar(col="yellow")))
     })
+    unlink(pdf_file)
+    dev.off()
+    if (current_dev > 1) grDevices::dev.set(current_dev)
     skip_on_ci()
+    skip_if_not_installed("vdiffr")
+    library("vdiffr")
     expect_doppelganger("add_checkers", function() {
         rect <- pp_shape("rect")
         pushViewport(viewport(width=0.9, height=0.9))
@@ -77,7 +80,7 @@ test_that("partition_edges works", {
 
     s <- pp_shape("oval")
     expect_equal(partition_edges(s)$type, "ring")
-    expect_equal(partition_edges(s)$indices, list(1:36))
+    expect_equal(partition_edges(s)$indices, list(1:72))
 
     s <- pp_shape("halma")
     expect_equal(partition_edges(s)$type, c("flat", "flat", "flat", "curved", "flat", "flat"))

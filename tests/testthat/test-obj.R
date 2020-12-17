@@ -1,4 +1,4 @@
-cfg <- piecepackr::game_systems("dejavu3d")$piecepack
+cfg <- piecepackr::game_systems("sans3d")$piecepack
 test_that("save_piece_obj works", {
     files <- save_piece_obj("tile_face", z = NA, cfg = cfg)
     expect_length(files, 3)
@@ -23,6 +23,13 @@ test_that("rgl works", {
     skip_on_cran()
     skip_on_os("mac")
     library("rgl")
+    # go stone OBJ generation uses "rgl" in background
+    files <- save_piece_obj("bit_face", cfg = game_systems("dejavu3d")$go)
+    expect_length(files, 3)
+
+    files <- save_piece_obj("pawn_top", cfg = game_systems("sans3d", pawn="peg-doll")$piecepack)
+    expect_length(files, 3)
+
     rgl.open()
     df <- tibble::tibble(piece_side = "tile_face", scale = c(1, 0))
     pmap_piece(df, piece3d, cfg=cfg)

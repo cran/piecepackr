@@ -1,5 +1,4 @@
-piecepackr: Board Game Graphics
-===============================
+# piecepackr: Board Game Graphics
 
 [![CRAN Status Badge](https://www.r-pkg.org/badges/version/piecepackr)](https://cran.r-project.org/package=piecepackr)
 
@@ -26,8 +25,126 @@ By default it is configured to make [piecepack](#piecepack) game
 diagrams, animations, and \"Print & Play\" layouts but can be configured
 to make graphics for other board game systems as well.
 
-API Intro
----------
+## Built-in Game Systems
+
+The function `game_systems` returns configurations for multiple public
+domain game systems.
+
+### Checkers
+
+`game_systems()` returns a `checkers1` and `checkers2` configuration
+which has checkered and lined \"boards\" with matching checker \"bits\"
+in various sizes and colors.
+
+``` {.r}
+library("piecepackr")
+library("tibble")
+df_board <- tibble(piece_side = "board_face", suit = 3, rank = 8,
+               x = 4.5, y = 4.5)
+df_w <- tibble(piece_side = "bit_face", suit = 6, rank = 1,
+               x = rep(1:8, 2), y = rep(1:2, each=8))
+df_b <- tibble(piece_side = "bit_face", suit = 1, rank = 1,
+               x = rep(1:8, 2), y = rep(7:8, each=8))
+df <- rbind(df_board, df_w, df_b)
+df$cfg <- "checkers1"
+pmap_piece(df, envir=game_systems(), default.units="in", trans=op_transform, op_scale=0.5)
+```
+
+![Starting position for Dan Troyka\'s abstract game
+\"Breakthrough\"](man/figures/README-breakthrough-1.png)
+
+### Traditional 6-sided dice
+
+`game_systems()` returns a `dice` configuration which can make standard
+6-sided dice in six colors.
+
+### Double-12 dominoes
+
+`game_systems()` returns seven different configurations for double-12
+dominoes:
+
+1)  `dominoes`
+2)  `dominoes_black`
+3)  `dominoes_blue`
+4)  `dominoes_green`
+5)  `dominoes_red`
+6)  `dominoes_white` (identical to `dominoes`)
+7)  `dominoes_yellow`
+
+``` {.r}
+library("piecepackr")
+library("tibble")
+envir <- game_systems("dejavu")
+
+df_dominoes <- tibble(piece_side = "tile_face", x=rep(4:1, 3), y=rep(2*3:1, each=4), suit=1:12, rank=1:12+1,
+                      cfg = paste0("dominoes_", rep(c("black", "red", "green", "blue", "yellow", "white"), 2)))
+df_tiles <- tibble(piece_side = "tile_back", x=5.5, y=c(2,4,6), suit=1:3, rank=1:3, cfg="piecepack")
+df_dice <- tibble(piece_side = "die_face", x=6, y=0.5+1:6, suit=1:6, rank=1:6, cfg="dice")
+df_coins1 <- tibble(piece_side = "coin_back", x=5, y=0.5+1:4, suit=1:4, rank=1:4, cfg="piecepack")
+df_coins2 <- tibble(piece_side = "coin_face", x=5, y=0.5+5:6, suit=1:2, rank=1:2, cfg="piecepack")
+df <- rbind(df_dominoes, df_tiles, df_dice, df_coins1, df_coins2)
+
+pmap_piece(df, default.units="in", envir=envir, op_scale=0.5, trans=op_transform)
+```
+
+![Double-12 dominoes and standard dice in a variety of
+colors](man/figures/README-dominoes-1.png)
+
+### Go
+
+`game_systems()` returns a `go` configuration for
+[Go](https://en.wikipedia.org/wiki/Go_(game)) boards and stones in a
+variety of colors and sizes. Here are is [an example
+diagram](https://trevorldavis.com/piecepackr/go.html) for a game of
+[Multi-player
+go](https://en.wikipedia.org/wiki/Go_variants#Multi-player_Go) plotted
+using [rgl](https://www.rdocumentation.org/packages/rgl):
+
+![3D Multi-player Go diagram](man/figures/README-go.png){.align-center
+width="80.0%"}
+
+### Piecepack
+
+`game_systems()` returns three different [piecepack](#piecepack)
+configurations:
+
+1)  `piecepack`
+2)  `playing_cards_expansion`
+3)  `dual_piecepacks_expansion`
+
+Plus a configuration for a `subpack` aka \"mini\" piecepack and a
+`hexpack` configuration.
+
+The piecepack configurations also contain common piecepack accessories
+like piecepack pyramids, piecepack matchsticks, and piecepack saucers.
+
+### Playing Cards
+
+`game_systems()` returns `playing_cards`, `playing_cards_colored`, and
+`playing_cards_tarot` (French Tarot) configurations for making diagrams
+with various decks of playing cards.
+
+``` {.r}
+library("piecepackr")
+library("tibble")
+envir <- game_systems("dejavu", round=TRUE)
+
+df <- tibble(piece_side = "card_face", 
+             x=1.25 + 2.5 * 0:3, y=2, 
+             suit=1:4, rank=c(1,6,9,12),
+             cfg = "playing_cards")
+pmap_piece(df, default.units="in", envir=envir)
+```
+
+![Playing Cards](man/figures/README-cards-1.png)
+
+## Looney Pyramids
+
+Configurations for the proprietary Looney Pyramids aka Icehouse Pieces
+game system by Andrew Looney can be found in the companion R package
+`piecenikr`: <https://github.com/piecepackr/piecenikr>
+
+## API Intro
 
 ### grid.piece
 
@@ -106,7 +223,7 @@ g.p("coin_back", suit=2, x=3, y=1, z=3/4+1/8, angle=90)
 ![Piecepack diagram in an oblique
 projection](man/figures/README-proj-1.png)
 
-### save\_print\_and\_play and save\_piece\_images
+### save_print_and_play and save_piece_images
 
 `save_print_and_play` makes a \"Print & Play\" pdf of a configured
 piecepack, `save_piece_images` makes individual images of each piecepack
@@ -117,7 +234,7 @@ save_print_and_play(cfg, "my_piecepack.pdf", size="letter")
 save_piece_images(cfg)
 ```
 
-### pmap\_piece
+### pmap_piece
 
 If you are comfortable using R data frames there is also `pmap_piece`
 that processes data frame input. It accepts an optional `trans` argument
@@ -140,7 +257,7 @@ cfg <- game_systems("dejavu")$piecepack
 pmap_piece(df, cfg=cfg, default.units="in", trans=op_transform, op_scale=0.5, op_angle=135)
 ```
 
-![\'pmap\_piece\' lets you use data frames as
+![\'pmap_piece\' lets you use data frames as
 input](man/figures/README-pmap-1.png)
 
 ### piece3d (rgl)
@@ -148,7 +265,7 @@ input](man/figures/README-pmap-1.png)
 `piece3d` draws pieces using `rgl` graphics.
 
 ``` {.r}
-library("ppgames")
+library("ppgames") # remotes::install_github("piecepackr/ppgames")
 library("rgl")
 invisible(rgl::open3d())
 rgl::view3d(phi=-30, zoom = 0.8)
@@ -158,23 +275,27 @@ envir <- game_systems("dejavu3d")
 pmap_piece(df, piece3d, trans=op_transform, envir = envir, scale = 0.98, res = 150)
 ```
 
-![rgl render](man/figures/README-rgl_snapshot.png)
+![3D render with rgl package](man/figures/README-rgl_snapshot.png)
 
 ### piece (rayrender)
 
 `piece` creates `rayrender` objects.
 
 ``` {.r}
-library("ppgames")
+library("ppgames") # remotes::install_github("piecepackr/ppgames")
+library("magrittr")
 library("rayrender")
-df <- ppgames::df_four_field_kono()
-envir <- game_systems("dejavu3d")
-l <- pmap_piece(df, piece, trans=op_transform, envir = envir, scale = 0.98, res = 150)
-scene <- Reduce(rayrender::add_object, l)
-rayrender::render_scene(scene, lookat = c(2.5, 2.5, 0), lookfrom = c(0, -2, 13))
+df <- ppgames::df_xiangqi()
+envir <- game_systems("dejavu3d", round=TRUE, pawn="peg-doll")
+l <- pmap_piece(df, piece, trans=op_transform, envir = envir, scale = 0.98, res = 150, as_top="pawn_face")
+table <- sphere(z=-1e3, radius=1e3, material=diffuse(color="green")) %>%
+         add_object(sphere(x=5,y=-4, z=30, material=light(intensity=420)))
+scene <- Reduce(rayrender::add_object, l, init=table)
+rayrender::render_scene(scene, lookat = c(5, 5, 0), lookfrom = c(5, -7, 25), 
+                        width = 500, height = 500, samples=200)
 ```
 
-![3D render with rayrender package](man/figures/README-rayrender-1.png)
+![plot of chunk rayrender](man/figures/README-rayrender-1.png)
 
 ### Further documentation
 
@@ -191,91 +312,6 @@ PDFs](https://trevorldavis.com/piecepackr/pages/print-and-play-pdfs.html).
 More API documentation is also available in the package\'s built-in [man
 pages](https://trevorldavis.com/R/piecepackr/reference/index.html).
 
-Game Systems
-------------
-
-The function `game_systems` returns configurations for multiple public
-domain game systems.
-
-### Checkers
-
-`game_systems` returns a `checkers1` and `checkers2` configuration which
-has checkered and lined \"boards\" with matching checker \"bits\" in
-various sizes and colors.
-
-``` {.r}
-df_board <- tibble(piece_side = "board_face", suit = 3, rank = 8,
-               x = 4.5, y = 4.5)
-df_w <- tibble(piece_side = "bit_face", suit = 6, rank = 1,
-               x = rep(1:8, 2), y = rep(1:2, each=8))
-df_b <- tibble(piece_side = "bit_face", suit = 1, rank = 1,
-               x = rep(1:8, 2), y = rep(7:8, each=8))
-df <- rbind(df_board, df_w, df_b)
-df$cfg <- "checkers1"
-pmap_piece(df, envir=game_systems(), default.units="in", trans=op_transform, op_scale=0.5)
-```
-
-![Starting position for Dan Troyka\'s abstract game
-\"Breakthrough\"](man/figures/README-breakthrough-1.png)
-
-### Traditional 6-sided dice
-
-`game_systems` returns a `dice` configuration which can make standard
-6-sided dice in six colors.
-
-### Double-12 dominoes
-
-`game_systems` returns seven different configurations for double-12
-dominoes:
-
-1)  `dominoes`
-2)  `dominoes_black`
-3)  `dominoes_blue`
-4)  `dominoes_green`
-5)  `dominoes_red`
-6)  `dominoes_white` (identical to `dominoes`)
-7)  `dominoes_yellow`
-
-``` {.r}
-library("tibble")
-
-envir <- game_systems("dejavu")
-
-df_dominoes <- tibble(piece_side = "tile_face", x=rep(4:1, 3), y=rep(2*3:1, each=4), suit=1:12, rank=1:12+1,
-                      cfg = paste0("dominoes_", rep(c("black", "red", "green", "blue", "yellow", "white"), 2)))
-df_tiles <- tibble(piece_side = "tile_back", x=5.5, y=c(2,4,6), suit=1:3, rank=1:3, cfg="piecepack")
-df_dice <- tibble(piece_side = "die_face", x=6, y=0.5+1:6, suit=1:6, rank=1:6, cfg="dice")
-df_coins1 <- tibble(piece_side = "coin_back", x=5, y=0.5+1:4, suit=1:4, rank=1:4, cfg="piecepack")
-df_coins2 <- tibble(piece_side = "coin_face", x=5, y=0.5+5:6, suit=1:2, rank=1:2, cfg="piecepack")
-df <- rbind(df_dominoes, df_tiles, df_dice, df_coins1, df_coins2)
-
-pmap_piece(df, default.units="in", envir=envir, op_scale=0.5, trans=op_transform)
-```
-
-![Double-12 dominoes and standard dice in a variety of
-colors](man/figures/README-dominoes-1.png)
-
-### Piecepack
-
-`game_systems` returns three different [piecepack](#piecepack)
-configurations:
-
-1)  `piecepack`
-2)  `playing_cards_expansion`
-3)  `dual_piecepacks_expansion`
-
-Plus a configuration for a `subpack` aka \"mini\" piecepack and a
-`hexpack` configuration.
-
-The piecepack configurations also contain common piecepack accessories
-like piecepack pyramids, piecepack matchsticks, and piecepack saucers.
-
-### Looney Pyramids
-
-Configurations for the proprietary Looney Pyramids aka Icehouse Pieces
-game system by Andrew Looney can be found in the companion R package
-`piecenikr`: <https://github.com/piecepackr/piecenikr>
-
 ### Tak Example
 
 Here we\'ll show an example of configuring piecepackr to draw diagrams
@@ -290,7 +326,7 @@ is easy to see smaller sub-boards. To start we\'ll write a function to
 draw the Tak board.
 
 ``` {.r}
-library("grid")
+library("grid", warn.conflicts=FALSE)
 library("piecepackr")
 grobTakBoard <- function(...) {
     g <- "darkgreen"
@@ -367,8 +403,7 @@ popViewport()
 
 ![Tak game diagram](man/figures/README-diagram-1.png)
 
-Installation
-------------
+## Installation
 
 To install the last version released on CRAN use the following command
 in [R](https://www.r-project.org/):
@@ -429,120 +464,44 @@ You can install these utilities on Ubuntu with
 sudo apt install ghostscript poppler-utils
 ```
 
-Frequently Asked Questions
---------------------------
+## Frequently Asked Questions
+
+### Where should I ask questions?
+
+-   For general questions about piecepackr one may use the project
+    mailing list: <https://groups.google.com/forum/#!forum/piecepackr>
+-   If you have a bug report or a feature request please use the issue
+    tracker: <https://github.com/piecepackr/piecepackr/issues>
 
 ### What is the package licence?
 
-This software package is released under a [Creative Commons
-Attribution-ShareAlike 4.0 International license (CC BY-SA
+The **code** of this software package is released under a [Creative
+Commons Attribution-ShareAlike 4.0 International license (CC BY-SA
 4.0)](https://creativecommons.org/licenses/by-sa/4.0/). This license is
 compatible with version 3 of the GNU Public License (GPL-3).
 
-### How should I Print & Play my piecepack?
+The graphical assets generated by configurations returned by
+`piecepackr::game_systems()` should be usable without attribution:
 
-The Print-and-Play pdf\'s produced by the `save_print_and_play` function
-can be configured in two different ways:
+1.  Uses fonts which should allow you to embed them in images/documents
+    without even requiring attribution.
+2.  Does not embed any outside copyrighted images.[^1]
+3.  Only contains public domain game systems (which should not suffer
+    from copyright / trademark issues).
 
-single-sided
-
-:   Print single-sided on label paper, cut out the labels, and apply to
-    components (in the material of your choice) or print single-sided on
-    paper(board), apply adhesive to the back, fold over in half
-    \"hot-dog-style\", and cut out the components. One will need to to
-    some additional folding and application of adhesive/tape in order to
-    construct the dice, pawns, and pyramids. One can build more
-    dice/pawns/pawn belts if you cut them out *before* folding the
-    paper(board) in half but if you don\'t do so you should still have
-    all the \"standard\" piecepack components.
-
-double-sided
-
-:   Print double-sided on paper(board) and cut out the components. One
-    will need to do some additional folding and application of
-    adhesive/tape in order to construct the dice, pawns, and pyramids.
-
-The [Piecepack Wiki](http://www.ludism.org/ppwiki/HomePage) has a page
-on [making piecepacks](http://www.ludism.org/ppwiki/MakingPiecepacks).
-The BoardGameGeek [Print-and-Play
-Wiki](https://boardgamegeek.com/wiki/page/Print_and_Play_Games#) also
-has lots of good info like how to [quickly make coins uisng an arch
-punch](https://boardgamegeek.com/thread/507240/making-circular-tokens-and-counters-arch-punch).
-
-**Warning:** Generally it is advisable to uncheck \'fit to size\' when
-printing PDF files otherwise your components maybe re-sized by the
-printer.
-
-### What are the dimensions of the components?
-
-Although one can use the API to make layouts with components of
-different sizes the default print-and-play pdf\'s draw components of the
-following size which (except for the pawns and non-standard \"pawn
-belts\") matches the traditional [Mesomorph piecepack
-dimensions](https://web.archive.org/web/20191222010028/http://www.piecepack.org/Anatomy.html)
-if one uses the default component shapes and sizes:
-
--   tiles (default \"rect\") are drawn into a 2\" by 2\" square
--   coins (default \"circle\") are drawn into a ¾\" by ¾\" square
--   dice (default \"rect\") faces are drawn into a ½\" by ½\" square
--   pawn sides (default \"halma\") are drawn into a ½\" by ⅞\" rectangle
--   \"pawn belts\" (default \"rect\") are drawn into a ¾π\" by ½\"
-    rectangle
--   \"pawn saucers\" (default \"circle\") are drawn into a ⅞\" by ⅞\"
-    square
-
-Components are drawn into rectangular drawing spaces (which are always
-squares except for pawn components). The program allows one to customize
-piecepack component shapes. If a components shape is `rect` it will fill
-up the entire rectangular drawing space, if it is a `circle` then the
-rectangular drawing space will be circumscribed around the circle. If a
-components shape is a `convex#` or `concave#` where `#` is the number of
-exterior vertices then the rectangular drawing space will be
-circumscribed around a circle that will be circumscribed around that
-convex/concave polygon. The rectangular drawing space also is
-circumscribed around the special `halma`, `kite`, and `pyramid` shapes.
-
-**Warning:** Generally it is advisable to uncheck \'fit to size\' when
-printing PDF files otherwise your components maybe re-sized by the
-printer.
-
-### What are the possible color options?
-
-You can specify colors either by [RGB hex color
-codes](https://www.color-hex.com/) or [R color
-strings](http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf).
-\"transparent\" is a color option which does what you\'d expect it to
-(if used for something other than the background color will render the
-element effectively invisible). **Warning:** you shouldn\'t mix
-\"transparent\" backgrounds with the `invert_colors` options.
-
-### I have some images I want to use as suit/rank/directional mark symbols, how can I use them with this program?
-
-There are a couple of approaches one can take:
-
-1.  Take them and put them into a font.
-    [FontForge](https://fontforge.org/en-US/) is a popular
-    open-source program suitable for this task.
-    [fontcustom](https://github.com/FontCustom/fontcustom) is a popular
-    command-line wrapper around FontForge. You may need to convert your
-    images from one format to another format first. To guarantee
-    dispatch by `fontconfig` you might want to put the symbols in a part
-    of the \"Private Use Area\" of Unicode not used by any other fonts
-    on your system. If you do that you won\'t need to specify your font
-    otherwise you\'ll need to configure the `suit_symbols_font`,
-    `rank_symbols_font`, and/or `dm_font` options.
-2.  Write a custom grob function to insert the desired symbols using
-    functions like `grid`\'s `rasterGrob` or `grImport2`\'s
-    `pictureGrob`.
+However, third party game configurations [may be encumbered by copyright
+/ trademark
+issues](https://trevorldavis.com/piecepackr/licenses-faq.html#piecepackr-output).
 
 ### Why does the package sometimes use a different font then the one I instructed it to use for a particular symbol?
 
-The program uses `Cairo` which uses `fontconfig` to select fonts.
-`fontconfig` picks what it thinks is the \'best\' font and sometimes it
-annoyingly decides that the font to use for a particular symbol is not
-the one you asked it to use. (although sometimes the symbol it chooses
-instead still looks nice in which case maybe you shouldn\'t sweat it).
-It is hard but not impossible to [configure which
+Some of R\'s graphic devices (`cairo_pdf`, `svg`, bitmap devices like
+`png`) use `Cairo` which uses `fontconfig` to select fonts. `fontconfig`
+picks what it thinks is the \'best\' font and sometimes it annoyingly
+decides that the font to use for a particular symbol is not the one you
+asked it to use. (although sometimes the symbol it chooses instead still
+looks nice in which case maybe you shouldn\'t sweat it). It is hard but
+not impossible to [configure which
 fonts](https://eev.ee/blog/2015/05/20/i-stared-into-the-fontconfig-and-the-fontconfig-stared-back-at-me/)
 are dispatched by fontconfig. A perhaps easier way to guarantee your
 symbols will be dispatched would be to either make a new font and
@@ -592,29 +551,13 @@ get_embedded_font(fonts, chars)
 # 21     ꩜               sans     NotoSansCham-Regular
 ```
 
-### How do I use this package in piecepack rulesets?
-
-There are two main ways that this package could be used to help make
-piecepack rulesets:
-
-1)  The `save_piece_images` function makes individual images of
-    components. By default it makes them in the svg formats with
-    rotations of 0 degrees but with configuration can also make them in
-    the bmp, jpeg, pdf, png, ps, and tiff formats as well as 90, 180,
-    and 270 degree rotations. These can be directly inserted into your
-    ruleset or even used to build diagrams with the aid of a graphics
-    editor program. An example filename is `tile_face_s1_r5_t180.pdf`
-    where `tile` is the component, `face` is the side, `s1` indicates it
-    was the first suit, `r5` indicates it was the 5th rank, `t180`
-    indicates it was rotated 180 degrees, and `pdf` indicates it is a
-    pdf image.
-2)  This R package can be directly used with the `grid` graphics library
-    in R to make diagrams. The important function for diagram drawing
-    exported by the `piecepack` R package is `grid.piece` (or
-    alternatives like `pmap_piece`) which draws piecepack components to
-    the graphics device. The
-    [ppgames](https://github.com/piecepackr/ppgames) R package has code
-    for several [game diagram
-    examples](https://trevorldavis.com/piecepackr/tag/ppgames.html). One
-    can also use this package to [make
-    animations](https://trevorldavis.com/piecepackr/animations.html).
+[^1]: The outline for meeple shape used in the \"meeples\" configuration
+    (also used in some face cards in the playing cards) was extracted
+    (converted into a dataset of normalized x, y coordinates) from
+    [Meeple icon](https://game-icons.net/1x1/delapouite/meeple.html) by
+    [Delapouite](https://delapouite.com/) / [CC BY
+    3.0](https://creativecommons.org/licenses/by/3.0/). Since \"simple
+    shapes\" nor data can be copyrighted under American law this meeple
+    outline is not copyrightable in the United States. However, in other
+    legal jurisdictions with stricter copyright laws you may need to
+    give the proper CC BY attribution if you use any of the meeples.

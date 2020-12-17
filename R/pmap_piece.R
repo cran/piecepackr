@@ -16,7 +16,7 @@
 #'  }
 #' @inheritParams grid.piece
 #' @param .l A list of vectors, such as a data frame. The length of \code{.l}
-#'           determines the number of arguments that \code{grid.piece_wrapper}
+#'           determines the number of arguments that \code{.f}
 #'           will be called  with. List names will be used if present.
 #' @param .f Function to be applied to \code{.l} after adjustments to
 #'        \code{cfg} and \code{envir} and the application of \code{trans}.
@@ -54,12 +54,12 @@ pmap_piece <- function(.l, .f = pieceGrob, ..., cfg=NULL, envir=NULL, trans=NULL
         .l <- trans(.l, ..., cfg=cfg, envir=envir)
         .l <- update_name(.l)
     }
-    if (has_name(.l, "cfg")) {
+    if (hasName(.l, "cfg")) {
         ll <- purrr::pmap(.l, .f, ..., envir=envir, draw=FALSE)
     } else {
         ll <- purrr::pmap(.l, .f, ..., cfg=cfg, envir=envir, draw=FALSE)
     }
-    if (all(sapply(ll, is.grob))) {
+    if (length(ll) && all(sapply(ll, is.grob))) {
         grob <- gTree(children=as.gList(ll), name=name, gp=gp, vp=vp, cl="pmap_piece")
         if (draw) grid.draw(grob)
         invisible(grob)
@@ -70,7 +70,7 @@ pmap_piece <- function(.l, .f = pieceGrob, ..., cfg=NULL, envir=NULL, trans=NULL
 }
 
 update_name <- function(.l) {
-    if (has_name(.l, "name")) {
+    if (hasName(.l, "name")) {
         if (!is.character(.l$name)) .l$name <- as.character(.l$name)
         if (sum(duplicated(.l$name)) == 0) {
             return(.l)
@@ -78,7 +78,7 @@ update_name <- function(.l) {
             warning("the name column in .l is not unique, generating new name column")
         }
     }
-    if (has_name(.l, "id")) {
+    if (hasName(.l, "id")) {
         .l$name <- paste0("piece.", as.character(.l$id))
         if (sum(duplicated(.l$name)) == 0) {
             return(.l)
@@ -110,7 +110,7 @@ default_cfg_envir <- function(cfg=NULL, envir=NULL) {
         cfg <- pp_cfg()
         envir <- game_systems()
     } else if (is.null(cfg)) { # and !is.null(envir)
-        if (has_name(envir, "piecepack")) {
+        if (hasName(envir, "piecepack")) {
             cfg <- envir[["piecepack"]]
         } else {
             cfg <- pp_cfg()
