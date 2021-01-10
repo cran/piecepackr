@@ -100,8 +100,7 @@ diagram](https://trevorldavis.com/piecepackr/go.html) for a game of
 go](https://en.wikipedia.org/wiki/Go_variants#Multi-player_Go) plotted
 using [rgl](https://www.rdocumentation.org/packages/rgl):
 
-![3D Multi-player Go diagram](man/figures/README-go.png){.align-center
-width="80.0%"}
+![3D Multi-player Go diagram](man/figures/README-go.png)
 
 ### Piecepack
 
@@ -292,7 +291,7 @@ table <- sphere(z=-1e3, radius=1e3, material=diffuse(color="green")) %>%
          add_object(sphere(x=5,y=-4, z=30, material=light(intensity=420)))
 scene <- Reduce(rayrender::add_object, l, init=table)
 rayrender::render_scene(scene, lookat = c(5, 5, 0), lookfrom = c(5, -7, 25), 
-                        width = 500, height = 500, samples=200)
+                        width = 500, height = 500, samples=200, clamp_value=8)
 ```
 
 ![plot of chunk rayrender](man/figures/README-rayrender-1.png)
