@@ -83,7 +83,7 @@ save_print_and_play <- function(cfg=pp_cfg(), output_filename="piecepack.pdf", s
     pl <- list()
 
     if ("piecepack" %in% pieces || "subpack" %in% pieces) {
-        psuits <- seq(cfg$i_unsuit+1)
+        psuits <- seq(cfg$n_suits+2L)
         lpgf <- lapply(psuits, a5_piecepack_grob, cfg=cfg, front=TRUE, arrangement=arrangement)
         lpgb <- lapply(psuits, a5_piecepack_grob, cfg=cfg, front=FALSE, arrangement=arrangement)
     }
@@ -166,7 +166,7 @@ save_print_and_play <- function(cfg=pp_cfg(), output_filename="piecepack.pdf", s
             n_pages <- n_pages + 1
         for (ii in seq(n_pages)) {
             ss <- seq(4*ii-3, 4*ii)
-            ss[which(ss > cfg$i_unsuit+1)] <- cfg$i_unsuit+1
+            ss[which(ss > cfg$n_suits+2L)] <- cfg$n_suits+2L
             gf <- grobTree(grobTree(lsgf[[ss[1]]], vp=vpul),
                      grobTree(lsgb[[ss[1]]], vp=vpur),
                      grobTree(lsgf[[ss[2]]], vp=vpll),
@@ -297,21 +297,21 @@ a5_inst_grob <- function(cfg=pp_cfg(), pieces) {
                           pieceGrob("belt_face", x=xb, y=yb, cfg=cfg,
                                     default.units="in"))
     # Pyramids
-    yy <- yt
-    xy <- A5W-1
+    yy <- yt+0.10
+    xy <- A5W-1.2
     df <- tibble(piece_side=c("pyramid_layout", "pyramid_top"),
-                              suit=1, rank=2, x=xy+c(-0.5, 0.5), y=yy)
+                              suit=1, rank=1, x=xy+c(-0.5, 0.6), y=yy)
     grob_pyramid <- grobTree(htg("Pyramid", xy, yy+0.8),
-                             htg("Top (View)", xy+0.5, yy+0.45),
-                             tg("Face", xy+0.5, yy+0.3),
-                             tg("Back", xy+0.5, yy-0.3),
-                             tg("Left", xy+0.2, yy, rot=90),
-                             tg("Right", xy+0.8, yy, rot=-90),
-                             tg("Back", xy-0.1, yy, rot=-90),
-                             tg("Face", xy-0.5, yy+0.65),
-                             tg("Face", xy-0.5, yy-0.65),
-                             tg("Right", xy-0.2, yy+0.4),
-                             tg("Left", xy-0.2, yy-0.4),
+                             htg("Top (View)", xy+0.7, yy+0.50),
+                             tg("Face", xy+0.6, yy+0.33),
+                             tg("Back", xy+0.6, yy-0.33),
+                             tg("Left", xy+0.25, yy, rot=90),
+                             tg("Right", xy+0.95, yy, rot=-90),
+                             tg("Back", xy-0.0, yy, rot=-90),
+                             tg("Face", xy-1.0, yy+0.60, rot=90),
+                             tg("Face", xy-1.0, yy-0.60, rot=90),
+                             tg("Right", xy-0.05, yy+0.45),
+                             tg("Left", xy-0.05, yy-0.45),
                              pmap_piece(df, default.units="in",
                                         cfg=cfg, draw=FALSE))
     # Matchsticks
@@ -517,35 +517,20 @@ a5_pyramids_grob <- function(suit=1:2, cfg=pp_cfg(), front=TRUE) {
 }
 
 pyramid_grob_helper <- function(suit, cfg=pp_cfg(), xleft=0) {
-    rank <- c(1:2,4,3,5:6)
+    rank <- c(2,4,5,1,3, 6)
     plh <- PYRAMID_LAYOUT_HEIGHTS[rank]
-    pawn_width <- cfg$get_width("pawn_face")
     y_up <- cumsum(plh) - 0.5*plh
     x_up <- 0.5*PYRAMID_LAYOUT_WIDTHS[rank]
-    x <- xleft+c(x_up[1:4], A5W/2 - x_up[5:6] - pawn_width)
-    y <- c(y_up[1:4], c(plh[6]+0.5*plh[5], 0.5*plh[6]))
+    x <- xleft+c(x_up[1:3], A5W/2 - x_up[4:6])
+    y <- c(y_up[1:3], c(plh[5] + plh[6] + 0.5*plh[4], plh[6]+0.5*plh[5], 0.5*plh[6]))
     piece_side <- "pyramid_layout"
-    angle <- c(rep(0, 4), rep(180,2))
+    angle <- c(rep(0, 3), rep(180,3))
     df <- tibble::tibble(piece_side, x, y, suit, rank, angle)
+    # space for a pawn layout on top
     dfp <- tibble::tibble(piece_side="pawn_layout",
-                          x=xleft+A5W/2-0.5*pawn_width,
-                          y=c(0.5,1.5)*cfg$get_height("pawn_layout"),
-                          suit, rank=NA, angle=0)
-    if (cfg$get_width("die_face") <= 0.6) {
-        dfd <- tibble::tibble(piece_side="die_layoutLF",
-                              x=xleft+c(0.5)*cfg$get_width("die_layoutLF"),
-                              y=A5H-c(0.5)*cfg$get_height("die_layoutLF"),
-                              suit, rank=NA, angle=0)
-    } else {
-        die_width <- cfg$get_width("die_width")
-        xdr <- c(0.5,1.5,2.5) * die_width
-        ydt <- A5H - 0.5 * die_width
-        ydb <- A5H - 1.5 * die_width
-        dfd <- tibble(piece_side="die_face", x=xleft+rep(xdr,2),
-                      y=rep(c(ydt,ydb),each=3),
-                      suit, rank=1:6, angle=0)
-    }
-    df <- rbind(dfp, dfd, df)
+                          x = xleft + 0.25 * A5W, y = A5H - 0.5 * cfg$get_width("pawn_layout"),
+                          suit, rank=1, angle=90)
+    df <- rbind(dfp, df)
     pmap_piece(df, cfg=cfg, default.units="inches", draw=FALSE)
 }
 

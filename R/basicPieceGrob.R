@@ -83,21 +83,24 @@ makeContent.basic_piece_side <- function(x) {
 }
 
 #' @rdname basicPieceGrobs
-#' @param directory Directory that \code{picturePieceGrobFn} will look in for piece graphics.
-#' @param filename_fn Function that takes arguments \code{directory}, \code{piece_side}, \code{suit},
-#'        and \code{rank} and returns the (full path) filename of the image that the
-#'        function returned by \code{picturePieceGrobFn} should import.
+#' @param directory Directory that `picturePieceGrobFn` will look in for piece graphics.
+#' @param filename_fn Function that takes arguments `directory`, `piece_side`, `suit`,
+#'        `rank`, and optionally `cfg` and returns the (full path) filename of the image that the
+#'        function returned by `picturePieceGrobFn` should import.
 #' @export
 picturePieceGrobFn <- function(directory, filename_fn=find_pp_file) {
-    function(piece_side, suit, rank, cfg=pp_cfg()) {
-        f <- filename_fn(directory, piece_side, suit, rank)
+    function(piece_side, suit, rank, cfg) {
+        if (hasName(formals(find_pp_file), "cfg"))
+            f <- filename_fn(directory, piece_side, suit, rank, cfg)
+        else
+            f <- filename_fn(directory, piece_side, suit, rank)
         file2grob(f)
     }
 }
 
-find_pp_file <- function(directory, piece_side, suit, rank) {
+find_pp_file <- function(directory, piece_side, suit, rank, cfg) {
     for (format in c("svgz", "svg", "png", "jpg", "jpeg")) {
-        f <- piece_filename_helper(directory, piece_side, format, suit, rank)
+        f <- piece_filename_helper(directory, piece_side, format, suit, rank, cfg)
         if (file.exists(f)) {
             return(f)
         }
@@ -105,14 +108,14 @@ find_pp_file <- function(directory, piece_side, suit, rank) {
     stop(paste("Couldn't find suitable", piece_side, "image in", directory))
 }
 
-piece_filename_helper <- function(directory, piece_side, format, suit, rank) {
-    if (!has_suit(piece_side) && !has_rank(piece_side)) {
+piece_filename_helper <- function(directory, piece_side, format, suit, rank, cfg) {
+    if (piece_side %in% intersect(cfg$lacks_rank, cfg$lacks_suit)) {
         piece_filename(directory, piece_side, format, 0)
-    } else if (has_suit(piece_side) && !has_rank(piece_side)) {
+    } else if (piece_side %in% cfg$lacks_rank) {
         piece_filename(directory, piece_side, format, 0, suit=suit)
-    } else if (!has_suit(piece_side) && has_rank(piece_side)) {
+    } else if (piece_side %in% cfg$lacks_suit) {
         piece_filename(directory, piece_side, format, 0, rank=rank)
-    } else if (has_suit(piece_side) && has_rank(piece_side)) {
+    } else {
         piece_filename(directory, piece_side, format, 0, suit=suit, rank=rank)
     }
 }
@@ -304,22 +307,16 @@ pawnLayoutGrob <- function(piece_side, suit, rank, cfg) {
 }
 
 pyramidLayoutGrob <- function(piece_side, suit, rank, cfg) {
-    gl <- gList()
-    suppressWarnings({
-        t <- c(72, 36, 0, -36, -72)
-        r <- 0.5
-        x <- to_x(t, r)
-        y <- 0.5 + 0.5*to_y(t, r)
-        pieces <- c("pyramid_face", "pyramid_right", "pyramid_back", "pyramid_left", "pyramid_face")
-        angles <- c(90+72, 90+36, 90, 90-36, 90-72)
-        for (ii in 1:5) {
-            cs <- pieces[ii]
-            vp <- viewport(width=inch(cfg$get_width(cs, rank=rank)),
-                           height=inch(cfg$get_height(cs, rank=rank)),
-                           angle=angles[ii], x=x[ii], y=y[ii])
-            grob <- pieceGrob(cs, suit, rank, cfg, vp=vp)
-            gl[[ii]] <- grob
-        }
-    })
-    gTree(children=gl, name="pyramid_layout")
+    w <- cfg$get_width("pyramid_face", rank=rank)
+    h <- cfg$get_height("pyramid_face", rank=rank)
+    d <- sqrt(h^2 + (0.5*w)^2)
+    t <- c(72, 36, 0, -36, -72)
+    r <- h
+    x <- 0.5 * to_x(t, r)
+    y <- d + 0.5 * to_y(t, r)
+    pieces <- c("pyramid_face", "pyramid_right", "pyramid_back", "pyramid_left", "pyramid_face")
+    angles <- c(90+72, 90+36, 90, 90-36, 90-72)
+    df <- tibble(piece_side=pieces, x=x, y=y, suit=suit, rank=rank, angle=angles)
+    g <- pmap_piece(df, cfg=cfg, default.units="inches", draw=FALSE)
+    grobTree(g, name="pyramid_layout")
 }

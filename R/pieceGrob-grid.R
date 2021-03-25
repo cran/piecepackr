@@ -87,9 +87,8 @@ pieceGrobHelper <- function(piece_side="tile_back", suit=NA, rank=NA, cfg=pp_cfg
                            default.units = "npc", scale=1, alpha=1, name="") {
     if (scale == 0 || alpha == 0) return(nullGrob())
     cfg <- as_pp_cfg(cfg)
-    suit <- ifelse(has_suit(piece_side), ifelse(is.na(suit), 1, suit), cfg$i_unsuit)
-    suit <- ifelse(suit > cfg$i_unsuit+1, cfg$i_unsuit+1, suit)
-    rank <- ifelse(has_rank(piece_side), ifelse(is.na(rank), 1, rank), 0)
+    rank <- impute_rank(piece_side, rank, cfg)
+    suit <- impute_suit(piece_side, suit, cfg)
     if (is.na(angle)) angle <- 0
     if (is.na(width)) width <- inch(cfg$get_width(piece_side, suit, rank))
     if (is.na(height)) height <- inch(cfg$get_height(piece_side, suit, rank))
@@ -146,16 +145,13 @@ pieceGrob <- function(piece_side="tile_back", suit=NA, rank=NA,
 makeContext.piece <- function(x) {
     scale <- x$scale
     alpha <- x$alpha
-    gp <- x$gp
-
+    gp <- x$gp %||% gpar()
     if (scale != 1) {
-        if (is.null(gp)) gp <- gpar()
-        if (is.null(gp$cex)) gp$cex <- scale else gp$cex <- scale * gp$cex
-        if (is.null(gp$lex)) gp$lex <- scale else gp$lex <- scale * gp$lex
+        gp$cex <- scale * (gp$cex %||% 1)
+        gp$lex <- scale * (gp$lex %||% 1)
     }
     if (alpha != 1) {
-        if (is.null(gp)) gp <- gpar()
-        if (is.null(gp$alpha)) gp$alpha <- alpha else gp$alpha <- alpha * gp$alpha
+        gp$alpha <- scale * (gp$alpha %||% 1)
     }
     x$gp <- gp
     x

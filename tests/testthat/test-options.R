@@ -1,60 +1,70 @@
 test_that("options work as expected", {
     cfg <- list(invert_colors.suited = TRUE,
                 background_color = "white",
-                suit_color = "darkred,black,darkgreen,darkblue,grey")
+                suit_color = "darkred,black,darkgreen,darkblue,grey",
+                lacks_suit = "coin_face", n_suits = 4)
     expect_equal(get_suit_color("coin_back", 1, 1, cfg), "white")
     expect_equal(get_suit_color("coin_face", 5, 1, cfg), "grey")
     expect_equal(pp_cfg(cfg)$get_suit_color(3:2), c("darkgreen", "black"))
-    cfg <- list(invert_colors.suited = TRUE,
-                background_color = "white",
-                suit_color = c("darkred", "black", "darkgreen", "darkblue", "grey"))
+    colors <- c("darkred", "black", "darkgreen", "darkblue", "grey")
+    cfg <- list(invert_colors.suited = TRUE, background_color = "white", suit_color = colors,
+                lacks_suit = "coin_face", n_suits = 4)
     expect_equal(get_suit_color("coin_back", 1, 1, cfg), "white")
     expect_equal(get_suit_color("coin_face", 5, 1, cfg), "grey")
-    expect_equal(pp_cfg(cfg)$get_suit_color(3:2), c("darkgreen", "black"))
+    cfg <- pp_cfg(cfg)
+    expect_equal(cfg$get_suit_color(3:2), colors[3:2])
+    expect_equal(cfg$get_suit_color(), colors[1:4])
 
-    expect_equal(should_invert("coin_back", 1, 1, list()), FALSE)
-    expect_equal(should_invert("coin_back", 1, 1, list(invert_colors = TRUE)), TRUE)
-    expect_equal(should_invert("coin_back", 1, 1, list(invert_colors.suited = TRUE)), TRUE)
-    expect_equal(should_invert("coin_back", 1, 1, list(invert_colors.unsuited = TRUE)), FALSE)
-    expect_equal(should_invert("coin_back", 1, 1, list(invert_colors.coin_back = TRUE)), TRUE)
-    expect_equal(should_invert("coin_back", 1, 1, list(invert_colors.coin_face = TRUE)), FALSE)
-    expect_equal(should_invert("coin_back", 1, 1, list(invert_colors = FALSE)), FALSE)
-    expect_equal(should_invert("coin_face", 5, 1, list()), FALSE)
-    expect_equal(should_invert("coin_face", 5, 1, list(invert_colors = TRUE)), TRUE)
-    expect_equal(should_invert("coin_face", 5, 1, list(invert_colors.suited = TRUE)), FALSE)
-    expect_equal(should_invert("coin_face", 5, 1, list(invert_colors.unsuited = TRUE)), TRUE)
-    expect_equal(should_invert("coin_face", 5, 1, list(invert_colors.coin_back = TRUE)), FALSE)
-    expect_equal(should_invert("coin_face", 5, 1, list(invert_colors.coin_face = TRUE)), TRUE)
-    expect_equal(should_invert("coin_face", 5, 1, list(invert_colors = FALSE)), FALSE)
+    cfg <- list(n_suits = 4)
+    expect_equal(should_invert("coin_back", 1, 1, cfg), FALSE)
+    expect_equal(should_invert("coin_face", 5, 1, cfg), FALSE)
+    cfg <- list(invert_colors = TRUE, n_suits = 4)
+    expect_equal(should_invert("coin_back", 1, 1, cfg), TRUE)
+    expect_equal(should_invert("coin_face", 5, 1, cfg), TRUE)
+    cfg <- list(invert_colors = FALSE, n_suits = 4)
+    expect_equal(should_invert("coin_back", 1, 1, cfg), FALSE)
+    expect_equal(should_invert("coin_face", 5, 1, cfg), FALSE)
+    cfg <- list(invert_colors.suited = TRUE, lacks_suit = "coin_face", n_suits = 4)
+    expect_equal(should_invert("coin_back", 1, 1, cfg), TRUE)
+    expect_equal(should_invert("coin_face", 5, 1, cfg), FALSE)
+    cfg <- list(invert_colors.unsuited = TRUE, lacks_suit = "coin_face", n_suits = 4)
+    expect_equal(should_invert("coin_back", 1, 1, cfg), FALSE)
+    expect_equal(should_invert("coin_face", 5, 1, cfg), TRUE)
+    cfg <- list(invert_colors.coin_back = TRUE, n_suits = 4)
+    expect_equal(should_invert("coin_back", 1, 1, cfg), TRUE)
+    expect_equal(should_invert("coin_face", 5, 1, cfg), FALSE)
+    cfg <- list(invert_colors.coin_face = TRUE, n_suits = 4)
+    expect_equal(should_invert("coin_back", 1, 1, cfg), FALSE)
+    expect_equal(should_invert("coin_face", 5, 1, cfg), TRUE)
 
-    expect_equal(pp_cfg(list(n_ranks = 7))$n_ranks, 7)
-    expect_equal(pp_cfg(list(n_suits = 3))$n_suits, 3)
+    cfg <- pp_cfg(list(n_ranks = 7, n_suits = 3))
+    expect_equal(cfg$n_ranks, 7)
+    expect_equal(cfg$n_suits, 3)
 
-    cfg <- list(rank_symbols="A,B,C,D,E,F",
-                use_suit_as_ace=TRUE)
+    cfg <- list(rank_symbols="A,B,C,D,E,F", use_suit_as_ace=TRUE, n_ranks=6, n_suits=4)
     expect_equal(get_rank_symbol("die_face", 6, 2, cfg), "\u263c")
 
-    cfg <- list(background_color.unsuited="orange")
+    cfg <- list(background_color.unsuited="orange", lacks_suit = "tile_back", n_suits=4)
     expect_equal(get_background_color("tile_face", 1, 1, cfg), "white")
     expect_equal(get_background_color("tile_back", 1, 1, cfg), "orange")
-    expect_equal(is_suited("die_face", 5, 1, list()), TRUE)
-    expect_equal(is_suited("die_face", 6, 1, list()), FALSE)
+    expect_equal(is_suited("die_face", 5, 1, list(n_suits=4)), TRUE)
+    expect_equal(is_suited("die_face", 6, 1, list(n_suits=4)), FALSE)
     expect_equal(get_background_color("die_face", 5, 1, cfg), "white")
     expect_equal(get_background_color("die_face", 6, 1, cfg), "orange")
-    cfg1 <- list(dm_text="")
-    cfg2 <- list(dm_text=",,,,")
+    cfg1 <- list(dm_text="", n_suits=4)
+    cfg2 <- list(dm_text=",,,,", n_suits=4)
     expect_equal(get_dm_text("suitdie_face", 3, 1, cfg1), "")
     expect_equal(get_dm_text("suitdie_face", 3, 1, cfg2), "")
     expect_equal(get_dm_text("suitdie_face", 6, 1, cfg1), "")
     expect_equal(get_dm_text("suitdie_face", 6, 1, cfg2), "")
     expect_equal(get_dm_text("die_face", 6, 1, cfg2), "")
-    cfg <- list(dm_text.saucer_face="b")
+    cfg <- list(dm_text.saucer_face="b", n_suits=4)
     expect_equal(get_dm_text("saucer_face", 3, 1, cfg), "b")
-    cfg <- list(dm_text.saucer_back="b")
+    cfg <- list(dm_text.saucer_back="b", n_suits=4)
     expect_equal(get_dm_text("saucer_back", 5, 1, cfg), "b")
 
     cfg <- list(invert_colors.suited=TRUE, invert_colors.r1=FALSE,
-                suit_color = "darkred,black,darkgreen,darkblue,grey")
+                suit_color = "darkred,black,darkgreen,darkblue,grey", n_suits=4)
     expect_equal(get_background_color("tile_face", 1, 2, cfg), "darkred")
     expect_equal(get_background_color("tile_face", 1, 1, cfg), "white")
 })
@@ -114,11 +124,23 @@ test_that("get_piece_opt works as expected", {
     expect_equal(cfg$get_piece_opt("tile_face")$bleed_color, "blue")
     cfg <- pp_cfg(list(border_color = "transparent", mat_color = "blue", background_color = "#00000000"))
     expect_equal(cfg$get_piece_opt("tile_face")$bleed_color, "transparent")
+
+    # edges
+    cfg <- pp_cfg(list(suit_color="darkred,black,darkgreen,darkblue,grey",
+                       edge_color="darkred,black,darkgreen,darkblue,grey"))
+    opt <- cfg$get_piece_opt("pawn_top", 1, 1)
+    expect_equal(opt$shape, "rect")
+    expect_equal(opt$dm_text, "")
+    expect_equal(opt$ps_text, "")
+    expect_equal(opt$background_color, "darkred")
 })
 
 context("pp_cfg querying variables work as expected")
 test_that("pp_cfg querying variables work as expected", {
     cfg <- pp_cfg()
+    expect_warning(cfg$cache_shadow, "pp_cfg\\()\\$cache_op_fn")
+    expect_warning(cfg$i_unsuit, "Add '1L' to 'n_suits'")
+    expect_error(suppressWarnings(cfg$cache_shadow <- "boo"), "value was not a boolean")
     expect_true(cfg$has_piecepack)
 
     expect_true(cfg$has_pawns)
@@ -140,4 +162,16 @@ test_that("pp_cfg querying variables work as expected", {
     expect_false(cfg$has_pyramids)
     expect_false(cfg$has_matchsticks)
     expect_error(cfg$has_piecepack <- 3, "3 is not logical")
+
+    expect_true(cfg$cache_grob)
+    cfg$cache_grob <- FALSE
+    expect_false(cfg$cache_grob)
+    cfg$cache_piece_opt <- FALSE
+    expect_false(cfg$cache_piece_opt)
+    cfg$cache_piece_opt <- TRUE
+    expect_true(cfg$cache_piece_opt)
+    cfg$cache_obj_fn <- FALSE
+    expect_false(cfg$cache_obj_fn)
+    cfg$cache_op_fn <- FALSE
+    expect_false(cfg$cache_op_fn)
 })
