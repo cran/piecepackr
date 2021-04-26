@@ -1,6 +1,6 @@
-d16e439308c08f02540b4900fe32f092 *DESCRIPTION
+565faff98992c6677a2053b270b2aa77 *DESCRIPTION
 788023533e89fe8b13b35ec63f123253 *NAMESPACE
-15ae760506f8b27a328909233ba74472 *NEWS.md
+4c4c5a40f4c63371bea454e290de17c4 *NEWS.md
 2157ef4c47a24104c55c7b9b41db98b5 *R/basicPieceGrob.R
 b4fb82a7ec37c34facff4a0856028942 *R/game_systems.R
 3499d4395971a16e02c65f93a55c037d *R/hooks.R
@@ -15,7 +15,7 @@ ae7f990b3238f731a806da87626dae0e *R/pp_shape.R
 bff486bbb6909fad5f1e9fb1a1630337 *R/save_piece_images.R
 c97e4bb8ea0ad7c3923ee7b181d11447 *R/save_piece_obj.R
 aa16ddc1937bebfc48405204a77b1178 *R/save_print_and_play.R
-741796bfa09e9f73d698eca265aed1e2 *R/sysdata.rda
+2a77c48f81ccc9b0a1099161e7a32b05 *R/sysdata.rda
 0477eba40545143385c461bded6bd6f9 *R/utils-boards.R
 2dc8180bc508b1ffd496ff2e8ecd8de8 *R/utils-cache.R
 38e49ff2f564132c0337e8fb2681d5ec *R/utils-composite.R
