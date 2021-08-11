@@ -67,7 +67,6 @@
 #'             if \code{"peg-doll"} the piecepack pawn will be a \dQuote{peg doll} style pawn, and
 #'             if \code{"joystick"} the piecepack pawn will be a \dQuote{joystick} style pawn.
 #'             Note for the latter two pawn styles only \code{pawn_top} will work with \code{grid.piece}.
-#' @param cfg List of configuration options
 #' @examples
 #'        cfgs <- game_systems()
 #'        names(cfgs)
@@ -101,11 +100,8 @@
 #' @seealso \code{\link{pp_cfg}} for information about the \code{pp_cfg} objects returned by \code{game_systems}.
 #' @export
 game_systems <- function(style = NULL, round = FALSE, pawn = "token") {
-    styles <- c("dejavu", "dejavu3d", "sans", "sans3d")
-    if (!is.null(style) && is.na(match(style, styles))) {
-        stop(paste("Don't have a customized configuration for style", style))
-    }
-    style <- style %||% "sans"
+    style <- game_systems_style(style)
+
     is_3d <- grepl("3d$", style)
     rect_shape <- ifelse(round, "roundrect", "rect")
     if (is_3d) {
@@ -145,6 +141,21 @@ game_systems <- function(style = NULL, round = FALSE, pawn = "token") {
          playing_cards_tarot = cards$tarot,
          playing_cards_expansion = packs$pce,
          subpack = packs$subpack)
+}
+
+game_systems_style <- function(style) {
+    styles <- c("dejavu", "dejavu3d", "sans", "sans3d")
+    if (!is.null(style) && is.na(match(style, styles))) {
+        stop(paste("Don't have a customized configuration for style", style))
+    }
+
+    if (is.null(style))
+        style <- "sans"
+
+    if (grepl("dejavu", style) && !suppressWarnings(has_font("Dejavu Sans")))
+        message(sprintf("'style = \"%s\"' but 'has_font(\"Dejavu Sans\")' is 'FALSE'", style))
+
+    style
 }
 
 cb_suit_colors_impure <- c("#D55E00", "grey30", "#009E73", "#56B4E9", "#E69F00", "#FFFFFF")
@@ -490,8 +501,9 @@ joystick_pawn <- function(shapes) {
 }
 
 #' @rdname game_systems
+#' @inheritParams pp_cfg
 #' @export
-to_hexpack <- function(cfg=pp_cfg()) {
+to_hexpack <- function(cfg = getOption("piecepackr.cfg", pp_cfg())) {
     cfg <- as_pp_cfg(cfg)
     hexpack <- as.list(cfg)
     hexpack$shape.tile <- "convex6"
@@ -505,8 +517,9 @@ to_hexpack <- function(cfg=pp_cfg()) {
 }
 
 #' @rdname game_systems
+#' @inheritParams pp_cfg
 #' @export
-to_subpack <- function(cfg=pp_cfg()) {
+to_subpack <- function(cfg = getOption("piecepackr.cfg", pp_cfg())) {
     cfg <- as_pp_cfg(cfg)
     subpack <- as.list(cfg)
     subpack$width.tile <- (3/8)*cfg$get_width("tile")

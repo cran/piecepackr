@@ -3,13 +3,13 @@
 \name{grid.piece}
 \alias{grid.piece}
 \alias{pieceGrob}
-\title{Draw board game pieces using grid}
+\title{Draw board game pieces with grid}
 \usage{
 pieceGrob(
   piece_side = "tile_back",
   suit = NA,
   rank = NA,
-  cfg = pp_cfg(),
+  cfg = getOption("piecepackr.cfg", pp_cfg()),
   x = unit(0.5, "npc"),
   y = unit(0.5, "npc"),
   z = NA,
@@ -18,23 +18,24 @@ pieceGrob(
   width = NA,
   height = NA,
   depth = NA,
-  op_scale = 0,
-  op_angle = 45,
-  default.units = "npc",
-  envir = NULL,
+  op_scale = getOption("piecepackr.op_scale", 0),
+  op_angle = getOption("piecepackr.op_angle", 45),
+  default.units = getOption("piecepackr.default.units", "npc"),
+  envir = getOption("piecepackr.envir"),
   name = NULL,
   gp = NULL,
   vp = NULL,
   ...,
   scale = 1,
-  alpha = 1
+  alpha = 1,
+  type = "normal"
 )
 
 grid.piece(
   piece_side = "tile_back",
   suit = NA,
   rank = NA,
-  cfg = pp_cfg(),
+  cfg = getOption("piecepackr.cfg", pp_cfg()),
   x = unit(0.5, "npc"),
   y = unit(0.5, "npc"),
   z = NA,
@@ -43,17 +44,18 @@ grid.piece(
   width = NA,
   height = NA,
   depth = NA,
-  op_scale = 0,
-  op_angle = 45,
-  default.units = "npc",
-  envir = NULL,
+  op_scale = getOption("piecepackr.op_scale", 0),
+  op_angle = getOption("piecepackr.op_angle", 45),
+  default.units = getOption("piecepackr.default.units", "npc"),
+  envir = getOption("piecepackr.envir"),
   name = NULL,
   gp = NULL,
   draw = TRUE,
   vp = NULL,
   ...,
   scale = 1,
-  alpha = 1
+  alpha = 1,
+  type = "normal"
 )
 }
 \arguments{
@@ -65,7 +67,9 @@ grid.piece(
 
 \item{cfg}{Piecepack configuration list or \code{pp_cfg} object,
 a list of \code{pp_cfg} objects,
-or a character vector of \code{pp_cfg} objects}
+or a character vector referring to names in \code{envir}
+or a character vector referring to object names that
+can be retrieved by \code{base::dynGet()}.}
 
 \item{x}{Where to place piece on x axis of viewport}
 
@@ -75,10 +79,7 @@ or a character vector of \code{pp_cfg} objects}
 
 \item{angle}{Angle (on xy plane) to draw piece at}
 
-\item{use_pictureGrob}{If \code{TRUE} instead of directly returning the grob first
-export to (temporary) svg and then re-import as a \code{grImport2::pictureGrob}.
-This is useful if drawing pieces really big or small and don't want
-to play with re-configuring fontsizes.}
+\item{use_pictureGrob}{Deprecated argument.  If \code{TRUE} sets \code{type} argument to \code{"picture"}.}
 
 \item{width}{Width of piece}
 
@@ -110,6 +111,12 @@ and \code{1.0} is the scale used in the \dQuote{cavalier} projection.}
 \item{scale}{Multiplicative scaling factor to apply to width, height, and depth.}
 
 \item{alpha}{Alpha channel for transparency.}
+
+\item{type}{Type of grid grob to use.  Either \code{"normal"} (default), \code{"picture"}, or \code{"raster"}.
+\code{"picture"} exports to (temporary) svg and re-imports as a \code{grImport2::pictureGrob}.
+\code{"raster"} exports to (temporary) png and re-imports as a \code{grid::rasterGrob}.
+The latter two can be useful if drawing pieces really big or small and don't want
+to mess with re-configuring fontsizes and linewidths.}
 
 \item{draw}{A logical value indicating whether graphics output should be produced.}
 }

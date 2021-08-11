@@ -1,4 +1,4 @@
-#' Draw board game pieces using rgl
+#' Render board game pieces with rgl
 #'
 #' \code{piece3d} draws board games pieces using the rgl package.
 #' @inheritParams grid.piece
@@ -11,7 +11,7 @@
 #'                If \code{NA} we will read the texture and figure out a reasonable value.
 #' @return A numeric vector of rgl object IDs.
 #' @examples
-#' if ((Sys.getenv("TRAVIS") == "") && require("rgl")) {
+#' if (require("rgl")) {
 #'     open3d()
 #'     cfg <- game_systems("sans3d")$piecepack
 #'     piece3d("tile_back", suit = 3, rank = 3, cfg = cfg, x = 0, y = 0, z = 0)
@@ -24,13 +24,16 @@
 #' @seealso See \code{\link[rgl]{rgl-package}} for more information about the \code{rgl} package.
 #'          See \code{\link[rgl:material]{rgl.material}} for more info about setting \code{rgl} material properties.
 #'          See \code{\link{geometry_utils}} for a discussion of the 3D rotation parameterization.
-piece3d <- function(piece_side = "tile_back", suit = NA, rank = NA, cfg = pp_cfg(), # nolint
-                           x = 0, y = 0, z = NA,
-                           angle = 0, axis_x = 0, axis_y = 0,
-                           width = NA, height = NA, depth = NA,
-                           envir = NULL, ..., scale = 1, res = 72,
-                           alpha = 1.0, lit = FALSE,
-                           shininess = 50.0, textype = NA) {
+piece3d <- function(piece_side = "tile_back", suit = NA, rank = NA, # nolint
+                    cfg = getOption("piecepackr.cfg", pp_cfg()),
+                    x = 0, y = 0, z = NA,
+                    angle = 0, axis_x = 0, axis_y = 0,
+                    width = NA, height = NA, depth = NA,
+                    envir = getOption("piecepackr.envir"),
+                    ...,
+                    scale = 1, res = 72,
+                    alpha = 1.0, lit = FALSE,
+                    shininess = 50.0, textype = NA) {
     assert_suggested("rgl")
 
     nn <- max(lengths(list(piece_side, suit, rank, x, y, z, angle, axis_x, axis_y, width, height, depth)))
@@ -88,6 +91,10 @@ rgl_piece_helper <- function(piece_side = "tile_back", suit = NA, rank = NA, cfg
                      lit = lit, shininess = shininess,
                      front = "filled", back = "filled",
                      texture = obj$png, textype = textype)
-    mesh <- suppressWarnings(rgl::readOBJ(obj$obj, material = material))
-    invisible(as.numeric(rgl::shade3d(mesh)))
+    if (requireNamespace("readobj", quietly = TRUE))
+        mesh <- readobj::read.obj(obj$obj, convert.rgl = TRUE)
+    else
+        mesh <- suppressWarnings(rgl::readOBJ(obj$obj))
+    id <- rgl::shade3d(mesh, material = material)
+    invisible(as.numeric(id))
 }

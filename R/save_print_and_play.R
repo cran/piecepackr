@@ -4,8 +4,8 @@ LETTER_WIDTH <- 8.5
 LETTER_HEIGHT <- 11
 A4_WIDTH <- 8.27
 A4_HEIGHT <- 11.69
-A5W <- 5
-A5H <- 7.5
+A5W <- 5 # 5.83"
+A5H <- 7.5 # 8.27"
 
 dev_onefile <- function(filename, family, paper) {
     dev <- switch(tools::file_ext(filename),
@@ -32,7 +32,7 @@ gappend <- function(ll, g) {
 #'
 #' Save piecepack print-and-play (PnP) file
 #'
-#' @param cfg Piecepack configuration list
+#' @param cfg Piecepack configuration list or `pp_cfg` object
 #' @param output_filename Filename for print-and-play file
 #' @param size PnP output size (currently either "letter", "A4", or "A5")
 #' @param pieces Character vector of desired PnP pieces.
@@ -40,7 +40,8 @@ gappend <- function(ll, g) {
 #' @param arrangement Either "single-sided" or "double-sided".
 #' @examples
 #'   \donttest{
-#'     if (capabilities("cairo")) {
+#'     is_mac <- tolower(Sys.info()[["sysname"]]) == "darwin"
+#'     if (capabilities("cairo") && !is_mac) {
 #'         cfg <- pp_cfg(list(invert_colors.suited=TRUE))
 #'         save_print_and_play(cfg, "my_pnp_file.pdf")
 #'         save_print_and_play(cfg, "my_pnp_file_ds.pdf", arrangement="double-sided")
@@ -53,9 +54,10 @@ gappend <- function(ll, g) {
 #'     }
 #'   }
 #' @export
-save_print_and_play <- function(cfg=pp_cfg(), output_filename="piecepack.pdf", size="letter",
-                     pieces=c("piecepack", "matchsticks", "pyramids"),
-                     arrangement="single-sided") {
+save_print_and_play <- function(cfg = getOption("piecepackr.cfg", pp_cfg()),
+                                output_filename="piecepack.pdf", size="letter",
+                                pieces=c("piecepack", "matchsticks", "pyramids"),
+                                arrangement="single-sided") {
 
     cfg <- as_pp_cfg(cfg)
     n_suits <- cfg$n_suits
@@ -504,9 +506,9 @@ a5_piecepack_grob <- function(suit, cfg=pp_cfg(), front=TRUE, arrangement="singl
         df$x <- A5W - df$x
         df$piece_side <- c(rep("coin_face", 6), rep("die_face", 6),
                            "pawn_layout", "belt_face", "saucer_back", rep("tile_back", 6))
-    }
-    if (!front && arrangement == "double-sided") {
-        df <- df[df$piece_side %in% c("tile_back", "coin_face", "saucer_back"),]
+        if (arrangement == "double-sided") {
+            df <- df[df$piece_side %in% c("tile_back", "coin_face", "saucer_back"), ]
+        }
     }
     pmap_piece(df, cfg=cfg, default.units="inches", draw=FALSE)
 }

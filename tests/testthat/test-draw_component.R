@@ -6,7 +6,8 @@ test_that("pp_cfg works as expected", {
     expect_equal(class(as.list(cfg_default)), "list")
     expect_output(print(cfg_default), "default cfg")
     skip_if_not(capabilities("cairo"))
-    expect_warning(cfg_default$get_pictureGrob("tile_back", 1, 1))
+    skip_on_os("mac")
+    expect_warning(cfg_default$get_pictureGrob("tile_back", 1, 1)) # deprecated
 })
 
 test_that("update_names works as expected", {
@@ -39,6 +40,8 @@ test_that("save_print_and_play works as expected", {
     on.exit(unlink(pdf_deck_filename_5s))
     cfg_5s <- list(suit_text="♥,★,♣,♦,♠,꩜", suit_color="darkred,gold,darkgreen,darkblue,black,grey")
 
+    skip_if_not(capabilities("cairo"))
+    skip_on_os("mac")
     save_print_and_play(cfg_5s, pdf_deck_filename_5s, "A5", "all", "double-sided")
 
     save_print_and_play(cfg_default, pdf_deck_filename, "letter")
@@ -63,6 +66,7 @@ test_that("save_print_and_play works as expected", {
 context("save_piece_images works as expected")
 test_that("save_piece_images works as expected", {
     skip_if_not(capabilities("cairo"))
+    skip_on_os("mac")
     directory <- tempfile()
     on.exit(unlink(directory))
     cfg <- pp_cfg(list(grob_fn=picturePieceGrobFn(directory)))
@@ -95,23 +99,24 @@ context("no regressions in figures")
 test_that("no regressions in figures", {
     skip_on_ci()
     skip_if_not(capabilities("cairo"))
+    skip_on_os("mac")
     skip_if_not_installed("vdiffr")
     library("vdiffr")
     dc <- function(..., cfg=cfg_default) {
-        grid.piece(..., cfg=cfg)
+        grid.piece(..., cfg=cfg, default.units="npc")
     }
     dce <- function(...) {
         tmpfile <- tempfile(fileext=".svg")
         on.exit(unlink(tmpfile))
         svg(tmpfile)
         on.exit(dev.off())
-        grid.piece(...)
+        grid.piece(..., default.units="npc")
     }
     # tile back
     expect_doppelganger("tile_back", function() dc("tile_back"))
     expect_doppelganger("tile_back_thickgrid", function() dc("tile_back", cfg=list(gridline_lex.tile_back=5)))
     expect_doppelganger("tile_back_thickborder", function() dc("tile_back", cfg=list(border_lex.tile_back=5)))
-    expect_doppelganger("tile_back-svg", function() dc("tile_back", use_pictureGrob=TRUE))
+    expect_doppelganger("tile_back-svg", function() dc("tile_back", type="picture"))
     expect_doppelganger("tile_back-hex",
                                 function() dc("tile_back", cfg=list(shape.tile_back="convex6")))
     # tile face
@@ -279,17 +284,17 @@ test_that("oblique projection works", {
     skip_on_ci()
     skip_on_cran()
     skip_if_not(capabilities("cairo"))
+    skip_on_os("mac")
     skip_if_not_installed("vdiffr")
     library("vdiffr")
     dc <- function(..., cfg=cfg_default) {
-        grid.piece(..., cfg=cfg, op_scale=0.5)
+        grid.piece(..., cfg=cfg, op_scale=0.5, default.units="npc")
     }
     expect_doppelganger("tile_face_op", function() dc("tile_face"))
     expect_doppelganger("tile_face_op_roundrect", function() dc("tile_face", cfg=list(shape.tile="roundrect")))
     expect_doppelganger("coin_face_op", function() dc("coin_face"))
     expect_doppelganger("pawn_face_op", function() dc("pawn_face", cfg=cfg_3d))
     expect_doppelganger("matchstick_face_op", function() dc("matchstick_face"))
-    expect_doppelganger("pyramid_face_op", function() dc("pyramid_face"))
     expect_doppelganger("die_face_op", function() dc("die_face"))
     g.p <- function(...) {
         grid.piece(..., op_scale=0.5, default.units="in")
@@ -326,12 +331,19 @@ context("alpha and scale works")
 test_that("alpha and scale works", {
     skip_on_ci()
     skip_if_not(capabilities("cairo"))
+    skip_on_os("mac")
     skip_if_not_installed("vdiffr")
     library("vdiffr")
-    expect_doppelganger("alpha_and_scale", function() {
+    expect_doppelganger("alpha", function() {
         cfg <- pp_cfg(list(shape.coin="convex6"))
         df <- tibble(piece_side="coin_back",
-                     x=1:6, y=1, alpha=seq(0, 1, length.out=6),
+                     x=1:6, y=1, alpha=seq(0, 1, length.out=6))
+        pmap_piece(df, default.units="in", cfg=cfg)
+    })
+    expect_doppelganger("scale", function() {
+        cfg <- pp_cfg(list(shape.coin="convex6"))
+        df <- tibble(piece_side="coin_back",
+                     x=1:6, y=1,
                      scale=seq(0, 1, length.out=6))
         pmap_piece(df, default.units="in", cfg=cfg)
     })

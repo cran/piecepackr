@@ -1,3 +1,63 @@
+piecepackr 1.8.1
+================
+
+New features
+------------
+
+* New function `render_piece()` renders an image of game pieces to a file or graphics device.
+  It is a wrapper around `pmap_piece()` that can auto-size files and graphic devices,
+  apply axes offsets, annotate coordinates, and set up `rayrender` scenes (#245).
+* New function `geom_piece()` provides `{ggplot2}` bindings (#209).
+
+  * Helper function `aes_piece()` helps create an appropriate matching `ggplot2::aes()` "mapping".
+  * `geom_piece()` requires a fixed scale coordinate system with an aspect ratio of 1
+    as provided by `ggplot2::coord_fixed()`.
+  * `geom_piece()` also requires that `cfg` is a character vector (and not a `pp_cfg()` object).
+    In particular if using `op_transform()` one should set its argument `cfg_class = "character"`
+    if intending for use with `geom_piece()`.
+  * Requires Suggested package `{ggplot2}`.
+
+* New function `aabb_piece()` which calculates axis-aligned bounding box (AABB) for set of game pieces
+  with and without an "oblique projection".
+* New function `has_font()` which returns `TRUE` or `FALSE` if it detects a given font is
+  provided by the OS.  Needs either 1) Suggested package `{systemfonts}` or 
+  2) R compiled with "cairo" support plus system tool `pdffonts` installed.
+* The R6 object returned by `pp_shape()` now has a new `pattern()` method that fills 
+  the shape with a specified pattern.  Requires the suggested package `{gridpattern}` (#228).
+* `pieceGrob()` and `grid.piece()` now support a new `type` argument 
+  which modifies which type of grid grob is used.  
+  Can be either `"normal"` (default), `"picture"`, or `"raster"`.
+  `"picture"` exports to (temporary) svg and re-imports as a `grImport2::pictureGrob`.
+  `"raster"` exports to (temporary) png and re-imports as a `grid::rasterGrob`.
+  The latter two can be useful if drawing pieces really big or small and don't want
+  to mess with re-configuring fontsizes and linewidths.
+* Now defaults for the following `piecepackr` function arguments may now be set globally via `base::options()`:
+
+  * `piecepackr.cfg` Sets a new default for the `cfg` argument.
+  * `piecepackr.default.units` Sets a new default for the `default.units` argument.
+  * `piecepackr.envir` Sets a new default for the `envir` argument.
+  * `piecepackr.op_angle` Sets a new default for the `op_angle` argument.
+  * `piecepackr.op_scale` Sets a new default for the `op_scale` argument.
+  * `piecepackr.trans` Sets a new default for the `trans` argument.
+
+Bug fixes and minor improvements
+--------------------------------
+
+* If the suggested package `{readobj}` is installed then the default
+  ``piece3d()`` method will import Wavefront OBJ files with ``readobj::read.obj()``
+  instead of ``rgl::readOBJ()``.  In particular ``readobj::read.obj()`` can
+  successfully triangulate the "meeple" shape and the "roundrect" shape (#220).
+* Fixes bug when setting `alpha` transparency parameter in `grid.piece()` / `pieceGrob()`.
+* `game_systems()` now provides a `message()` if `style = "dejavu"` and
+  `has_font("Dejavu Sans")` is `FALSE`.
+* Fixes bug in `picturePieceGrobFn()` when its `filename_fn` argument does not support
+  a `cfg` argument.
+
+Deprecated features
+-------------------
+
+The ``use_pictureGrob`` argument of ``pieceGrob()`` and ``grid.piece()`` is now deprecated 
+in favor of the new ``type`` argument.  Use ``type = "picture"` instead of `use_pictureGrob = TRUE`. 
 
 piecepackr 1.7.2
 ================

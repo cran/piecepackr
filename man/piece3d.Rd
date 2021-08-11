@@ -2,13 +2,13 @@
 % Please edit documentation in R/piece3d-rgl.R
 \name{piece3d}
 \alias{piece3d}
-\title{Draw board game pieces using rgl}
+\title{Render board game pieces with rgl}
 \usage{
 piece3d(
   piece_side = "tile_back",
   suit = NA,
   rank = NA,
-  cfg = pp_cfg(),
+  cfg = getOption("piecepackr.cfg", pp_cfg()),
   x = 0,
   y = 0,
   z = NA,
@@ -18,7 +18,7 @@ piece3d(
   width = NA,
   height = NA,
   depth = NA,
-  envir = NULL,
+  envir = getOption("piecepackr.envir"),
   ...,
   scale = 1,
   res = 72,
@@ -37,7 +37,9 @@ piece3d(
 
 \item{cfg}{Piecepack configuration list or \code{pp_cfg} object,
 a list of \code{pp_cfg} objects,
-or a character vector of \code{pp_cfg} objects}
+or a character vector referring to names in \code{envir}
+or a character vector referring to object names that
+can be retrieved by \code{base::dynGet()}.}
 
 \item{x}{Where to place piece on x axis of viewport}
 
@@ -83,7 +85,7 @@ A numeric vector of rgl object IDs.
 \code{piece3d} draws board games pieces using the rgl package.
 }
 \examples{
-if ((Sys.getenv("TRAVIS") == "") && require("rgl")) {
+if (require("rgl")) {
     open3d()
     cfg <- game_systems("sans3d")$piecepack
     piece3d("tile_back", suit = 3, rank = 3, cfg = cfg, x = 0, y = 0, z = 0)
