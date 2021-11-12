@@ -12,12 +12,12 @@ test_that("no regressions in figures", {
     # dominoes
     envir <- game_systems("dejavu")
     expect_doppelganger("dominoes", function()
-        grid.piece("tile_face", x=rep(4:1, 3), y=rep(2*3:1, each=4), suit=1:12, rank=1:12+1,
+        grid.piece("tile_face", x=rep(6:1, 3), y=rep(2*3:1, each=6), suit=1:18, rank=1:18+1,
                    cfg = paste0("dominoes_", rep(rev(c("black", "red", "green", "blue", "yellow", "white")), 2)),
                    default.units="in", envir=envir, op_scale=0.5)
         )
     expect_error(xya_pips_cards(11), "Don't know pip pattern for 11 pips")
-    expect_error(xya_pips_dominoes(13), "Don't know pip pattern for 13 pips")
+    expect_error(xya_pips_dominoes(19), "Don't know pip pattern for 19 pips")
     for (i in 0:10) expect_equal(nrow(xya_pips_cards(i)), i)
 
     # checkers
@@ -105,4 +105,38 @@ test_that("no regressions in figures", {
     expect_doppelganger("knight_of_diamonds", function()
         grid.piece("card_face", suit = 4, rank = 12, cfg = cfg,
                    default.units = "npc"))
+
+    # morris
+    cfg <- envir$morris
+    expect_doppelganger("two_morris", function() {
+        grid.piece("board_face", x=4, y=4, suit=3, rank=2, cfg = cfg, default.units = "in")
+        grid.piece("bit_back", x=0:5, y=0:5, suit=1:6, cfg = cfg, default.units = "in")
+    })
+    expect_doppelganger("three_morris", function() {
+        grid.piece("board_face", x=4, y=4, suit=3, rank=3, cfg = cfg, default.units = "in")
+        grid.piece("bit_back", x=0:5, y=0:5, suit=1:6, cfg = cfg, default.units = "in")
+    })
+    expect_doppelganger("six_morris", function() {
+        grid.piece("board_face", x=4, y=4, suit=3, rank=6, cfg = cfg, default.units = "in")
+        grid.piece("bit_back", x=0:5, y=0:5, suit=1:6, cfg = cfg, default.units = "in")
+    })
+    expect_doppelganger("seven_morris", function() {
+        grid.piece("board_face", x=4, y=4, suit=3, rank=7, cfg = cfg, default.units = "in")
+        grid.piece("bit_back", x=0:5, y=0:5, suit=1:6, cfg = cfg, default.units = "in")
+    })
+    expect_doppelganger("nine_morris", function() {
+        grid.piece("board_face", x=4, y=4, suit=3, rank=9, cfg = cfg, default.units = "in")
+        grid.piece("bit_back", x=0:5, y=0:5, suit=1:6, cfg = cfg, default.units = "in")
+    })
+    expect_doppelganger("twelve_morris", function() {
+        grid.piece("board_face", x=4, y=4, suit=3, rank=12, cfg = cfg, default.units = "in")
+        grid.piece("bit_back", x=0:5, y=0:5, suit=1:6, cfg = cfg, default.units = "in")
+    })
+
+    # alquerque
+    cfg <- envir$alquerque
+    expect_doppelganger("alquerque", function() {
+        grid.piece("board_face", x=3, y=3, suit=3, cfg = cfg, default.units = "in")
+        grid.piece("bit_back", x=1:5, y=1:5, suit=1:5, cfg = cfg, default.units = "in")
+    })
 })

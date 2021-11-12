@@ -12,7 +12,8 @@
 make configurable board game graphics. It can be used with the
 [ggplot2](https://ggplot2.tidyverse.org/),
 [grid](https://www.rdocumentation.org/packages/grid),
-[rayrender](https://www.rayrender.net/), and
+[rayrender](https://www.rayrender.net/),
+[rayvertex](https://www.rayvertex.com/), and
 [rgl](https://www.rdocumentation.org/packages/rgl) graphics packages to
 make board game diagrams, board game animations, and custom [Print &
 Play
@@ -52,9 +53,9 @@ various sizes and colors.
 `game_systems()` returns a `dice` configuration which can make standard
 6-sided dice in six colors.
 
-### Double-12 dominoes
+### Double-18 dominoes
 
-`game_systems()` returns seven different configurations for double-12
+`game_systems()` returns seven different configurations for double-18
 dominoes:
 
 1.  `dominoes`
@@ -71,7 +72,7 @@ dominoes:
     library("tibble")
     envir <- game_systems("dejavu")
 
-    df_dominoes <- tibble(piece_side = "tile_face", x=rep(4:1, 3), y=rep(2*3:1, each=4), suit=1:12, rank=1:12+1,
+    df_dominoes <- tibble(piece_side = "tile_face", x=rep(4:1, 3), y=rep(2*3:1, each=4), suit=1:12, rank=7:18+1,
                           cfg = paste0("dominoes_", rep(c("black", "red", "green", "blue", "yellow", "white"), 2)))
     df_tiles <- tibble(piece_side = "tile_back", x=5.5, y=c(2,4,6), suit=1:3, rank=1:3, cfg="piecepack")
     df_dice <- tibble(piece_side = "die_face", x=6, y=0.5+1:6, suit=1:6, rank=1:6, cfg="dice")
@@ -81,7 +82,7 @@ dominoes:
 
     pmap_piece(df, default.units="in", envir=envir, op_scale=0.5, trans=op_transform)
 
-![Double-12 dominoes and standard dice in a variety of
+![Double-18 dominoes and standard dice in a variety of
 colors](man/figures/README-dominoes-1.png)
 
 ### Go
@@ -95,6 +96,13 @@ go](https://en.wikipedia.org/wiki/Go_variants#Multi-player_Go) plotted
 using [rgl](https://www.rdocumentation.org/packages/rgl):
 
 ![3D Multi-player Go diagram](man/figures/README-go.png)
+
+### Morris/Merels/Mills Games
+
+`game_systems()` returns a `morris` configuration that can produce
+[Three/Six/Seven/Nine/Twelve men's
+morris](https://en.wikipedia.org/wiki/Nine_men%27s_morris) boards in a
+variety of colors.
 
 ### Piecepack
 
@@ -340,6 +348,30 @@ objects.
                             width = 500, height = 500, samples=200, clamp_value=8)
 
 ![plot of chunk rayrender](man/figures/README-rayrender-1.png)
+
+### piece\_mesh ({rayvertex})
+
+`piece_mesh()` creates [rayvertex](https://www.rayvertex.com/) objects.
+
+    library("ppgames") # remotes::install_github("piecepackr/ppgames")
+    library("rayvertex")
+
+    ## 
+    ## Attaching package: 'rayvertex'
+
+    ## The following object is masked from 'package:rayrender':
+    ## 
+    ##     r_obj
+
+    df <- ppgames::df_international_chess()
+    envir <- game_systems("dejavu3d", round=TRUE, pawn="joystick")
+    l <- pmap_piece(df, piece_mesh, trans=op_transform, envir = envir, scale = 0.98, res = 150, as_top="pawn_face")
+    table <- sphere_mesh(c(0, 0, -1e3), radius=1e3, material = material_list(diffuse="grey40"))
+    scene <- Reduce(rayvertex::add_shape, l, init=table)
+    rayvertex::rasterize_scene(scene, lookat = c(4.5, 4, 0), lookfrom=c(4.5, -16, 20),
+                               light_info = directional_light(c(5, -7, 7), intensity = 2.5))
+
+![plot of chunk rayvertex](man/figures/README-rayvertex-1.png)
 
 ### Further documentation
 

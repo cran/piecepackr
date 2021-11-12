@@ -1,3 +1,24 @@
+piecepackr 1.9.1
+================
+
+New features
+------------
+
+* New `piece_mesh()` function that creates `{rayvertex}` objects (#247).
+
+  * Requires suggested package `{rayvertex}`.
+  * Can further customize how piece_mesh() creates `{rayvertex}` object
+    by setting `rayvertex_fn` in `pp_cfg()` configuration list.
+  * `piece_mesh` can be used as the `.f` argument in `render_piece()` (#255)
+
+* The following enhancements to the configurations returned by `game_systems()`:
+
+  + New "alquerque" configuration that produces board/pieces for Alquerque.
+  + Domino configurations now support up to double-18 sets 
+   (previously supported only up to double-12).
+  + New "morris" configuration that can produce 
+    Three/Six/Seven/Nine/Twelve Men's Morris boards in a variety of colors (#250).
+
 piecepackr 1.8.1
 ================
 
@@ -57,7 +78,7 @@ Deprecated features
 -------------------
 
 The ``use_pictureGrob`` argument of ``pieceGrob()`` and ``grid.piece()`` is now deprecated 
-in favor of the new ``type`` argument.  Use ``type = "picture"` instead of `use_pictureGrob = TRUE`. 
+in favor of the new ``type`` argument.  Use ``type = "picture"`` instead of ``use_pictureGrob = TRUE``. 
 
 piecepackr 1.7.2
 ================

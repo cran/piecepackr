@@ -35,6 +35,7 @@ subpack and (piecepack) hexpack \code{pp_cfg} R6 objects respectively given a pi
 }
 \details{
 Contains the following game systems:\describe{
+\item{alquerque}{Boards and pieces in six color schemes for Alquerque}
 \item{checkers1, checkers2}{Checkers and checkered boards in six color schemes.
 Checkers are represented by a piecepackr \dQuote{bit}.  The \dQuote{board} \dQuote{face} is a checkered board
 and the \dQuote{back} is a lined board.
@@ -49,7 +50,8 @@ Color is controlled by suit and number of rows/columns by rank.
 \item{dominoes, dominoes_black, dominoes_blue, dominoes_green, dominoes_red, dominoes_white, dominoes_yellow}{
 Traditional pipped dominoes in six color schemes (\code{dominoes} and \code{dominoes_white} are the same).
 In each color scheme the number of pips on the \dQuote{top} of the domino is
-controlled by their \dQuote{rank} and on the \dQuote{bottom} by their \dQuote{suit}.}
+controlled by their \dQuote{rank} and on the \dQuote{bottom} by their \dQuote{suit}.
+Supports up to double-18 sets.}
 \item{dual_piecepacks_expansion}{A companion piecepack with a special suit scheme.
 See \url{https://trevorldavis.com/piecepackr/dual-piecepacks-pnp.html}.}
 \item{go}{Go stones and lined boards in six color schemes.
@@ -60,6 +62,11 @@ but perhaps unsatisfactory for 3D diagrams.}
 \item{hexpack}{A hexagonal extrapolation of the piecepack designed by Nathan Morse and Daniel Wilcox.
 See \url{https://boardgamegeek.com/boardgameexpansion/35424/hexpack}.}
 \item{meeples}{Standard 16mm x 16mm x 10mm \dQuote{meeples} in six colors represented by a \dQuote{bit}.}
+\item{morris}{Various morris aka mills aka merels games in six colors.
+Color is controlled by suit and \dQuote{size} of morris board
+is controlled by rank e.g. \dQuote{Six men's morris} corresponds to a rank of 6 and
+\dQuote{Nine men's morris} corresponds to a rank of 9.
+Game pieces are represented by stones.}
 \item{piecepack}{A public domain game system invented by James "Kyle" Droscha.
 See \url{https://www.ludism.org/ppwiki}.
 Configuration also contains the following piecepack accessories:\describe{
@@ -75,14 +82,17 @@ See \url{https://web.archive.org/web/20190719155827/http://www.piecepack.org/Acc
 \item{playing_cards, playing_cards_colored, playing_cards_tarot}{
 Poker-sized \code{card} components for various playing card decks:\describe{
 \item{playing_cards}{A traditional deck of playing cards with 4 suits
-and 13 ranks (A, 2-10, J, Q, K) plus a 14th "Joker" rank.}
+and 13 ranks (A, 2-10, J, Q, K) plus a 14th \dQuote{Joker} rank.}
 \item{playing_cards_colored}{Like \code{playing_cards} but with five colored suits:
 red hearts, black spades, green clubs, blue diamonds, and yellow stars.}
 \item{playing_cards_tarot}{A (French Bourgeois) deck of tarot playing cards:
 first four suits are hearts, spades, clubs, and diamonds with
-14 ranks (ace through jack, knight, queen, king) plus a 15th "Joker" rank
-and a fifth "suit" of 22 trump cards (1-21 plus an "excuse").}}}
-\item{playing_cards_expansion}{A piecepack with the standard \verb{French'' playing card suits. See \url{https://www.ludism.org/ppwiki/PlayingCardsExpansion}.\} \\item\{subpack\}\{A mini piecepack.  Designed to be used with the \code{piecepack} to make piecepack }stackpack'' diagrams.  See \url{https://www.ludism.org/ppwiki/StackPack}.}
+14 ranks (ace through jack, knight, queen, king) plus a 15th \dQuote{Joker} rank
+and a fifth "suit" of 22 trump cards (1-21 plus an \dQuote{excuse}).}}}
+\item{playing_cards_expansion}{A piecepack with the standard dQuote{French} playing card suits.
+See \url{https://www.ludism.org/ppwiki/PlayingCardsExpansion}.}
+\item{subpack}{A mini piecepack.  Designed to be used with the \code{piecepack} to make piecepack
+\dQuote{stackpack} diagrams.  See \url{https://www.ludism.org/ppwiki/StackPack}.}
 }
 }
 \examples{

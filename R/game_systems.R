@@ -6,6 +6,7 @@
 #'      subpack and (piecepack) hexpack \code{pp_cfg} R6 objects respectively given a piecepack configuration.
 #'
 #' Contains the following game systems:\describe{
+#' \item{alquerque}{Boards and pieces in six color schemes for Alquerque}
 #' \item{checkers1, checkers2}{Checkers and checkered boards in six color schemes.
 #'       Checkers are represented by a piecepackr \dQuote{bit}.  The \dQuote{board} \dQuote{face} is a checkered board
 #'       and the \dQuote{back} is a lined board.
@@ -20,7 +21,8 @@
 #' \item{dominoes, dominoes_black, dominoes_blue, dominoes_green, dominoes_red, dominoes_white, dominoes_yellow}{
 #'      Traditional pipped dominoes in six color schemes (\code{dominoes} and \code{dominoes_white} are the same).
 #'      In each color scheme the number of pips on the \dQuote{top} of the domino is
-#'      controlled by their \dQuote{rank} and on the \dQuote{bottom} by their \dQuote{suit}.}
+#'      controlled by their \dQuote{rank} and on the \dQuote{bottom} by their \dQuote{suit}.
+#'      Supports up to double-18 sets.}
 #' \item{dual_piecepacks_expansion}{A companion piecepack with a special suit scheme.
 #'               See \url{https://trevorldavis.com/piecepackr/dual-piecepacks-pnp.html}.}
 #' \item{go}{Go stones and lined boards in six color schemes.
@@ -31,6 +33,11 @@
 #' \item{hexpack}{A hexagonal extrapolation of the piecepack designed by Nathan Morse and Daniel Wilcox.
 #'                See \url{https://boardgamegeek.com/boardgameexpansion/35424/hexpack}.}
 #' \item{meeples}{Standard 16mm x 16mm x 10mm \dQuote{meeples} in six colors represented by a \dQuote{bit}.}
+#' \item{morris}{Various morris aka mills aka merels games in six colors.
+#'               Color is controlled by suit and \dQuote{size} of morris board
+#'               is controlled by rank e.g. \dQuote{Six men's morris} corresponds to a rank of 6 and
+#'               \dQuote{Nine men's morris} corresponds to a rank of 9.
+#'               Game pieces are represented by stones.}
 #' \item{piecepack}{A public domain game system invented by James "Kyle" Droscha.
 #'   See \url{https://www.ludism.org/ppwiki}.
 #'   Configuration also contains the following piecepack accessories:\describe{
@@ -46,17 +53,17 @@
 #' \item{playing_cards, playing_cards_colored, playing_cards_tarot}{
 #'       Poker-sized \code{card} components for various playing card decks:\describe{
 #'        \item{playing_cards}{A traditional deck of playing cards with 4 suits
-#'            and 13 ranks (A, 2-10, J, Q, K) plus a 14th "Joker" rank.}
+#'            and 13 ranks (A, 2-10, J, Q, K) plus a 14th \dQuote{Joker} rank.}
 #'        \item{playing_cards_colored}{Like \code{playing_cards} but with five colored suits:
 #'            red hearts, black spades, green clubs, blue diamonds, and yellow stars.}
 #'        \item{playing_cards_tarot}{A (French Bourgeois) deck of tarot playing cards:
 #'            first four suits are hearts, spades, clubs, and diamonds with
-#'            14 ranks (ace through jack, knight, queen, king) plus a 15th "Joker" rank
-#'            and a fifth "suit" of 22 trump cards (1-21 plus an "excuse").}}}
-#' \item{playing_cards_expansion}{A piecepack with the standard ``French'' playing card suits.
+#'            14 ranks (ace through jack, knight, queen, king) plus a 15th \dQuote{Joker} rank
+#'            and a fifth "suit" of 22 trump cards (1-21 plus an \dQuote{excuse}).}}}
+#' \item{playing_cards_expansion}{A piecepack with the standard dQuote{French} playing card suits.
 #'                                See \url{https://www.ludism.org/ppwiki/PlayingCardsExpansion}.}
 #' \item{subpack}{A mini piecepack.  Designed to be used with the \code{piecepack} to make piecepack
-#'               ``stackpack'' diagrams.  See \url{https://www.ludism.org/ppwiki/StackPack}.}
+#'               \dQuote{stackpack} diagrams.  See \url{https://www.ludism.org/ppwiki/StackPack}.}
 #' }
 #' @param style If \code{NULL} (the default) uses suit glyphs from the default \dQuote{sans} font.
 #'              If \code{"dejavu"} it will use suit glyphs from the "DejaVu Sans" font
@@ -119,7 +126,8 @@ game_systems <- function(style = NULL, round = FALSE, pawn = "token") {
     cards <- playing_cards(style, rect_shape)
     packs <- piecepack(style, color_list, rect_shape, pawn)
 
-    list(checkers1 = checkers(1, color_list),
+    list(alquerque = alquerque(1, color_list),
+         checkers1 = checkers(1, color_list),
          checkers2 = checkers(2, color_list),
          chess1 = chess(style, 1, color_list),
          chess2 = chess(style, 2, color_list),
@@ -135,6 +143,7 @@ game_systems <- function(style = NULL, round = FALSE, pawn = "token") {
          go = go(1, color_list),
          hexpack = packs$hexpack,
          meeples = meeples(color_list),
+         morris = morris(1, color_list),
          piecepack = packs$base,
          playing_cards = cards$base,
          playing_cards_colored = cards$color,
@@ -169,8 +178,8 @@ dice <- function(color_list, rect_shape) {
                       invert_colors = TRUE,
                       die_arrangement = "opposites_sum_to_5",
                       shape.card = rect_shape,
-                      grob_fn.card = cardGrobFn(type = "circle"),
-                      grob_fn.die = pippedGrobFn(0, FALSE))
+                      grob_fn.card = cardGrobFn(grob_type = "circle"),
+                      grob_fn.die = pippedGrobFn(0, "die"))
     dice <- pp_cfg(c(dice_list, color_list))
     dice$has_piecepack <- FALSE
     dice$has_dice <- TRUE
@@ -188,10 +197,69 @@ meeples <- function(color_list) {
     meeples
 }
 
+alquerque <- function(cell_width = 1, color_list = 1) {
+    alquerque <- list(n_suits = 6, n_ranks = 1,
+                      width.board = 5 * cell_width,
+                      height.board = 5 * cell_width,
+                      grob_fn.board_face = alquerqueBoardGrobFn(),
+                      gridline_color.board_face = cb_suit_colors_pure,
+                      gridline_color.board_back = "transparent",
+                      gridline_lex.board = 4,
+                      suit_color = cb_suit_colors_impure,
+                      background_color = color_list$background_color,
+                      gridline_color.s6.board_face = "grey80")
+    alquerque <- pp_cfg(c(alquerque, go_stone(cell_width / 2), color_list))
+    alquerque$has_piecepack <- FALSE
+    alquerque$has_boards <- TRUE
+    alquerque$has_bits <- TRUE
+    alquerque
+}
+
+morris <- function(cell_width = 1, color_list) {
+    morris <- list(n_suits = 6, n_ranks = 15,
+                   width.board = 7 * cell_width,
+                   height.board = 7 * cell_width,
+                   grob_fn.r1.board_face = morrisBoardGrobFn(12),
+                   gridline_color.board_face = cb_suit_colors_pure,
+                   gridline_color.board_back = "transparent",
+                   gridline_lex.board = 4,
+                   suit_color = cb_suit_colors_impure,
+                   background_color = color_list$background_color,
+                   gridline_color.s6.board_face = "grey80")
+    for (i in seq(2, 15)) {
+        if (i < 5) {
+            morris[[paste0("width.r", i, ".board")]] <- 3 * cell_width
+            morris[[paste0("height.r", i, ".board")]] <- 3 * cell_width
+        } else if (i < 8) {
+            morris[[paste0("width.r", i, ".board")]] <- 5 * cell_width
+            morris[[paste0("height.r", i, ".board")]] <- 5 * cell_width
+        } else {
+            morris[[paste0("width.r", i, ".board")]] <- 7 * cell_width
+            morris[[paste0("height.r", i, ".board")]] <- 7 * cell_width
+        }
+        morris[[paste0("grob_fn.r", i, ".board_face")]] <- morrisBoardGrobFn(i)
+    }
+    morris <- pp_cfg(c(morris, go_stone(cell_width), color_list))
+    morris$has_piecepack <- FALSE
+    morris$has_boards <- TRUE
+    morris$has_bits <- TRUE
+    morris
+}
+
+go_stone <- function(cell_width) {
+    list(width.bit = 0.8700787 * cell_width,
+         depth.bit = 0.3937008 * cell_width,
+         invert_colors.bit = TRUE,
+         op_grob_fn.bit = basicEllipsoid,
+         obj_fn.bit = function(...) save_ellipsoid_obj(..., subdivide=4),
+         ps_text.bit = "", dm_text.bit = ""
+    )
+}
+
 dominoes <- function(background_color = "white", suit_color = "black", border_color = "black",
                      rect_shape, mat_width = 0) {
     border_lex <- ifelse(border_color == "black", 4, 0)
-    dominoes <- pp_cfg(list(n_suits = 13, n_ranks = 13,
+    dominoes <- pp_cfg(list(n_suits = 18 + 1, n_ranks = 18 + 1,
                             width.tile = 1,
                             height.tile = 2,
                             depth.tile = 0.25, # 3/8 professional, 1/2 jumbo
@@ -200,13 +268,13 @@ dominoes <- function(background_color = "white", suit_color = "black", border_co
                             mat_width = mat_width, mat_color = suit_color,
                             border_color = border_color, border_lex = border_lex,
                             die_arrangement = "opposites_sum_to_5",
-                            grob_fn.die = pippedGrobFn(0, FALSE),
-                            grob_fn.card = cardGrobFn(-1, type = "circle"),
+                            grob_fn.die = pippedGrobFn(0, "die"),
+                            grob_fn.card = cardGrobFn(-1, "card", grob_type = "circle"),
                             gridline_color.tile_back = "transparent",
                             gridline_color.tile_face = suit_color,
                             gridline_lex.tile_face = 6,
                             shape.tile = rect_shape, shape.card = rect_shape,
-                            grob_fn.tile_face = dominoGrobFn(-1, FALSE)
+                            grob_fn.tile_face = dominoGrobFn(-1)
                             ))
     dominoes$has_piecepack <- FALSE
     dominoes$has_dice <- TRUE
@@ -214,12 +282,16 @@ dominoes <- function(background_color = "white", suit_color = "black", border_co
     dominoes
 }
 
+checker_piece <- function(cell_width) {
+    list(width.bit = 0.75 * cell_width, invert_colors.bit = TRUE,
+         ps_text.bit = "", dm_text.bit = "")
+
+}
+
 checkers <- function(cell_width = 1, color_list) {
     checkers <- list(n_suits = 6, n_ranks = 12,
                      width.board = 8 * cell_width,
                      height.board = 8 * cell_width,
-                     width.bit = 0.75 * cell_width, invert_colors.bit = TRUE,
-                     ps_text.bit = "", dm_text.bit = "",
                      grob_fn.r1.board_face = checkeredBoardGrobFn(8, 8),
                      grob_fn.r1.board_back = linedBoardGrobFn(8, 8),
                      gridline_color.board_face = cb_suit_colors_impure,
@@ -235,7 +307,7 @@ checkers <- function(cell_width = 1, color_list) {
         checkers[[paste0("grob_fn.r", i, ".board_face")]] <- checkeredBoardGrobFn(i, i)
         checkers[[paste0("grob_fn.r", i, ".board_back")]] <- linedBoardGrobFn(i, i)
     }
-    checkers <- pp_cfg(c(checkers, color_list))
+    checkers <- pp_cfg(c(checkers, checker_piece(cell_width), color_list))
     checkers$has_piecepack <- FALSE
     checkers$has_boards <- TRUE
     checkers$has_bits <- TRUE
@@ -288,13 +360,7 @@ go <- function(cell_width = 1, color_list) {
     go <- list(n_suits = 6, n_ranks = 19,
                width.board = (18 + 1) * cell_width,
                height.board = (18 + 1) * cell_width,
-               width.bit = 0.8700787 * cell_width, # white stone should be 22.1 mm wide
-               depth.bit = 0.3937008 * cell_width, # stones should be 6-10 mm thick
                grob_fn.board_back = basicPieceGrob,
-               invert_colors.bit = TRUE,
-               op_grob_fn.bit = basicEllipsoid,
-               obj_fn.bit = function(...) save_ellipsoid_obj(..., subdivide=4),
-               ps_text.bit = "", dm_text.bit = "",
                grob_fn.r1.board_face = linedBoardGrobFn(18, 18, 0.5),
                gridline_color.board_face = cb_suit_colors_pure,
                gridline_color.board_back = "transparent",
@@ -307,7 +373,7 @@ go <- function(cell_width = 1, color_list) {
         go[[paste0("height.r", i, ".board")]] <- i * cell_width
         go[[paste0("grob_fn.r", i, ".board_face")]] <- linedBoardGrobFn(i - 1, i - 1, 0.5)
     }
-    go <- pp_cfg(c(go, color_list))
+    go <- pp_cfg(c(go, go_stone(cell_width), color_list))
     go$has_piecepack <- FALSE
     go$has_boards <- TRUE
     go$has_bits <- TRUE
@@ -496,6 +562,7 @@ joystick_pawn <- function(shapes) {
     list(grob_fn.pawn = joystick$grob_fn,
          op_grob_fn.pawn = joystick$op_grob_fn,
          rayrender_fn.pawn = joystick$rayrender_fn,
+         rayvertex_fn.pawn = joystick$rayvertex_fn,
          rgl_fn.pawn = joystick$rgl_fn,
          width.pawn=5/8, height.pawn=1.0, depth.pawn=5/8)
 }
