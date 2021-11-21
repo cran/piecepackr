@@ -1,9 +1,9 @@
-a99458500538e2019f5ed849d3a88550 *DESCRIPTION
+c542b6af9ecda44b6d7ad41527abcb89 *DESCRIPTION
 b04475f3f9136257be4bde9e58aa5aed *NAMESPACE
-c130437d3c8c07c842603d63bd4a39f0 *NEWS.md
+28f14f14597e0a4b2c7a0adf0f71189d *NEWS.md
 d3234ec66ff76cda2976bf19107d5791 *R/aabb_piece.R
 07b6fc5706bf3dbba3113555f56b40b8 *R/basicPieceGrob.R
-66611425655dca6bee60aff86884d118 *R/game_systems.R
+901cb74b8c1a41d1d3cae973711938d4 *R/game_systems.R
 3636cfd620ef095aa19b78a284b47a58 *R/geom_piece.R
 351f74ef9d2a64745b7d0bbe91489eaf *R/hooks.R
 378b6a62c13baf7210dd13ecb8d7e568 *R/op_transform.R
@@ -18,12 +18,12 @@ f1c1402e646c3aa7fb3dee6399c38dbb *R/pmap_piece.R
 8ebdf8db5d30e741e2ea2d5663da1373 *R/pp_shape.R
 4e77c728628c03416c83a152f2ff3eb6 *R/render_piece.R
 01a0a9f98bce7eab2b94cf721802e410 *R/save_piece_images.R
-f4f667c8cf92ff11d511954fc35a3c97 *R/save_piece_obj.R
+25b3c4468e1120ce7f2e1a0fb6e7342f *R/save_piece_obj.R
 d876f93d72c5181683c731191fc82ab9 *R/save_print_and_play.R
-15e8490c3a32a9e66e7d77424ab3e347 *R/sysdata.rda
+6944354ef50aa96d8aa0ad94ff60702c *R/sysdata.rda
 be5da2d5f17be5e04f7957d08103a3bf *R/utils-boards.R
 2dc8180bc508b1ffd496ff2e8ecd8de8 *R/utils-cache.R
-95194ed0ef55159ad84b463122f17bc7 *R/utils-composite.R
+066d70e7a5b04875e9cc9f0088d11bc8 *R/utils-composite.R
 42e15dcf444e57ff1a04dd9eedf6a26b *R/utils-font.R
 c13c37939f9ffbe369a9d341eb8db84d *R/utils-geometry.R
 d25a156c3dc43509e8637352887f384d *R/utils-mat-grobs.R
@@ -71,7 +71,7 @@ fb5d255cd4359e0bbf3a2feb8725e6fd *man/obj_fns.Rd
 707207b2f11bff5172d42d90ba0c0524 *man/pp_utils.Rd
 5aea47b6a4321aa9b0b322ab20e0cc55 *man/render_piece.Rd
 4aa3954c16478c93ae735e3e501deff6 *man/save_piece_images.Rd
-a47b3e893459c2254ce58cfc443e20ae *man/save_piece_obj.Rd
+6e9d2219cd23fc8450b70cf66df4fbd4 *man/save_piece_obj.Rd
 d509dca275903955ea12c60ca340f578 *man/save_print_and_play.Rd
 896bef18f1ba9790f6d9916e19bc1577 *tests/run-all.R
 182248fb7267ce5d1f3b65765fdfca4a *tests/testthat/_snaps/draw_component/alpha-and-scale-op.svg
