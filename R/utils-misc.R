@@ -1,6 +1,5 @@
 #' Miscellaneous \code{piecepackr} utility functions
 #'
-#' \code{get_embedded_font} returns which font is actually embedded by \code{cairo_pdf}.
 #' \code{cleave} converts a delimiter separated string into a vector.
 #' \code{inch(x)} is equivalent to \code{unit(x, "in")}.
 #' \code{is_color_invisible} tells whether the color is transparent (and hence need not be drawn).
@@ -70,7 +69,7 @@ has_gs <- function() {
 gs <- function() {
     cmd <- tools::find_gs_cmd()
     if (cmd == "")
-        stop("Can't find system dependency ghostscript on PATH")
+        abort("Can't find system dependency ghostscript on PATH")
     cmd
 }
 
@@ -161,10 +160,9 @@ makeContent.pp_picture <- function(x) {
 assert_suggested <- function(package) {
     calling_fn <- deparse(sys.calls()[[sys.nframe()-1]])
     if (!requireNamespace(package, quietly = TRUE)) {
-        stop(paste("You need to install the suggested package", sQuote(package),
-                   sprintf("to use %s.", sQuote(calling_fn)),
-                   sprintf("Use %s.", sQuote(sprintf('install.packages("%s")', package)))))
+        msg <- c(sprintf("You need to install the suggested package %s to use %s.",
+                         sQuote(package), sQuote(calling_fn)),
+                 i = sprintf("Use %s.", sQuote(sprintf('install.packages("%s")', package))))
+        abort(msg, class = "piecepackr_suggested_package")
     }
 }
-
-`%||%` <- function(x, y) if (is.null(x)) y else x

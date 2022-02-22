@@ -1,3 +1,141 @@
+piecepackr 1.10.1
+=================
+
+Breaking changes
+----------------
+
+* `save_print_and_play()` no longer automatically assumes that the
+  generated print-and-play file should automatically be released under the CC BY-SA 4.0 license.
+  To continue to release under the CC BY-SA 4.0 license you should set the `cfg` argument's
+  `spdx_id` style/binding to "CC-BY-SA-4.0" (i.e. `cfg$spdx_id = "CC-BY-SA-4.0")
+  before calling `save_print_and_play()`.
+
+* Several features that were deprecated in 2020 have been removed:
+
+  + The following utility functions have been removed:
+    
+    - `checkersGrob(c, s, t, n)`, use `pp_shape(s, t)$checkers(n, gp=gpar(fill=c))` instead.
+    - `concaveGrobFn(n, t, r)`, use `pp_shape(paste0("concave", n), t, r)$shape` instead.
+    - `convexGrobFn(n, t)`, use `pp_shape(paste0("convex", n), t)$shape` instead.
+    - `get_shape_grob_fn(s, t, r, b)`, use `pp_shape(s, t, r, b)$shape` instead.
+    - `gridlinesGrob(c, s, t, l, n)`, use `pp_shape(s, t)$gridlines(n, gp=gpar(col=c, lex=l))` instead.
+    - `halmaGrob(...)`, use `pp_shape("halma")$shape(...)` instead.
+    - `hexlinesGrob(c, s, n)`, use `pp_shape(s)$hexlines(n, gp=gpar(col=c))` instead.
+    - `kiteGrob(...)`, use `pp_shape("kite")$shape(...)` instead.
+    - `matGrob(c, s, t, mw, n)`, use `pp_shape(s, t)$mat(mw, n, gp=gpar(fill=c))` instead.
+    - `pyramidGrob(...)`, use `pp_shape("pyramid")$shape(...)` instead.
+  
+  + The following ``pp_cfg()`` R6 class public method has been removed:
+  
+    - ``get_pictureGrob()``, use ``get_grob(piece_type, suit, rank, type="picture")`` instead.
+  
+  + The following ``pp_cfg()`` "style" has been removed:
+  
+    - `shadow_fn`, use `op_grob_fn` to indicate a custom function for drawing in an oblique projection.
+
+New features
+------------
+
+* `animate_piece()` can be used to create board game animations
+  using either the suggested package `{animation}` or `{gifski}` (#251).
+  Adding transition effects between moves (i.e. `n_transitions > 0`) 
+  requires the suggested package `{tweenr}`.
+
+* `scale_x_piece()` and `scale_y_piece()` are wrappers around
+  `ggplot2::scale_x_continuous()` and `ggplot2::scale_y_continuous()`
+  with better defaults for board game diagrams.
+  The functions returned by `label_letter()` labels with letters,
+ `label_counting()` labels with counting numbers,
+  and `breaks_counting()` generates breaks at the counting numbers
+  to more easily generate (i.e. chess) algebraic notation coordinates
+  as commonly used in board game diagrams (#252).
+
+* The following enhancements to the configurations returned by `game_systems()`:
+
+  + New `piecepack_inverted` configuration (#256). 
+    The standard piecepack with its color scheme inverted.
+    Intended to aid in highlighting special pieces in diagrams.
+
+  + New `reversi` configuration (#258).
+    "board_face" provides lined boards with colored backgrounds.
+    "board_back" provides checkered boards.
+    "bit_face" / "bit_back" provides circular game tokens with differently colored sides: 
+    red paired with green, black paired with white, and blue paired with yellow.
+
+* Improvements to `save_print_and_play()`:
+
+  + Now supports a `dev` argument and `dev.args` argument
+    that allows one to customize which graphic device (and its arguments) is 
+    used to generate the print-and-play files.
+
+  + Now natively supports bitmap file formats "bmp", "jpeg", "png", and "tiff".
+    but `output_filename` will need to have a "C integer format" in the string 
+    (e.g. `"piecepack%02d.png"`) so it can generate multiple "pages".
+
+  + Now supports `size` "4x6" to create a piecepack print-and-play layout for
+    4x6 (photo print) size documents (#162).
+
+    - Currently only supports `pieces = "piecepack"`.
+      Will throw an error if you try to create 
+      (piecepack) "pyramids", "matchsticks", or "subpack" print-and-play layouts.
+    - For 4x6 photo prints will probably want to use a bitmap file format e.g. set
+      `output_filename = "piecepack%02d.png"`.
+
+  + The license of the generated print-and-play file is now customized by 
+    the `cfg` argument's `spdx_id` style/binding (#235).  
+    `save_print_and_play()` will then create a license section with
+    that license's "full name", a URL, and in case of a Creative Commons license
+    add a "button mark" badge.
+    If left `NULL` we will now omit the license section but print a message 
+    saying we omitted it (unless `quietly = TRUE`).
+
+  + New argument `quietly`.
+    Unless `quietly = FALSE` will now `message()` about missing metadata.
+
+  + The "title" page was tweaked and improved.  In particular it should
+    now be able to handle any license with a [SPDX Identifier](https://spdx.org/licenses/).
+
+* Improvements to support adding a "bleed" zone around pieces:
+
+  * `pieceGrob()` and `grid.piece()` now support a `bleed` argument.
+
+    + If `bleed = TRUE` we add a "bleed" zone around the piece.
+    + `width` and `height` should be the width and height of the piece plus bleed zone.
+      If `width` or `height` is `NA` we will add 1/8 inch bleeds (about 3.18 mm).
+    + `bleed = TRUE` is incompatible with `op_scale > 0`.
+
+  * `pp_cfg()` now supports a `grob_with_bleed_fn` style that can be 
+    used to set a custom function for drawing the piece with bleed.
+    The default `grob_with_bleed_fn` function tries to guess a 
+    good solid bleed color and draws it around the base piece.
+
+* `pp_cfg()` supports a new `spdx_id` "style" and an associated active binding to update it.
+  This is meant to refer to the [SPDX Identifier](https://spdx.org/licenses/) for
+  the graphical design license. 
+  `save_print_and_play()` can now use this field to customize the License info
+  for the generated print-and-play layout (#235).
+
+* `spdx_license_list` is a dataset for the [SPDX License List](https://spdx.org/licenses/).
+  It is intended as an aid for developers writing print-and-play layout generators
+  or board game ruleset generators.
+
+Bug fixes and minor improvements
+--------------------------------
+
+* `render_piece()` should now handle its `dev.args` argument properly.
+* `pmap_piece()` now simply returns `list()` if its `.l` argument has zero length
+  or number of rows (instead of throwing an error).
+* The "saucer" pieces in `game_systems()`'s piecepack configurations have been improved.
+  The suit text on the backs are better sized and the suit text has been removed from the faces.
+* The "joystick" or "peg-doll" pawns now have support for `piece_side = "pawn_base"` with `pieceGrob()`.
+
+Deprecated features
+-------------------
+
+The following ``pp_cfg()`` R6 class public method has been deprecated:
+
+* ``get_shadow_fn()``, use ``get_op_grob()`` to get complete oblique projection **grob**.
+
 piecepackr 1.9.2
 ================
 
@@ -18,10 +156,10 @@ New features
 
 * New `piece_mesh()` function that creates `{rayvertex}` objects (#247).
 
-  * Requires suggested package `{rayvertex}`.
-  * Can further customize how piece_mesh() creates `{rayvertex}` object
+  + Requires suggested package `{rayvertex}`.
+  + Can further customize how piece_mesh() creates `{rayvertex}` object
     by setting `rayvertex_fn` in `pp_cfg()` configuration list.
-  * `piece_mesh` can be used as the `.f` argument in `render_piece()` (#255)
+  + `piece_mesh` can be used as the `.f` argument in `render_piece()` (#255)
 
 * The following enhancements to the configurations returned by `game_systems()`:
 
@@ -42,13 +180,13 @@ New features
   apply axes offsets, annotate coordinates, and set up `rayrender` scenes (#245).
 * New function `geom_piece()` provides `{ggplot2}` bindings (#209).
 
-  * Helper function `aes_piece()` helps create an appropriate matching `ggplot2::aes()` "mapping".
-  * `geom_piece()` requires a fixed scale coordinate system with an aspect ratio of 1
+  + Helper function `aes_piece()` helps create an appropriate matching `ggplot2::aes()` "mapping".
+  + `geom_piece()` requires a fixed scale coordinate system with an aspect ratio of 1
     as provided by `ggplot2::coord_fixed()`.
-  * `geom_piece()` also requires that `cfg` is a character vector (and not a `pp_cfg()` object).
+  + `geom_piece()` also requires that `cfg` is a character vector (and not a `pp_cfg()` object).
     In particular if using `op_transform()` one should set its argument `cfg_class = "character"`
     if intending for use with `geom_piece()`.
-  * Requires Suggested package `{ggplot2}`.
+  + Requires Suggested package `{ggplot2}`.
 
 * New function `aabb_piece()` which calculates axis-aligned bounding box (AABB) for set of game pieces
   with and without an "oblique projection".
@@ -66,12 +204,12 @@ New features
   to mess with re-configuring fontsizes and linewidths.
 * Now defaults for the following `piecepackr` function arguments may now be set globally via `base::options()`:
 
-  * `piecepackr.cfg` Sets a new default for the `cfg` argument.
-  * `piecepackr.default.units` Sets a new default for the `default.units` argument.
-  * `piecepackr.envir` Sets a new default for the `envir` argument.
-  * `piecepackr.op_angle` Sets a new default for the `op_angle` argument.
-  * `piecepackr.op_scale` Sets a new default for the `op_scale` argument.
-  * `piecepackr.trans` Sets a new default for the `trans` argument.
+  + `piecepackr.cfg` Sets a new default for the `cfg` argument.
+  + `piecepackr.default.units` Sets a new default for the `default.units` argument.
+  + `piecepackr.envir` Sets a new default for the `envir` argument.
+  + `piecepackr.op_angle` Sets a new default for the `op_angle` argument.
+  + `piecepackr.op_scale` Sets a new default for the `op_scale` argument.
+  + `piecepackr.trans` Sets a new default for the `trans` argument.
 
 Bug fixes and minor improvements
 --------------------------------
@@ -359,7 +497,7 @@ Bug fixes and minor improvements
   to ``"rgb"`` avoids a rglWebGL rendering bug (#187).
 * Utility function ``get_shape_grob_fn()`` now has a ``back`` argument to indicate 
   we are drawing the back of the shape and should reflect it across a vertical axis (#218).
-* Some bug fixes and enhancements in the OBJ export for certain shapes (#207, #208, #215).
+* Some bug fixes and enhancements in the Wavefront OBJ export for certain shapes (#207, #208, #215).
 
 piecepackr 1.3.1
 ================

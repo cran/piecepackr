@@ -5,9 +5,6 @@
 GeomPiece <- NULL
 
 .onLoad <- function(libname, pkgname) {
-  backports::import(pkgname, "suppressWarnings")
-  backports::import(pkgname, "hasName", force = TRUE)
-
   if (requireNamespace("ggplot2", quietly = TRUE)) {
       # Modify object at load time
       GeomPiece <<- create_GeomPiece()

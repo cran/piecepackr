@@ -69,7 +69,6 @@ test_that("options work as expected", {
     expect_equal(get_background_color("tile_face", 1, 1, cfg), "white")
 })
 
-context("get_piece works as expected")
 test_that("get_piece_opt works as expected", {
     cfg <- pp_cfg(list(suit_color="darkred,black,darkgreen,darkblue,grey"))
     opt <- cfg$get_piece_opt("coin_face")
@@ -135,7 +134,6 @@ test_that("get_piece_opt works as expected", {
     expect_equal(opt$background_color, "darkred")
 })
 
-context("pp_cfg querying variables work as expected")
 test_that("pp_cfg querying variables work as expected", {
     cfg <- pp_cfg()
     expect_warning(cfg$cache_shadow, "pp_cfg\\()\\$cache_op_fn")
@@ -161,7 +159,7 @@ test_that("pp_cfg querying variables work as expected", {
     expect_false(cfg$has_saucers)
     expect_false(cfg$has_pyramids)
     expect_false(cfg$has_matchsticks)
-    expect_error(cfg$has_piecepack <- 3, "3 is not logical")
+    expect_error(cfg$has_piecepack <- 3, "is.logical\\(value)\\ is not TRUE")
 
     expect_true(cfg$cache_grob)
     cfg$cache_grob <- FALSE

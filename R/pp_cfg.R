@@ -16,7 +16,7 @@
 #'   + Suit colors
 #'   + Which types of components are included and/or properly supported
 #'   + What would be a good color to use when adding annotations on top of these components.
-#'   + Title, Description, Copyright, and Credit metadata
+#'   + Title, Description, Copyright, License, and Credit metadata
 #'
 #' @section `pp_cfg` R6 Class Method Arguments:\describe{
 #'   \item{`piece_side`}{A string with piece and side separated by a underscore e.g. "coin_face".}
@@ -40,6 +40,7 @@
 #'                  This can be replaced by another cache that
 #'                  implements the cache API used by the `cachem` package}
 #'   \item{`cache_grob`}{Whether we should cache (2D) grobs}
+#'   \item{`cache_grob_with_bleed_fn`}{Whether we should cache the grob with bleed functions}
 #'   \item{`cache_piece_opt`}{Whether we should cache piece opt information}
 #'   \item{`cache_op_fn`}{Whether we should cache the oblique projection functions}
 #'   \item{`cache_obj_fn`}{Whether we should cache any 3D rendering functions}
@@ -59,13 +60,19 @@
 #'   \item{`has_pyramids`}{Whether we should assume this supports "pyramid" pieces}
 #'   \item{`has_saucers`}{Whether we should assume this supports "saucer" pieces}
 #'   \item{`has_tiles`}{Whether we should assume this supports "tile" pieces}
+#'   \item{`spdx_id`}{SPDX Identifier for graphical design license.
+#'                    See \url{https://spdx.org/licenses/} for full list.}
 #'   \item{`title`}{Design title}
 #' }
 #'
 #' @section Deprecated `pp_cfg` R6 Class attributes:\describe{
 #'    \item{`cache_shadow`}{Use `cache_op_fn` instead}
-#'    \item{`get_pictureGrob()`}{Use `get_grob(..., type = "picture")` instead}
+#'    \item{`get_shadow_fn`}{`get_op_grob()` returns complete oblique projection grob}
 #'    \item{`i_unsuit`}{Instead add `1L` to `n_suits`}
+#' }
+#'
+#' @section Defunct `pp_cfg` R6 Class attributes which have been removed:\describe{
+#'    \item{`get_pictureGrob()`}{Use `get_grob(..., type = "picture")` instead}
 #' }
 #'
 #' @seealso [game_systems()] for functions that return configuration list
@@ -129,7 +136,6 @@ impute_suit <- function(piece_side, suit, cfg) {
            ifelse(is.na(suit), 1L, min(suit, cfg$n_suits+2L)))
 }
 
-#' @import R6
 Config <- R6Class("pp_cfg",
     public = list(
         cache = NULL,
@@ -159,6 +165,21 @@ Config <- R6Class("pp_cfg",
                    normal = private$get_grob_normal(piece_side, suit, rank),
                    picture = private$get_grob_picture(piece_side, suit, rank),
                    raster = to_rasterGrob(self$get_raster(piece_side, suit, rank, ...)))
+        },
+        get_grob_with_bleed = function(piece_side, suit, rank) {
+            rank <- impute_rank(piece_side, rank, self)
+            suit <- impute_suit(piece_side, suit, self)
+            key <- private$opt_cache_key(piece_side, suit, rank, "grob_with_bleed_fn")
+            grob_fn <- self$cache$get(key, key_missing())
+            if (is.key_missing(grob_fn)) {
+                default_grob_fn <- basicGrobWithBleed
+                grob_fn <- get_style_element("grob_with_bleed_fn", piece_side, private$cfg,
+                                             default_grob_fn, suit, rank)
+                if (is.character(grob_fn))
+                    grob_fn <- match.fun(grob_fn)
+                if (self$cache_grob_with_bleed_fn) self$cache$set(key, grob_fn)
+            }
+            grob_fn(piece_side, suit, rank, self)
         },
         get_piece_opt = function(piece_side, suit=NA, rank=NA) {
             if (is.na(rank)) rank <- 1L
@@ -214,7 +235,7 @@ Config <- R6Class("pp_cfg",
                               saucer = 0.75, # better than 7/8" for diagrams of hex games played with coin+pawn
                               suitdie = 0.5,
                               tile = 2,
-                              stop(paste("Don't know width of piece", piece)))
+                              abort(paste("Don't know width of piece", piece)))
             width <- get_style_element("width", piece_side, private$cfg, default, suit, rank)
             self$cache$set(key, width)
             width
@@ -270,7 +291,7 @@ Config <- R6Class("pp_cfg",
                               saucer = width,
                               suitdie = width,
                               tile = width,
-                              stop(paste("Don't know height of piece", piece))) #nocov
+                              abort(paste("Don't know height of piece", piece))) #nocov
             height <- get_style_element("height", piece_side, private$cfg, default, suit, rank)
             self$cache$set(key, height)
             height
@@ -359,19 +380,6 @@ Config <- R6Class("pp_cfg",
             invisible(grDevices::dev.off())
             as.raster(png::readPNG(png_file))
         },
-        get_shadow_fn = function(piece_side, suit, rank) {
-            key <- private$opt_cache_key(piece_side, suit, rank, "shadow")
-            grobFn <- self$cache$get(key, key_missing())
-            if (is.key_missing(grobFn)) {
-                default_fn <- get_style_element("shadow_fn", piece_side, private$cfg,
-                                                basicShadowGrob, suit, rank)
-                grobFn <- switch(piece_side,
-                                 pyramid_top = function(...) nullGrob(),
-                                 default_fn)
-                if (self$cache_op_fn) self$cache$set(key, grobFn)
-            }
-            grobFn
-        },
         rayrender = function(piece_side, suit, rank,
                              x, y, z, angle, axis_x, axis_y,
                              width, height, depth,
@@ -447,7 +455,7 @@ Config <- R6Class("pp_cfg",
                 }
                 obj_fn <- get_style_element("obj_fn", piece_side, private$cfg, default_fn, suit, rank)
                 if (is.null(obj_fn)) {
-                    stop("Don't know how to export ", piece_side, " to Wavefront OBJ format.")
+                    abort(paste("Don't know how to export ", piece_side, " to Wavefront OBJ format."))
                 }
                 if (self$cache_obj_fn) self$cache$set(key, obj_fn)
             }
@@ -458,9 +466,19 @@ Config <- R6Class("pp_cfg",
                    filename = filename, res = res)
         },
         # Deprecated public methods
-        get_pictureGrob = function(piece_side, suit, rank) {
-            .Deprecated('pp_cfg()$get_grob(piece_side, suit, rank, type = "picture")')
-            private$get_grob_picture(piece_side, suit, rank)
+        get_shadow_fn = function(piece_side, suit, rank) {
+            .Deprecated("pp_cfg()$get_op_grob() returns complete oblique projection *grob*")
+            key <- private$opt_cache_key(piece_side, suit, rank, "shadow")
+            grobFn <- self$cache$get(key, key_missing())
+            if (is.key_missing(grobFn)) {
+                default_fn <- get_style_element("shadow_fn", piece_side, private$cfg,
+                                                basicShadowGrob, suit, rank)
+                grobFn <- switch(piece_side,
+                                 pyramid_top = function(...) nullGrob(),
+                                 default_fn)
+                if (self$cache_op_fn) self$cache$set(key, grobFn)
+            }
+            grobFn
         }),
     active = list(
         annotation_color = function(value) {
@@ -476,6 +494,13 @@ Config <- R6Class("pp_cfg",
                 private$cache_grob_bool
             } else {
                 private$cache_type(value, "cache_grob_bool", "grob$")
+            }
+        },
+        cache_grob_with_bleed_fn = function(value) {
+            if (missing(value)) {
+                private$cache_grob_with_bleed_fn_bool
+            } else {
+                private$cache_type(value, "cache_grob_with_bleed_fn_bool", "grob_with_bleed_fn$")
             }
         },
         cache_obj_fn = function(value) {
@@ -550,13 +575,13 @@ Config <- R6Class("pp_cfg",
             if (missing(value))
                 private$cfg$fontfamily %||% "sans"
             else
-                warning("Must set 'fontfamily' at initialization")
+                warn("Must set 'fontfamily' at initialization")
         },
         has_piecepack = function(value) {
             if (missing(value)) {
                 self$has_coins && self$has_tiles && self$has_pawns && self$has_dice
             } else {
-                if (!is.logical(value)) stop(paste(value, "is not logical"))
+                stopifnot(is.logical(value))
                 self$has_coins <- value
                 self$has_tiles <- value
                 self$has_pawns <- value
@@ -567,29 +592,38 @@ Config <- R6Class("pp_cfg",
             if (missing(value))
                 private$cfg$lacks_rank
             else
-                warning("Must set 'lacks_rank' at initialization")
+                warn("Must set 'lacks_rank' at initialization")
         },
         lacks_suit = function(value) {
             if (missing(value))
                 private$cfg$lacks_suit
             else
-                warning("Must set 'lacks_suit' at initialization")
+                warn("Must set 'lacks_suit' at initialization")
         },
         n_ranks = function(value) {
             if (missing(value))
                 private$cfg$n_ranks
             else
-                warning("Must set 'n_ranks' at initialization")
+                warn("Must set 'n_ranks' at initialization")
         },
         n_suits = function(value) {
             if (missing(value))
                 private$cfg$n_suits
             else
-                warning("Must set 'n_suits' at initialization")
+                warn("Must set 'n_suits' at initialization")
         },
         i_unsuit = function(value) {
             .Deprecated("Add '1L' to 'n_suits'")
             self$n_suits + 1L
+        },
+        spdx_id = function(value) {
+            if (missing(value)) {
+                private$cfg$spdx_id
+            } else {
+                stopifnot(is.character(value))
+                check_spdx_id(value)
+                private$cfg$spdx_id <- value
+            }
         },
         title = function(value) {
             if (missing(value)) {
@@ -600,9 +634,13 @@ Config <- R6Class("pp_cfg",
             }
         }),
     private = list(cfg = NULL, prefix = NULL,
-                   cache_grob_bool = TRUE, cache_obj_fn_bool = TRUE,
-                   cache_piece_opt_bool = TRUE, cache_op_fn_bool = TRUE,
-                   n_suits_val = NULL, n_ranks_val = NULL,
+                   cache_grob_bool = TRUE,
+                   cache_grob_with_bleed_fn_bool = TRUE,
+                   cache_obj_fn_bool = TRUE,
+                   cache_piece_opt_bool = TRUE,
+                   cache_op_fn_bool = TRUE,
+                   n_suits_val = NULL,
+                   n_ranks_val = NULL,
         get_grob_normal = function(piece_side, suit, rank) {
             rank <- impute_rank(piece_side, rank, self)
             suit <- impute_suit(piece_side, suit, self)
@@ -653,7 +691,7 @@ Config <- R6Class("pp_cfg",
                 keys <- grep(cache_key, self$cache$keys(), value = TRUE)
                 for (key in keys) self$cache$remove(key)
             } else {
-                stop("value was not a boolean")
+                abort("value was not a boolean")
             }
         })
 )

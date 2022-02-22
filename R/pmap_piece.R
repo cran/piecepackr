@@ -50,6 +50,8 @@ pmap_piece <- function(.l, .f = pieceGrob, ...,
                        envir = getOption("piecepackr.envir"),
                        trans = getOption("piecepackr.trans"),
                        draw = TRUE, name = NULL, gp = NULL, vp = NULL) {
+    if (length(.l) == 0L || (!is.null(nrow(.l)) && nrow(.l) == 0L))
+        return(list())
     ce <- default_cfg_envir(cfg, envir)
     cfg <- ce$cfg
     envir <- ce$envir
@@ -80,7 +82,7 @@ update_name <- function(.l) {
         if (sum(duplicated(.l$name)) == 0) {
             return(.l)
         } else {
-            warning("the name column in .l is not unique, generating new name column")
+            warn("the name column in .l is not unique, generating new name column")
         }
     }
     if (hasName(.l, "id")) {
@@ -88,7 +90,7 @@ update_name <- function(.l) {
         if (sum(duplicated(.l$name)) == 0) {
             return(.l)
         } else {
-            warning("the id column in .l is not unique, generating new name column")
+            warn("the id column in .l is not unique, generating new name column")
         }
     }
     .l$name <- paste0("piece.", as.character(seq(length(.l[[1]]))))

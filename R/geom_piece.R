@@ -33,6 +33,9 @@
 #' @inheritParams render_piece
 #' @param  ... Aesthetics, used to set an aesthetic to a fixed value.
 #' @seealso `geom_piece()` is a wrapper around [pieceGrob()].
+#'         [scale_x_piece()] and [scale_y_piece()] are wrappers
+#'         around [ggplot2::scale_x_continuous()] and [ggplot2::scale_y_continuous()]
+#'         with better defaults for board game diagrams.
 #' @examples
 #' if (require("ggplot2") && require("tibble")) {
 #'
@@ -44,10 +47,25 @@
 #'   df_b <- tibble(piece_side = "bit_face", suit = 1, rank = 1,
 #'                  x = rep(1:8, 2), y = rep(7:8, each=8))
 #'   df <- rbind(df_board, df_w, df_b)
+#'   # 2D example
 #'   # `cfg` must be a character vector for `geom_piece()`
 #'   ggplot(df, aes_piece(df)) +
 #'       geom_piece(cfg = "checkers1", envir = envir) +
-#'       coord_fixed() + theme_void()
+#'       coord_fixed() +
+#'       scale_x_piece() +
+#'       scale_y_piece() +
+#'       theme_minimal(28) +
+#'       theme(panel.grid = element_blank())
+#'
+#'   # 3D "oblique" projection example
+#'   # `cfg_class` must be "character" when using with `geom_piece()`
+#'   df3d <- op_transform(df, cfg = "checkers1", envir = envir,
+#'                        op_angle = 45, cfg_class = "character")
+#'   ggplot(df3d, aes_piece(df3d)) +
+#'       geom_piece(cfg = "checkers1", envir = envir,
+#'                  op_angle = 45, op_scale = 0.5) +
+#'       coord_fixed() +
+#'       theme_void()
 #' }
 #'
 #' @export
@@ -76,6 +94,90 @@ geom_piece <- function(mapping = NULL, data = NULL,
             ...
         )
     )
+}
+
+#' ggplot2 game diagram scales
+#'
+#' `scale_x_piece()` and `scale_y_piece()` are wrappers
+#' around [ggplot2::scale_x_continuous()] and
+#' [ggplot2::scale_y_continuous()] with "better"
+#' defaults for board game diagrams.
+#' `label_letter()` labels breaks with letters
+#' and `label_counting()` labels breaks with positive integers
+#' to more easily generate (i.e. chess) algebraic notation coordinates.
+#' `breaks_counting()` generates breaks of just the positive integers within the limits.
+#' @param ... Passed to [ggplot2::scale_x_continuous()] or [ggplot2::scale_y_continuous()].
+#' @inheritParams ggplot2::scale_x_continuous
+#' @examples
+#' if (require("ggplot2") && require("tibble")) {
+#'
+#'   envir <- game_systems("sans")
+#'   df_board <- tibble(piece_side = "board_face", suit = 3, rank = 8,
+#'                  x = 4.5, y = 4.5)
+#'   df_w <- tibble(piece_side = "bit_face", suit = 6, rank = 1,
+#'                  x = rep(1:8, 2), y = rep(1:2, each=8))
+#'   df_b <- tibble(piece_side = "bit_face", suit = 1, rank = 1,
+#'                  x = rep(1:8, 2), y = rep(7:8, each=8))
+#'   df <- rbind(df_board, df_w, df_b)
+#'
+#'   # `cfg` must be a character vector for `geom_piece()`
+#'   ggplot(df, aes_piece(df)) +
+#'       geom_piece(cfg = "checkers1", envir = envir) +
+#'       coord_fixed() +
+#'       scale_x_piece() +
+#'       scale_y_piece() +
+#'       theme_minimal(28) +
+#'       theme(panel.grid = element_blank())
+#' }
+#' @return `scale_x_piece()` and `scale_y_piece()` return ggplot2 scale objects.
+#'         `label_letter()` and `label_counting()` return functions suitable for use with the `labels` scale argument.
+#'         `breaks_counting()` returns a function suitable for use with the `breaks` scale argument.
+#' @rdname scale_piece
+#' @export
+scale_x_piece <- function(..., name = NULL,
+                          breaks = breaks_counting(),
+                          minor_breaks = NULL,
+                          labels = label_letter()) {
+    assert_suggested("ggplot2")
+    ggplot2::scale_x_continuous(..., name = name,
+                                breaks = breaks,
+                                minor_breaks = minor_breaks,
+                                labels = labels)
+}
+
+#' @rdname scale_piece
+#' @export
+scale_y_piece <- function(..., name = NULL,
+                          breaks = breaks_counting(),
+                          minor_breaks = NULL,
+                          labels = label_counting()) {
+    assert_suggested("ggplot2")
+    ggplot2::scale_y_continuous(..., name = name,
+                                breaks = breaks,
+                                minor_breaks = minor_breaks,
+                                labels = labels)
+}
+
+#' @rdname scale_piece
+#' @export
+label_letter <- function() {
+    function(x) letters[seq_along(x)]
+}
+
+#' @rdname scale_piece
+#' @export
+label_counting <- function() {
+    function(x) as.character(seq_along(x))
+}
+
+#' @rdname scale_piece
+#' @export
+breaks_counting <- function() {
+    function(x) {
+        seq.int(from = max(1L, ceiling(x[1])),
+                to = floor(x[2]),
+                by = 1L)
+    }
 }
 
 # GeomPiece is defined in `.onLoad()` in `hooks.R` so {ggplot2} can be Suggests instead of Imports
@@ -108,10 +210,10 @@ create_GeomPiece <- function() { # nocov start
     draw_panel = function(self, data, panel_params, coord,
                           envir, op_scale, op_angle) {
         if (coord$is_free()) {
-            stop("'geom_piece()' will not work correctly if not using a fixed scale.")
+            abort("'geom_piece()' will not work correctly if not using a fixed scale.")
         }
         if (hasName(coord, "ratio") && coord$ratio != 1) {
-            stop("'geom_piece()' will not work correctly if not using an aspect ratio of 1.")
+            abort("'geom_piece()' will not work correctly if not using an aspect ratio of 1.")
         }
         data <- gg_impute_missing_data(data, envir, panel_params)
         coord <- coord$transform(data, panel_params)

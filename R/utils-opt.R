@@ -115,10 +115,10 @@ styles <- c(paste(c("ps", "dm"),
             "use_suit_as_ace", "fontfamily", "fontface", "cex", "n_ranks", "n_suits",
             "coin_arrangement", "die_arrangement",
             "width", "height", "depth",
-            "grob_fn", "op_grob_fn", "shadow_fn",
+            "grob_fn", "op_grob_fn", "grob_with_bleed_fn",
             "obj_fn", "rayrender_fn", "rayvertex_fn", "rgl_fn",
             "lacks_rank", "lacks_suit",
-            "title", "description", "credit", "copyright")
+            "title", "description", "credit", "copyright", "spdx_id")
 is_legit_style <- function(style) {
     style %in% styles
 }
@@ -137,10 +137,23 @@ is_legit_piece <- function(piece) {
 warn_cfg <- function(cfg) {
     for (nn in names(cfg)) {
         if (!is_legit_cfg_style(nn)) {
-            warning(paste(nn, "is not a recognized configuration"))
+            warn(paste(nn, "is not a recognized configuration"))
         }
-        if (grepl("shadow_fn", nn))
-            warning("'shadow_fn' style is deprecated, use 'op_grob_fn' instead")
+    }
+    if (!is.null(cfg$spdx_id)) {
+        check_spdx_id(cfg$spdx_id)
+    }
+}
+
+check_spdx_id <- function(spdx_id) {
+    if (!(spdx_id %in% piecepackr::spdx_license_list$id)) {
+        warn(c(sprintf("'%s' not recognized as an appropriate SPDX Identifier.", spdx_id),
+               i = "See https://spdx.org/licenses/ for list of SPDX Identifiers."),
+             class = "piecepackr_unrecognized_spdx_id")
+    } else if (piecepackr::spdx_license_list[spdx_id, "deprecated"]) {
+        inform(c(sprintf("'%s' is a deprecated SPDX Identifier.", spdx_id),
+                 i = "See https://spdx.org/licenses/ for list of SPDX Identifiers."),
+               class = "piecepackr_deprecated_spdx_id")
     }
 }
 

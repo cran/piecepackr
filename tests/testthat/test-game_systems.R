@@ -1,4 +1,3 @@
-context("no regressions in figures")
 test_that("no regressions in figures", {
 
     skip_on_ci()
@@ -138,5 +137,18 @@ test_that("no regressions in figures", {
     expect_doppelganger("alquerque", function() {
         grid.piece("board_face", x=3, y=3, suit=3, cfg = cfg, default.units = "in")
         grid.piece("bit_back", x=1:5, y=1:5, suit=1:5, cfg = cfg, default.units = "in")
+    })
+
+    # reversi
+    expect_doppelganger("reversi", function() {
+        envir <- game_systems()
+        df_board <- tibble(piece_side = "board_face", x = 4.5, y = 4.5,
+                     suit = 4, rank = 8, cfg = "reversi")
+        df_bit_face <- tibble(piece_side = "bit_face", x = 1:6, y = 1:6,
+                              suit = 1:6, rank = NA, cfg = "reversi")
+        df_bit_back <- tibble(piece_side = "bit_back", x = 1:6 + 1L, y = 1:6,
+                              suit = 1:6, rank = NA, cfg = "reversi")
+        df <- rbind(df_board, df_bit_face, df_bit_back)
+        pmap_piece(df, default.units="in", envir=envir, op_scale=0.5, trans=op_transform)
     })
 })

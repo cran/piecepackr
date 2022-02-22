@@ -7,9 +7,13 @@
 save_print_and_play(
   cfg = getOption("piecepackr.cfg", pp_cfg()),
   output_filename = "piecepack.pdf",
-  size = "letter",
+  size = c("letter", "A4", "A5", "4x6"),
   pieces = c("piecepack", "matchsticks", "pyramids"),
-  arrangement = "single-sided"
+  arrangement = c("single-sided", "double-sided"),
+  dev = NULL,
+  dev.args = list(family = cfg$fontfamily, onefile = TRUE, units = "in", bg = "white",
+    res = 72),
+  quietly = FALSE
 )
 }
 \arguments{
@@ -17,12 +21,21 @@ save_print_and_play(
 
 \item{output_filename}{Filename for print-and-play file}
 
-\item{size}{PnP output size (currently either "letter", "A4", or "A5")}
+\item{size}{PnP output size (currently either "letter", "A4", "A5", or "4x6")}
 
 \item{pieces}{Character vector of desired PnP pieces.
 Supports "piecepack", "matchsticks", "pyramids", "subpack", or "all".}
 
-\item{arrangement}{Either "single-sided" or "double-sided".}
+\item{arrangement}{Either "single-sided" or "double-sided".
+Ignored if \code{size = "4x6"}.}
+
+\item{dev}{Graphics device function to use.  If \code{NULL} infer a reasonable choice.}
+
+\item{dev.args}{Additional arguments to pass to \code{dev} (besides \code{filename}, \code{width}, and \code{height}).
+Will filter out any names that aren't in \code{formals(dev)}.}
+
+\item{quietly}{Whether to hide messages about missing metadata
+in the provided configuration.}
 }
 \description{
 Save piecepack print-and-play (PnP) file
@@ -32,6 +45,11 @@ Save piecepack print-and-play (PnP) file
     is_mac <- tolower(Sys.info()[["sysname"]]) == "darwin"
     if (capabilities("cairo") && !is_mac) {
         cfg <- pp_cfg(list(invert_colors.suited=TRUE))
+        cfg$description <- 'Piecepack with an "inverted" color scheme.'
+        cfg$title <- '"Inverted" piecepack'
+        cfg$copyright <- "\u00a9 2022 Trevor L Davis.  Some Right Reserved."
+        cfg$spdx_id <- "CC-BY-4.0"
+        cfg$credit <- ""
         save_print_and_play(cfg, "my_pnp_file.pdf")
         save_print_and_play(cfg, "my_pnp_file_ds.pdf", arrangement="double-sided")
         save_print_and_play(cfg, "my_pnp_file_A4.pdf", size="A4", pieces="all")

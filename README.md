@@ -25,7 +25,7 @@ to make graphics for other board game systems as well.
 ## Built-in Game Systems
 
 The function `game_systems()` returns configurations for multiple public
-domain game systems.
+domain game systems:
 
 ### Checkers
 
@@ -46,7 +46,7 @@ various sizes and colors.
     pmap_piece(df, envir=game_systems(), default.units="in", trans=op_transform, op_scale=0.5)
 
 ![Starting position for Dan Troyka's abstract game
-&quot;Breakthrough&quot;](man/figures/README-breakthrough-1.png)
+Breakthrough](man/figures/README-breakthrough-1.png)
 
 ### Traditional 6-sided dice
 
@@ -97,13 +97,6 @@ using [rgl](https://www.rdocumentation.org/packages/rgl):
 
 ![3D Multi-player Go diagram](man/figures/README-go.png)
 
-### Morris/Merels/Mills Games
-
-`game_systems()` returns a `morris` configuration that can produce
-[Three/Six/Seven/Nine/Twelve men's
-morris](https://en.wikipedia.org/wiki/Nine_men%27s_morris) boards in a
-variety of colors.
-
 ### Piecepack
 
 `game_systems()` returns three different [piecepack](#piecepack)
@@ -136,6 +129,22 @@ with various decks of playing cards.
     pmap_piece(df, default.units="in", envir=envir)
 
 ![Playing Cards](man/figures/README-cards-1.png)
+
+### Other traditional abstracts
+
+-   An `alquerque` configuration that produces "boards"/"bits" for
+    [Alquerque](https://en.wikipedia.org/wiki/Alquerque) in a variety of
+    colors.
+-   `chess1` and `chess2` configurations with checkered "boards" and
+    matching chess "bits" (currently "disc" pieces instead of "Staunton"
+    pieces).
+-   A `morris` configuration that can produce
+    [Three/Six/Seven/Nine/Twelve men's
+    morris](https://en.wikipedia.org/wiki/Nine_men%27s_morris)
+    "board"/"bits" in a variety of colors.
+-   A `reversi` configuration that can produce "boards"/"bits" for
+    [Reversi](https://en.wikipedia.org/wiki/Reversi) in a variety of
+    colors.
 
 ## Looney Pyramids
 
@@ -292,7 +301,7 @@ desired angle of the oblique projection.
     cfg <- game_systems("dejavu")$piecepack
     pmap_piece(df, cfg=cfg, default.units="in", trans=op_transform, op_scale=0.5, op_angle=135)
 
-!['pmap\_piece' lets you use data frames as
+!['pmap\_piece()' lets you use data frames as
 input](man/figures/README-pmap-1.png)
 
 ### geom\_piece() ({ggplot2})
@@ -301,6 +310,25 @@ input](man/figures/README-pmap-1.png)
 objects.
 
     library("ggplot2")
+    envir <- game_systems("sans")
+    df_board <- tibble(piece_side = "board_face", suit = 3, rank = 12,
+                       x = 4, y = 4)
+    df_b <- tibble(piece_side = "bit_face", suit = 2, rank = 1,
+                   x = c(2, 3, 3, 4, 4), y = c(6, 5, 4, 5, 2))
+    df_w <- tibble(piece_side = "bit_face", suit = 1, rank = 1,
+                   x = c(2, 2, 3, 4, 5, 5), y = c(4, 3, 6, 5, 4, 6))
+    df <- rbind(df_board, df_w, df_b)
+
+    ggplot(df, aes_piece(df)) +
+        geom_piece(cfg = "morris", envir = envir) +
+        coord_fixed() +
+        scale_x_piece(limits = c(0.5, 7.5)) +
+        scale_y_piece(limits = c(0.5, 7.5)) +
+        theme_minimal(32) +
+        theme(panel.grid = element_blank())
+
+![Twelve men's morris game diagram](man/figures/README-ggplot2_2d-1.png)
+
     library("ppgames") # remotes::install_github("piecepackr/ppgames")
     library("withr")
     new <- list(piecepackr.cfg = "piecepack",
@@ -313,7 +341,8 @@ objects.
         ggplot(dft, aes_piece(dft)) + geom_piece() + coord_fixed() + theme_void()
     })
 
-![plot of chunk ggplot2](man/figures/README-ggplot2-1.png)
+![Fuji-san starting diagram in an oblique
+projection](man/figures/README-ggplot2-1.png)
 
 ### piece3d() ({rgl})
 
@@ -347,9 +376,9 @@ objects.
     rayrender::render_scene(scene, lookat = c(5, 5, 0), lookfrom = c(5, -7, 25), 
                             width = 500, height = 500, samples=200, clamp_value=8)
 
-![plot of chunk rayrender](man/figures/README-rayrender-1.png)
+![3D render with rayrender package](man/figures/README-rayrender-1.png)
 
-### piece\_mesh ({rayvertex})
+### piece\_mesh() ({rayvertex})
 
 `piece_mesh()` creates [rayvertex](https://www.rayvertex.com/) objects.
 
@@ -371,7 +400,37 @@ objects.
     rayvertex::rasterize_scene(scene, lookat = c(4.5, 4, 0), lookfrom=c(4.5, -16, 20),
                                light_info = directional_light(c(5, -7, 7), intensity = 2.5))
 
-![plot of chunk rayvertex](man/figures/README-rayvertex-1.png)
+![3D render with rayvertex package](man/figures/README-rayvertex-1.png)
+
+### animate\_piece()
+
+`animate_piece()` creates animations.
+
+    library("gifski")
+    library("piecepackr")
+    library("ppgames") # remotes::install_github("piecepackr/ppgames")
+    library("tweenr")
+
+    envir <- game_systems("dejavu")
+    cfg <- as.list(envir$piecepack)
+    cfg$suit_color <- "black"
+    cfg$background_color.r1 <- "#E69F00"
+    cfg$background_color.r2 <- "#56B4E9"
+    cfg$background_color.r3 <- "#009E73"
+    cfg$background_color.r4 <- "#F0E442"
+    cfg$background_color.r5 <- "#D55E00"
+    cfg$background_color.r6 <- "#F079A7"
+    envir$piecepack <- pp_cfg(cfg)
+
+    ppn_file <- system.file("ppn/relativity.ppn", package = "ppgames")
+    game <- read_ppn(ppn_file)[[1]]
+    animate_piece(game$dfs, file = "man/figures/README-relativity.gif", annotate = FALSE,
+                  envir = envir, trans = op_transform, op_scale = 0.5, 
+                  n_transitions = 3, n_pauses = 2, fps = 7)
+
+<figure>
+<img src="man/figures/README-relativity.gif" class="align-center" alt="Animation of Marty and Ron Hale-Evans&#39; abstract game Relativity" /><figcaption aria-hidden="true">Animation of Marty and Ron Hale-Evans' abstract game Relativity</figcaption>
+</figure>
 
 ### Further documentation
 
@@ -485,14 +544,91 @@ To install the development version use the following commands:
     install.packages("remotes")
     remotes::install_github("piecepackr/piecepackr")
 
-The default piecepackr configuration should work out on the box on most
+### Suggested R packages
+
+Although the "core" `{piecepackr}` functionality does not need any
+additional software installed some non-"core" functionality needs extra
+suggested software to be installed. To install **all** of the suggested
+R packages use:
+
+    install.packages("piecepackr", dependencies = TRUE)
+
+or (for the development version):
+
+    install.packages("remotes")
+    remotes::install_github("piecepackr/piecepackr", dependencies = TRUE)
+
+Suggested R packages:
+
+**animation**  
+`animate_piece()` uses the `{animation}` package to save "html" and
+"video" (e.g. mp4 and avi) animations. Additionally, if the `{gifski}`
+package is not installed `animate_piece()` will fall back to using
+`{animation}` to make "gif" animations.
+
+**ggplot2**  
+Required by the `{ggplot2}` bindings `geom_piece()` and its helper
+functions `aes_piece()`, `scale_x_piece()`, and `scale_y_piece()`.
+
+**gifski**  
+`animate_piece()` uses the `{gifski}` package to save "gif" animations.
+
+**gridpattern**  
+The `pp_shape()` object's `pattern()` method uses `{gridpattern}` to
+make patterned shapes. In particular can be used to make patterned board
+game pieces.
+
+**magick**  
+`file2grob()` uses `magick::image_read()` to import images that are not
+"png", "jpg/jpeg", or "svg/svgz".
+
+**rayrender**  
+Required for the `{rayrender}` binding `piece()` and the `pp_cfg()`
+object's `rayrender_fn()` method.
+
+**rayvertex**  
+Required for the `{rayvertex}` binding `piece_mesh()` and the `pp_cfg()`
+object's `rayvertex_fn()` method.
+
+**readobj**  
+Allows the `{rgl}` bindings to support more game piece shapes; in
+particular the "meeple", "halma", and "roundrect" shaped token game
+pieces.
+
+**rgl**  
+Required for the `{rgl}` binding `piece3d()` and the `pp_cfg()` object's
+`rgl_fn()` method. Also required for the `obj_fn()` method for game
+pieces with ellipsoid shapes (in particular this may effect
+`save_piece_obj()`, `piece()`, `piece3d()`, and/or `piece_mesh()` when
+used with the go stones and joystick pawns provided by
+`game_systems()`). You may need to [install extra
+software](https://github.com/dmurdoch/rgl#installing-opengl-support) for
+`{rgl}` to support OpenGL (in addition to WebGL).
+
+**systemfonts**  
+`has_font()` preferably uses `{systemfonts}` to determine if a given
+font is available. If `{styemfonts}` is not available it can fall back
+on the system tool `pdffonts` if `capabilities("cairo") == TRUE`.
+
+**tweenr**  
+`animate_piece()` needs `{tweenr}` to do animation transitions (i.e. its
+`n_transitions` argument is greater than the default zero).
+
+### Other suggested software
+
+The default piecepackr `pp_cfg()` configuration and the default game
+systems returned by `game_systems()` should work out on the box on most
 modern OSes including Windows without the user needing to mess with
-their system fonts. However if you wish to use advanced piecepackr
-configurations you'll need to install additional Unicode fonts and
-Windows users are highly recommended to use and install piecepackr on
-"Ubuntu on Bash on Windows" if planning on using Unicode symbols from
-multiple fonts. The following bash commands will give you a good
-selection of fonts (Noto, Quivira, and Dejavu) on Ubuntu:
+their system fonts. However `game_systems(style = "dejavu")` requires
+that the [Dejavu Sans](https://dejavu-fonts.github.io/Download.html)
+font is installed.
+
+For more advanced `{piecepackr}` configurations you'll want to install
+additional Unicode fonts and Windows users are highly recommended to use
+and install piecepackr on "Ubuntu on Bash on Windows" if planning on
+using Unicode symbols from multiple fonts. The following bash commands
+will give you a good selection of fonts (Noto, Quivira, and Dejavu) on
+Ubuntu:
 
     sudo apt install fonts-dejavu fonts-noto 
     fonts_dir=${XDG_DATA_HOME:="$HOME/.local/share"}/fonts
@@ -503,7 +639,7 @@ selection of fonts (Noto, Quivira, and Dejavu) on Ubuntu:
     mv NotoEmoji-Regular.ttf $fonts_dir/
     rm NotoEmoji-unhinted.zip
 
-**Note** `piecpackr` works best if the version of R installed was
+**Note** `piecepackr` works best if the version of R installed was
 compiled with support for Cairo and fortunately this is typically the
 case. One can confirm if this is true via R's `capabilities` function:
 
@@ -518,7 +654,9 @@ functions that depend on the system dependencies `ghostscript` and
 1.  `save_print_and_play()` will embed additional metadata into the pdf
     if `ghostscript` is available.
 2.  `get_embedded_font()` (a debugging helper function) needs `pdffonts`
-    (usually found in `poppler-utils`)
+    (usually found in `poppler-utils`). If the suggeste R package
+    `{systemfonts}` is not installed then `has_font()` also needs
+    `pdffonts`.
 
 You can install these utilities on Ubuntu with
 
@@ -535,19 +673,17 @@ You can install these utilities on Ubuntu with
 
 ### What is the package licence?
 
-The **code** of this software package is released under a [Creative
-Commons Attribution-ShareAlike 4.0 International license (CC BY-SA
-4.0)](https://creativecommons.org/licenses/by-sa/4.0/). This license is
-compatible with version 3 of the GNU Public License (GPL-3).
+The **code** of this software package is licensed under the [MIT
+license](https://opensource.org/licenses/MIT).
 
-The graphical assets generated by configurations returned by
-`piecepackr::game_systems()` should be usable without attribution:
+Graphical assets generated using configurations returned by
+`game_systems()` should be usable without attribution:
 
 1.  Uses fonts which should allow you to embed them in images/documents
-    without even requiring attribution.
+    without requiring attribution.
 2.  Does not embed any outside copyrighted images.[1]
-3.  Only contains public domain game systems (which should not suffer
-    from copyright / trademark issues).
+3.  Only contains public domain game systems which should not suffer
+    from copyright / trademark issues.
 
 However, third party game configurations [may be encumbered by copyright
 / trademark
@@ -555,13 +691,13 @@ issues](https://trevorldavis.com/piecepackr/licenses-faq.html#piecepackr-output)
 
 ### Why does the package sometimes use a different font then the one I instructed it to use for a particular symbol?
 
-Some of R's graphic devices (`cairo_pdf`, `svg`, bitmap devices like
-`png`) use `Cairo` which uses `fontconfig` to select fonts. `fontconfig`
-picks what it thinks is the 'best' font and sometimes it annoyingly
-decides that the font to use for a particular symbol is not the one you
-asked it to use. (although sometimes the symbol it chooses instead still
-looks nice in which case maybe you shouldn't sweat it). It is hard but
-not impossible to [configure which
+Some of R's graphic devices (`cairo_pdf()`, `svg()`, and `png()`) use
+`Cairo` which uses `fontconfig` to select fonts. `fontconfig` picks what
+it thinks is the 'best' font and sometimes it annoyingly decides that
+the font to use for a particular symbol is not the one you asked it to
+use (although sometimes the symbol it chooses instead still looks nice
+in which case maybe you shouldn't sweat it). It is hard but not
+impossible to [configure which
 fonts](https://eev.ee/blog/2015/05/20/i-stared-into-the-fontconfig-and-the-fontconfig-stared-back-at-me/)
 are dispatched by fontconfig. A perhaps easier way to guarantee your
 symbols will be dispatched would be to either make a new font and
@@ -576,12 +712,12 @@ the undesired fonts that `fontconfig` chooses over your requested fonts:
     $ sudo mv ~/NotoColorEmoji.ttf /usr/share/fonts/truetype/noto/
 
 Also as a sanity check use the command-line tool `fc-match` (or the R
-function `systemfonts::match_font`) to make sure you specified your font
-correctly in the first place (i.e. `fc-match "Noto Sans"` on my system
-returns "Noto Sans" but `fc-match "Sans Noto"` returns "DejaVu Sans" and
-not "Noto Sans" as one may have expected). To help determine which fonts
-are actually being embedded you can use the `get_embedded_font` helper
-function:
+function `systemfonts::match_font()`) to make sure you specified your
+font correctly in the first place (i.e. `fc-match "Noto Sans"` on my
+system returns "Noto Sans" but `fc-match "Sans Noto"` returns "DejaVu
+Sans" and not "Noto Sans" as one may have expected). To help determine
+which fonts are actually being embedded you can use the
+`get_embedded_font()` helper function:
 
     fonts <- c('Noto Sans Symbols2', 'Noto Emoji', 'sans')
     chars <- c('♥', '♠', '♣', '♦', '🌞' ,'🌜' ,'꩜')
@@ -609,10 +745,10 @@ function:
     # 20      🌜              sans                NotoEmoji
     # 21     ꩜               sans     NotoSansCham-Regular
 
-[1] The outline for meeple shape used in the "meeples" configuration
-(also used in some face cards in the playing cards) was extracted
-(converted into a dataset of normalized x, y coordinates) from [Meeple
-icon](https://game-icons.net/1x1/delapouite/meeple.html) by
+[1] The outline for the meeple shape used in the "meeples" configuration
+(also used in some face cards in the playing cards configurations) was
+extracted (converted into a dataset of normalized x, y coordinates) from
+[Meeple icon](https://game-icons.net/1x1/delapouite/meeple.html) by
 [Delapouite](https://delapouite.com/) / [CC BY
 3.0](https://creativecommons.org/licenses/by/3.0/). Since "simple
 shapes" nor data can be copyrighted under American law this meeple

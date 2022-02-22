@@ -2,7 +2,7 @@
 % Please edit documentation in R/piece_mesh-rayvertex.R
 \name{piece_mesh}
 \alias{piece_mesh}
-\title{Create rayvertex objects}
+\title{Create rayvertex board game piece objects}
 \usage{
 piece_mesh(
   piece_side = "tile_back",
@@ -49,9 +49,9 @@ can be retrieved by \code{base::dynGet()}.}
 
 \item{axis_y}{Second coordinate of the axis unit vector.}
 
-\item{width}{Width of piece}
+\item{width}{Width of piece (plus bleed if \code{bleed} is \code{TRUE})}
 
-\item{height}{Height of piece}
+\item{height}{Height of piece (plus bleed if \code{bleed} is \code{TRUE})}
 
 \item{depth}{Depth (thickness) of piece.  Has no effect if \code{op_scale} is \code{0}.}
 

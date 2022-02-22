@@ -1,13 +1,9 @@
 cfg_default <- pp_cfg(list(title="default cfg"))
 cfg_3d <- game_systems("sans3d")$piecepack
-context("test pp_cfg")
 test_that("pp_cfg works as expected", {
     expect_true(inherits(cfg_default, "pp_cfg"))
     expect_equal(class(as.list(cfg_default)), "list")
     expect_output(print(cfg_default), "default cfg")
-    skip_if_not(capabilities("cairo"))
-    skip_on_os("mac")
-    expect_warning(cfg_default$get_pictureGrob("tile_back", 1, 1)) # deprecated
 })
 
 test_that("update_names works as expected", {
@@ -23,7 +19,6 @@ test_that("update_names works as expected", {
     expect_warning(update_name(df)$name, "the id column in .l is not unique, generating new name column")
 })
 
-context("save_print_and_play works as expected")
 test_that("save_print_and_play works as expected", {
 
     skip_on_cran()
@@ -38,6 +33,8 @@ test_that("save_print_and_play works as expected", {
     on.exit(unlink(pdf_deck_filename_a5))
     pdf_deck_filename_5s <- file.path(pdf_deck_dir, "piecepack_deck_5s.pdf")
     on.exit(unlink(pdf_deck_filename_5s))
+    pdf_deck_filename_4x6 <- file.path(pdf_deck_dir, "piecepack_deck_4x6.pdf")
+    on.exit(unlink(pdf_deck_filename_4x6))
     cfg_5s <- list(suit_text="♥,★,♣,♦,♠,꩜", suit_color="darkred,gold,darkgreen,darkblue,black,grey")
 
     skip_if_not(capabilities("cairo"))
@@ -50,20 +47,20 @@ test_that("save_print_and_play works as expected", {
     save_print_and_play(cfg_large_dice, pdf_deck_filename_a4, "A4", arrangement = "double-sided")
     save_print_and_play(cfg_default, pdf_deck_filename_a5, "A5")
 
-    expect_error(save_print_and_play(cfg_default, tempfile(), "A6"), "Don't know how to handle paper A6")
+    save_print_and_play(cfg_default, pdf_deck_filename_4x6, "4x6", pieces = "piecepack")
+
     expect_true(file.exists(pdf_deck_filename))
 
     skip_if(!has_gs(), "Doesn't have ghostscript binary")
     expect_equal(get_n_pages(pdf_deck_filename), 7)
     expect_equal(get_n_pages(pdf_deck_filename_a4), 10)
     expect_equal(get_n_pages(pdf_deck_filename_a5), 14)
+    expect_equal(get_n_pages(pdf_deck_filename_4x6), 13)
     expect_equal(get_n_pages_gs(pdf_deck_filename), 7)
     skip_if(Sys.which("pdfinfo") == "", "Doesn't have pdfinfo binary")
     expect_equal(get_n_pages_pdfinfo(pdf_deck_filename), 7)
-
 })
 
-context("save_piece_images works as expected")
 test_that("save_piece_images works as expected", {
     skip_if_not(capabilities("cairo"))
     skip_on_os("mac")
@@ -74,7 +71,8 @@ test_that("save_piece_images works as expected", {
         grid.piece(..., op_scale=0.5, default.units="in")
     }
 
-    expect_error(save_piece_images(cfg_default, directory), paste("does not exist"))
+    expect_error(save_piece_images(cfg_default, directory),
+                 "dir.exists\\(directory\\) is not TRUE")
     expect_error(grid.piece("tile_back", cfg=cfg), "Couldn't find suitable")
     dir.create(directory)
 
@@ -95,7 +93,6 @@ test_that("save_piece_images works as expected", {
     })
 })
 
-context("no regressions in figures")
 test_that("no regressions in figures", {
     skip_on_ci()
     skip_if_not(capabilities("cairo"))
@@ -113,7 +110,7 @@ test_that("no regressions in figures", {
         grid.piece(..., default.units="npc")
     }
     # tile back
-    expect_doppelganger("tile_back", function() dc("tile_back"))
+    expect_doppelganger("tile_back", function() dc("tile_back", bleed=TRUE))
     expect_doppelganger("tile_back_thickgrid", function() dc("tile_back", cfg=list(gridline_lex.tile_back=5)))
     expect_doppelganger("tile_back_thickborder", function() dc("tile_back", cfg=list(border_lex.tile_back=5)))
     expect_doppelganger("tile_back-svg", function() dc("tile_back", type="picture"))
@@ -279,7 +276,6 @@ test_that("no regressions in figures", {
         dc("pyramid_face", rank = 6, op_angle = 90, op_scale = 0.5, cfg = list(invert_colors = TRUE)))
 })
 
-context("oblique projection works")
 test_that("oblique projection works", {
     skip_on_ci()
     skip_on_cran()
@@ -327,7 +323,6 @@ test_that("oblique projection works", {
     })
 })
 
-context("alpha and scale works")
 test_that("alpha and scale works", {
     skip_on_ci()
     skip_if_not(capabilities("cairo"))

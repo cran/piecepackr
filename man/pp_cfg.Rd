@@ -33,7 +33,7 @@ that maybe of use to developers:
 \item Suit colors
 \item Which types of components are included and/or properly supported
 \item What would be a good color to use when adding annotations on top of these components.
-\item Title, Description, Copyright, and Credit metadata
+\item Title, Description, Copyright, License, and Credit metadata
 }
 }
 }
@@ -64,6 +64,7 @@ Default is a memory-cache that does not prune.
 This can be replaced by another cache that
 implements the cache API used by the \code{cachem} package}
 \item{\code{cache_grob}}{Whether we should cache (2D) grobs}
+\item{\code{cache_grob_with_bleed_fn}}{Whether we should cache the grob with bleed functions}
 \item{\code{cache_piece_opt}}{Whether we should cache piece opt information}
 \item{\code{cache_op_fn}}{Whether we should cache the oblique projection functions}
 \item{\code{cache_obj_fn}}{Whether we should cache any 3D rendering functions}
@@ -83,6 +84,8 @@ implements the cache API used by the \code{cachem} package}
 \item{\code{has_pyramids}}{Whether we should assume this supports "pyramid" pieces}
 \item{\code{has_saucers}}{Whether we should assume this supports "saucer" pieces}
 \item{\code{has_tiles}}{Whether we should assume this supports "tile" pieces}
+\item{\code{spdx_id}}{SPDX Identifier for graphical design license.
+See \url{https://spdx.org/licenses/} for full list.}
 \item{\code{title}}{Design title}
 }
 }
@@ -90,8 +93,14 @@ implements the cache API used by the \code{cachem} package}
 \section{Deprecated \code{pp_cfg} R6 Class attributes}{
 \describe{
 \item{\code{cache_shadow}}{Use \code{cache_op_fn} instead}
-\item{\code{get_pictureGrob()}}{Use \code{get_grob(..., type = "picture")} instead}
+\item{\code{get_shadow_fn}}{\code{get_op_grob()} returns complete oblique projection grob}
 \item{\code{i_unsuit}}{Instead add \code{1L} to \code{n_suits}}
+}
+}
+
+\section{Defunct \code{pp_cfg} R6 Class attributes which have been removed}{
+\describe{
+\item{\code{get_pictureGrob()}}{Use \code{get_grob(..., type = "picture")} instead}
 }
 }
 
