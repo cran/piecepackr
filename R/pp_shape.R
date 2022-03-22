@@ -404,8 +404,9 @@ makeContent.hexlines <- function(x) {
 makeContent.pp_polyclip <- function(x) {
     subject <- x$shape$shape()
     clip <- x$clip
-    if (inherits(clip, "piece") || inherits(clip, "pmap_piece")) {
-        clip <- gridGeometry::xyListPath(grobPoints(clip))
+    if (inherits(clip, "pp_grobCoords") || inherits(clip, "pmap_piece")) {
+        xylist <- grid::grobCoords(clip, closed = TRUE)
+        clip <- gridGeometry::xyListPath(xylist)
     }
     gl <- gList(gridGeometry::polyclipGrob(subject, clip, x$op))
     setChildren(x, gl)
@@ -420,7 +421,8 @@ roundrect_xy <- function(shape_r) {
         grDevices::pdf(pdf_file)
         on.exit(grDevices::dev.off())
     }
-    coords <- grid::grobCoords(grid::roundrectGrob(r=grid::unit(shape_r, "snpc")), closed=TRUE)[[1]]
+    coords <- grid::grobCoords(grid::roundrectGrob(r=grid::unit(shape_r, "snpc")),
+                               closed=TRUE)[[1]]
     x <- as.numeric(grid::convertX(grid::unit(coords$x, "in"), "npc"))
     y <- as.numeric(grid::convertY(grid::unit(coords$y, "in"), "npc"))
     list(x = x, y = y, c = rep("C1", length(x)))

@@ -1,3 +1,36 @@
+piecepackr 1.10.3
+=================
+
+Breaking changes
+----------------
+
+* Upcoming breaking changes in R 4.2 for `grid::grobCoords()` and `grid::grobPoints()` 
+  required changes being made in `{piecepackr}` as well.  
+  However `{piecepackr}` users probably won't need to update any of their code due to these changes (#270).:
+
+  + `{piecepackr}` exports new S3 `grobCoords()` / `grobPoints()` methods that
+    works for grob objects returned by `pieceGrob()` and `pp_cfg()$get_grob()` (for `type = "normal"`)
+    as well as grob objects returned by `pmap_piece()`.
+    They return lists of lists with (x,y) coordinates of the polygons that bound the game pieces
+    in the format expected for `grid::grobCoords()` methods according to the R version number.
+  + Instead of `grobPoints.piece()` we now export the S3 method `grobPoints.pp_grobCoords()` and
+    the grob objects returned by `pieceGrob()` and `pp_cfg()$get_grob()` (for `type = "normal"`) now 
+    inherit the additional class "pp_grobCoords".
+
+Bug fixes
+--------------------------------
+
+* Final page in "4x6" `size` layout produced by `save_print_and_play()`
+  is no longer incorrectly rotated from landscape to portrait mode (#269).
+
+Deprecated features
+-------------------
+
+* Using `animate_piece()`'s `annotate` argument unnamed is now deprecated.
+  Instead either use its `annotate` argument named e.g. `annotate = "cartesian"`
+  or instead don't provide this argument (and let it use its default `TRUE` value).
+  In a future version this argument will be moved behind the `...`.
+
 piecepackr 1.10.1
 =================
 
