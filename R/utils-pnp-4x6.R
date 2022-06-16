@@ -1,8 +1,9 @@
-print_and_play_4x6 <- function(cfg, pieces, quietly) {
+print_and_play_4x6 <- function(cfg, pieces, quietly, bleed) {
     n_suits <- cfg$n_suits
     n_ranks <- cfg$n_ranks
 
     stopifnot(n_ranks <= 6)
+    stopifnot(!bleed)
 
     if ("matchsticks" %in% pieces)
         abort('"matchsticks" `pieces` not currently supported for `size = "4x6"`')
@@ -63,6 +64,8 @@ draw_4x6_tiles <- function(cfg, i_suit) {
     popViewport()
 
     df$piece_side = "tile_back"
+    # Rotate tile backs to partially hide direction of face if tile back are not fully symmetric
+    df$angle <- 90 * ((df$suit + df$rank) %% 4)
     grid.newpage()
     pushViewport(vp)
     pmap_piece(df, cfg = cfg, default.units = "npc")

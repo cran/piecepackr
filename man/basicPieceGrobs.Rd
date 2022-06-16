@@ -40,8 +40,10 @@ found in its \code{directory} argument.
 }
 \examples{
 
- is_mac <- tolower(Sys.info()[["sysname"]]) == "darwin"
- if (require("grid") && capabilities("cairo") && !is_mac) {
+ if (require("grid") && all(capabilities(c("cairo", "png")))) {
+    op <- options()
+    on.exit(options(op))
+    options(piecepackr.at.inform = FALSE)
     cfg <- pp_cfg(list(invert_colors=TRUE))
 
     pushViewport(viewport(width=unit(2, "in"), height=unit(2, "in")))

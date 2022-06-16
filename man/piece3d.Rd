@@ -53,9 +53,9 @@ can be retrieved by \code{base::dynGet()}.}
 
 \item{axis_y}{Second coordinate of the axis unit vector.}
 
-\item{width}{Width of piece (plus bleed if \code{bleed} is \code{TRUE})}
+\item{width}{Width of piece}
 
-\item{height}{Height of piece (plus bleed if \code{bleed} is \code{TRUE})}
+\item{height}{Height of piece}
 
 \item{depth}{Depth (thickness) of piece.  Has no effect if \code{op_scale} is \code{0}.}
 
@@ -85,7 +85,7 @@ A numeric vector of rgl object IDs.
 \code{piece3d} draws board games pieces using the rgl package.
 }
 \examples{
-if (require("rgl")) {
+if (require("rgl") && all(capabilities(c("cairo", "png")))) {
     open3d()
     cfg <- game_systems("sans3d")$piecepack
     piece3d("tile_back", suit = 3, rank = 3, cfg = cfg, x = 0, y = 0, z = 0)
@@ -97,6 +97,6 @@ if (require("rgl")) {
 }
 \seealso{
 See \code{\link[rgl]{rgl-package}} for more information about the \code{rgl} package.
-See \code{\link[rgl:material]{rgl.material}} for more info about setting \code{rgl} material properties.
+See \code{\link[rgl:material]{rgl::material3d()}} for more info about setting \code{rgl} material properties.
 See \code{\link{geometry_utils}} for a discussion of the 3D rotation parameterization.
 }

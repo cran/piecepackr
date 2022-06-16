@@ -35,19 +35,21 @@ test_that("save_print_and_play works as expected", {
     on.exit(unlink(pdf_deck_filename_5s))
     pdf_deck_filename_4x6 <- file.path(pdf_deck_dir, "piecepack_deck_4x6.pdf")
     on.exit(unlink(pdf_deck_filename_4x6))
+    pdf_deck_filename_bleed <- file.path(pdf_deck_dir, "piecepack_deck_bleed.pdf")
     cfg_5s <- list(suit_text="♥,★,♣,♦,♠,꩜", suit_color="darkred,gold,darkgreen,darkblue,black,grey")
 
     skip_if_not(capabilities("cairo"))
-    skip_on_os("mac")
-    save_print_and_play(cfg_5s, pdf_deck_filename_5s, "A5", "all", "double-sided")
+    save_print_and_play(cfg_5s, pdf_deck_filename_5s, "A5", "all", "double-sided", quietly = TRUE)
 
-    save_print_and_play(cfg_default, pdf_deck_filename, "letter")
+    save_print_and_play(cfg_default, pdf_deck_filename, "letter", quietly = TRUE)
 
     cfg_large_dice <- pp_cfg(list(title="default cfg", width.die = 0.7))
-    save_print_and_play(cfg_large_dice, pdf_deck_filename_a4, "A4", arrangement = "double-sided")
-    save_print_and_play(cfg_default, pdf_deck_filename_a5, "A5")
+    save_print_and_play(cfg_large_dice, pdf_deck_filename_a4, "A4", arrangement = "double-sided", quietly = TRUE)
+    save_print_and_play(cfg_default, pdf_deck_filename_a5, "A5", quietly = TRUE)
 
-    save_print_and_play(cfg_default, pdf_deck_filename_4x6, "4x6", pieces = "piecepack")
+    save_print_and_play(cfg_default, pdf_deck_filename_4x6, "4x6", pieces = "piecepack", quietly = TRUE)
+
+    save_print_and_play(cfg_default, pdf_deck_filename_bleed, bleed=TRUE, quietly = TRUE)
 
     expect_true(file.exists(pdf_deck_filename))
 
@@ -56,6 +58,7 @@ test_that("save_print_and_play works as expected", {
     expect_equal(get_n_pages(pdf_deck_filename_a4), 10)
     expect_equal(get_n_pages(pdf_deck_filename_a5), 14)
     expect_equal(get_n_pages(pdf_deck_filename_4x6), 13)
+    expect_equal(get_n_pages(pdf_deck_filename_bleed), 7)
     expect_equal(get_n_pages_gs(pdf_deck_filename), 7)
     skip_if(Sys.which("pdfinfo") == "", "Doesn't have pdfinfo binary")
     expect_equal(get_n_pages_pdfinfo(pdf_deck_filename), 7)
@@ -63,7 +66,6 @@ test_that("save_print_and_play works as expected", {
 
 test_that("save_piece_images works as expected", {
     skip_if_not(capabilities("cairo"))
-    skip_on_os("mac")
     directory <- tempfile()
     on.exit(unlink(directory))
     cfg <- pp_cfg(list(grob_fn=picturePieceGrobFn(directory)))
@@ -79,24 +81,26 @@ test_that("save_piece_images works as expected", {
     save_piece_images(cfg_default, directory, format="svgz", angle=c(0,90))
     expect_equal(length(list.files(directory)), 496)
 
+    announce_snapshot_file(name = "diagram-op-ppgf.svg")
     skip_if_not(Sys.info()[["nodename"]] == "stoic-sloth")
     library("vdiffr")
-    expect_doppelganger("diagram_op_ppgf", function() {
-        g.p("tile_back", x=0.5+c(3,1,3,1), y=0.5+c(3,3,1,1), cfg=cfg)
-        g.p("tile_back", x=0.5+3, y=0.5+1, z=1/4+1/8, cfg=cfg)
-        g.p("tile_back", x=0.5+3, y=0.5+1, z=2/4+1/8, cfg=cfg)
-        g.p("die_face", x=1, y=1, z=1/4+1/4, cfg=cfg)
-        g.p("pawn_face", x=1, y=4, z=1/4+1/8, angle=90, cfg=cfg)
-        g.p("coin_face", x=3, y=4, z=1/4+1/16, angle=180, cfg=cfg)
-        g.p("coin_back", x=3, y=4, z=1/4+1/8+1/16, angle=180, cfg=cfg)
-        g.p("coin_back", x=3, y=1, z=3/4+1/16, angle=90, cfg=cfg)
-    })
+    suppressMessages({
+      expect_doppelganger("diagram_op_ppgf", function() {
+          g.p("tile_back", x=0.5+c(3,1,3,1), y=0.5+c(3,3,1,1), cfg=cfg)
+          g.p("tile_back", x=0.5+3, y=0.5+1, z=1/4+1/8, cfg=cfg)
+          g.p("tile_back", x=0.5+3, y=0.5+1, z=2/4+1/8, cfg=cfg)
+          g.p("die_face", x=1, y=1, z=1/4+1/4, cfg=cfg)
+          g.p("pawn_face", x=1, y=4, z=1/4+1/8, angle=90, cfg=cfg)
+          g.p("coin_face", x=3, y=4, z=1/4+1/16, angle=180, cfg=cfg)
+          g.p("coin_back", x=3, y=4, z=1/4+1/8+1/16, angle=180, cfg=cfg)
+          g.p("coin_back", x=3, y=1, z=3/4+1/16, angle=90, cfg=cfg)
+      })
+    }, classes="piecepackr_affine_transformation")
 })
 
 test_that("no regressions in figures", {
     skip_on_ci()
     skip_if_not(capabilities("cairo"))
-    skip_on_os("mac")
     skip_if_not_installed("vdiffr")
     library("vdiffr")
     dc <- function(..., cfg=cfg_default) {
@@ -268,19 +272,24 @@ test_that("no regressions in figures", {
     cfg <- list(invert_colors.suited=TRUE, grob_fn="basicPieceGrob")
     expect_doppelganger("pyramid_layout.s3.r4", function() dc("pyramid_layout", cfg=cfg, suit=3, rank=4))
 
+    announce_snapshot_file(name = "pyramid-face-op.svg")
+    announce_snapshot_file(name = "pyramid-top-op.svg")
+    announce_snapshot_file(name = "pyramid-top-s4-r3.svg")
     skip_if_not(Sys.info()[["nodename"]] == "stoic-sloth")
-    expect_doppelganger("pyramid_top.s4.r3", function() dc("pyramid_top", suit=4, rank=3))
-    expect_doppelganger("pyramid_top_op", function()
-        dc("pyramid_top", rank = 6, op_angle = 90, op_scale = 0.5, cfg = list(invert_colors = TRUE)))
-    expect_doppelganger("pyramid_face_op", function()
-        dc("pyramid_face", rank = 6, op_angle = 90, op_scale = 0.5, cfg = list(invert_colors = TRUE)))
+    suppressMessages({
+      expect_doppelganger("pyramid_top.s4.r3", function()
+          dc("pyramid_top", suit=4, rank=3))
+      expect_doppelganger("pyramid_top_op", function()
+          dc("pyramid_top", rank = 6, op_angle = 90, op_scale = 0.5, cfg = list(invert_colors = TRUE)))
+      expect_doppelganger("pyramid_face_op", function()
+          dc("pyramid_face", rank = 6, op_angle = 90, op_scale = 0.5, cfg = list(invert_colors = TRUE)))
+    }, classes="piecepackr_affine_transformation")
 })
 
 test_that("oblique projection works", {
     skip_on_ci()
     skip_on_cran()
     skip_if_not(capabilities("cairo"))
-    skip_on_os("mac")
     skip_if_not_installed("vdiffr")
     library("vdiffr")
     dc <- function(..., cfg=cfg_default) {
@@ -291,22 +300,24 @@ test_that("oblique projection works", {
     expect_doppelganger("coin_face_op", function() dc("coin_face"))
     expect_doppelganger("pawn_face_op", function() dc("pawn_face", cfg=cfg_3d))
     expect_doppelganger("matchstick_face_op", function() dc("matchstick_face"))
-    expect_doppelganger("die_face_op", function() dc("die_face"))
-    g.p <- function(...) {
-        grid.piece(..., op_scale=0.5, default.units="in")
-    }
-    cfg <- pp_cfg(list(depth.pawn=1, width.pawn=0.75, height.pawn=0.75,
-                       dm_text.pawn="", shape.pawn="convex6", invert_colors.pawn=TRUE))
-    expect_doppelganger("diagram_op", function() {
-        g.p("tile_back", x=0.5+c(3,1,3,1), y=0.5+c(3,3,1,1), cfg=cfg)
-        g.p("tile_back", x=0.5+3, y=0.5+1, z=1/4+1/8, cfg=cfg)
-        g.p("tile_back", x=0.5+3, y=0.5+1, z=2/4+1/8, cfg=cfg)
-        g.p("die_face", x=1, y=1, z=1/4+1/4, cfg=cfg)
-        g.p("pawn_face", x=1, y=4, z=1/4+1/2, angle=90, cfg=cfg)
-        g.p("coin_back", x=3, y=4, z=1/4+1/16, angle=180, cfg=cfg)
-        g.p("coin_back", x=3, y=4, z=1/4+1/8+1/16, angle=180, cfg=cfg)
-        g.p("coin_back", x=3, y=1, z=3/4+1/16, angle=90, cfg=cfg)
-    })
+    suppressMessages({
+      expect_doppelganger("die_face_op", function() dc("die_face"))
+      g.p <- function(...) {
+          grid.piece(..., op_scale=0.5, default.units="in")
+      }
+      cfg <- pp_cfg(list(depth.pawn=1, width.pawn=0.75, height.pawn=0.75,
+                         dm_text.pawn="", shape.pawn="convex6", invert_colors.pawn=TRUE))
+      expect_doppelganger("diagram_op", function() {
+          g.p("tile_back", x=0.5+c(3,1,3,1), y=0.5+c(3,3,1,1), cfg=cfg)
+          g.p("tile_back", x=0.5+3, y=0.5+1, z=1/4+1/8, cfg=cfg)
+          g.p("tile_back", x=0.5+3, y=0.5+1, z=2/4+1/8, cfg=cfg)
+          g.p("die_face", x=1, y=1, z=1/4+1/4, cfg=cfg)
+          g.p("pawn_face", x=1, y=4, z=1/4+1/2, angle=90, cfg=cfg)
+          g.p("coin_back", x=3, y=4, z=1/4+1/16, angle=180, cfg=cfg)
+          g.p("coin_back", x=3, y=4, z=1/4+1/8+1/16, angle=180, cfg=cfg)
+          g.p("coin_back", x=3, y=1, z=3/4+1/16, angle=90, cfg=cfg)
+      })
+    }, classes="piecepackr_affine_transformation")
 
     cfg <- pp_cfg(list(depth.pawn = 10/25.4, width.pawn=16/25.4, height.pawn=16/25.4,
                        dm_cex.pawn=0.5, shape.pawn="meeple", invert_colors.pawn=TRUE))
@@ -326,7 +337,6 @@ test_that("oblique projection works", {
 test_that("alpha and scale works", {
     skip_on_ci()
     skip_if_not(capabilities("cairo"))
-    skip_on_os("mac")
     skip_if_not_installed("vdiffr")
     library("vdiffr")
     expect_doppelganger("alpha", function() {
@@ -342,6 +352,8 @@ test_that("alpha and scale works", {
                      scale=seq(0, 1, length.out=6))
         pmap_piece(df, default.units="in", cfg=cfg)
     })
+    announce_snapshot_file(name = "alpha-and-scale-op.svg")
+    skip_if_not(Sys.info()[["nodename"]] == "stoic-sloth")
     expect_doppelganger("alpha_and_scale_op", function() {
         cfg <- pp_cfg(list(shape.coin="convex6"))
         df <- tibble(piece_side="coin_back",

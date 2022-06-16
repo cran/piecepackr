@@ -89,7 +89,9 @@ animate_piece <- function(dfs, file = "animation.gif", annotate = TRUE, ...,
 
     ranges <- lapply(dfs, aabb_piece, cfg = cfg, envir = envir, ...)
     if (n_transitions > 0L) {
-        dfs <- get_tweened_dfs(dfs, n_transitions, ..., cfg = cfg, envir = envir)
+        dfs <- get_tweened_dfs(dfs, n_transitions, n_pauses, ..., cfg = cfg, envir = envir)
+    } else if (n_pauses != 1) {
+        dfs <- rep(dfs, each = n_pauses)
     }
 
     #### Add grid and comment annotations
@@ -147,6 +149,13 @@ animation_fn <- function(file, new_device = TRUE) {
             abort(c("At least one the suggested packages 'gifski' or 'animation' is required to use 'animate_game()'.",
                     i = "Use 'install.packages(\"gifski\")' and/or 'install.packages(\"animation\")' to install them."),
                   class = "piecepackr_suggested_package")
+        }
+    } else if (grepl(".bmp$|.jpg$|.jpeg$|.png$|.tiff$", file)) {
+        stopifnot(has_c_integer_format(file))
+        function(expr, file, width, height, delay, res) {
+            pp_device(file, width = width / res, height = height / res, res=res)
+            eval(expr)
+            grDevices::dev.off()
         }
     } else {
         assert_suggested("animation")

@@ -11,7 +11,7 @@
 #'                If \code{NA} we will read the texture and figure out a reasonable value.
 #' @return A numeric vector of rgl object IDs.
 #' @examples
-#' if (require("rgl")) {
+#' if (require("rgl") && all(capabilities(c("cairo", "png")))) {
 #'     open3d()
 #'     cfg <- game_systems("sans3d")$piecepack
 #'     piece3d("tile_back", suit = 3, rank = 3, cfg = cfg, x = 0, y = 0, z = 0)
@@ -22,7 +22,7 @@
 #' }
 #' @export
 #' @seealso See \code{\link[rgl]{rgl-package}} for more information about the \code{rgl} package.
-#'          See \code{\link[rgl:material]{rgl.material}} for more info about setting \code{rgl} material properties.
+#'          See [rgl::material3d()] for more info about setting \code{rgl} material properties.
 #'          See \code{\link{geometry_utils}} for a discussion of the 3D rotation parameterization.
 piece3d <- function(piece_side = "tile_back", suit = NA, rank = NA, # nolint
                     cfg = getOption("piecepackr.cfg", pp_cfg()),

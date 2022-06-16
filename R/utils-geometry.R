@@ -14,6 +14,10 @@ Point2D <- R6Class("point2d",
                                    self$x <- rep(xt, length.out = n)
                                    self$y <- rep(y, length.out = n)
                                },
+                               angle_to = function(p) {
+                                   p1 = self$diff(p)
+                                   to_t(p1$x, p1$y)
+                               },
                                diff = function(p) {
                                    Vector$new(p$x-self$x, p$y-self$y)
                                },
@@ -48,8 +52,17 @@ Point2D <- R6Class("point2d",
                                },
                                plot = function(gp = gpar()) {
                                    grid.points(x=self$x, y=self$y, default.units="in", gp = gp)
-                               }
-                               ))
+                               }),
+                   active = list(c = function() {
+                                     Point2D$new(mean(self$x), mean(self$y))
+                                 },
+                                 convex_hull = function() {
+                                     hull <- grDevices::chull(as.matrix(self))
+                                     x <- self$x[hull]
+                                     y <- self$y[hull]
+                                     Point2D$new(x, y)
+                                 })
+)
 #' @export
 `[.point2d` <- function(x, i) Point2D$new(x$x[i], x$y[i])
 #' @export
@@ -94,6 +107,9 @@ Point3D <- R6Class("point3d",
                                      self$x <- rep(xt, length.out = n)
                                      self$y <- rep(y, length.out = n)
                                      self$z <- rep(z, length.out = n)
+                                 },
+                                 diff = function(p) { ### later create Vector3D class?
+                                     Point3D$new(p$x-self$x, p$y-self$y, p$z-self$z)
                                  },
                                  distance_to = function(p) {
                                      sqrt((p$x - self$x)^2 + (p$y - self$y)^2 + (p$z  - self$z)^2)
@@ -267,6 +283,19 @@ LineSegment <- R6Class("line_segment",
     )
 #' @export
 `[.line_segment` <- function(x, i) LineSegment$new(x$p1[i], x$p2[i])
+
+Line <- R6Class("line",
+    public = list(a=NULL, b=NULL, c=NULL,
+                  initialize = function(theta, p) {
+                      # a * x + b * y + c = 0
+                      # cos(theta) * x + sin(theta) * y + c = 0
+                      self$a = cos(to_radians(theta))
+                      self$b = sin(to_radians(theta))
+                      self$c = -self$a * p$x + -self$b * p$y
+                  },
+                  distance_to = function(p) {
+                      abs(self$a * p$x + self$b * p$y + self$c) / sqrt(self$a^2 + self$b^2)
+                  }))
 
 ConvexPolygon <- R6Class("convex_polygon", inherit = Polygon)
 #### ConcavePolygon, add a list of convex polygons that cover it to test SAT

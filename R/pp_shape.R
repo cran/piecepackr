@@ -179,10 +179,15 @@ Shape <- R6Class("pp_shape",
                   name = name, gp = gp, vp = vp, cl = "pp_polyclip")
         }),
     active = list(
-        label = function() private$shape_label,
-        theta = function() private$shape_theta,
-        radius = function() private$shape_radius,
         back = function() private$shape_back,
+        convex = function() {
+            if (grepl(self$label, "^concave") ||
+                self$label %in% c("halma", "meeple"))
+                FALSE
+            else
+                TRUE
+        },
+        label = function() private$shape_label,
         npc_coords = function() {
             label <- self$label
             theta <- self$theta
@@ -211,7 +216,10 @@ Shape <- R6Class("pp_shape",
                 if (back) theta <- 180 - theta
                 convex_xy(get_n_vertices(label), theta)
             }
-        }),
+        },
+        radius = function() private$shape_radius,
+        theta = function() private$shape_theta
+        ),
     private = list(
         shape_label = NULL,
         shape_theta = NULL,
@@ -423,8 +431,8 @@ roundrect_xy <- function(shape_r) {
     }
     coords <- grid::grobCoords(grid::roundrectGrob(r=grid::unit(shape_r, "snpc")),
                                closed=TRUE)[[1]]
-    x <- as.numeric(grid::convertX(grid::unit(coords$x, "in"), "npc"))
-    y <- as.numeric(grid::convertY(grid::unit(coords$y, "in"), "npc"))
+    x <- convertX(grid::unit(coords$x, "in"), "npc", valueOnly = TRUE)
+    y <- convertY(grid::unit(coords$y, "in"), "npc", valueOnly = TRUE)
     list(x = x, y = y, c = rep("C1", length(x)))
 }
 

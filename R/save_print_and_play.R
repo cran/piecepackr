@@ -10,17 +10,24 @@ A4_HEIGHT <- 11.69
 #' @param cfg Piecepack configuration list or `pp_cfg` object
 #' @param output_filename Filename for print-and-play file
 #' @param size PnP output size (currently either "letter", "A4", "A5", or "4x6")
+#'             Size "4x6" currently only supports `pieces = "piecepack"`
+#'             and doesn't support `bleed = TRUE`.
 #' @param pieces Character vector of desired PnP pieces.
 #'        Supports "piecepack", "matchsticks", "pyramids", "subpack", or "all".
+#'        If `NULL` and combination of `size` / `bleed` values supports "matchsticks" and "pyramids"
+#'        then defaults to `c("piecepack", "pyramids", "matchsticks")` else just "piecepack".
 #' @param arrangement Either "single-sided" or "double-sided".
 #'                    Ignored if `size = "4x6"`.
 #' @param quietly Whether to hide messages about missing metadata
 #'                in the provided configuration.
+#' @param bleed If `TRUE` produce a variant file with "bleed" zones
+#'              and "crop marks".
+#'              Currently only supports `pieces = "piecepack"` and doesn't
+#'              support `size = "4x6"`.
 #' @inheritParams render_piece
 #' @examples
 #'   \donttest{
-#'     is_mac <- tolower(Sys.info()[["sysname"]]) == "darwin"
-#'     if (capabilities("cairo") && !is_mac) {
+#'     if (capabilities("cairo")) {
 #'         cfg <- pp_cfg(list(invert_colors.suited=TRUE))
 #'         cfg$description <- 'Piecepack with an "inverted" color scheme.'
 #'         cfg$title <- '"Inverted" piecepack'
@@ -39,9 +46,9 @@ A4_HEIGHT <- 11.69
 #'   }
 #' @export
 save_print_and_play <- function(cfg = getOption("piecepackr.cfg", pp_cfg()),
-                                output_filename="piecepack.pdf",
-                                size=c("letter", "A4", "A5", "4x6"),
-                                pieces=c("piecepack", "matchsticks", "pyramids"),
+                                output_filename = "piecepack.pdf",
+                                size = c("letter", "A4", "A5", "4x6"),
+                                pieces = NULL,
                                 arrangement=c("single-sided", "double-sided"),
                                 dev = NULL,
                                 dev.args = list(family = cfg$fontfamily,
@@ -49,11 +56,22 @@ save_print_and_play <- function(cfg = getOption("piecepackr.cfg", pp_cfg()),
                                                 units = "in",
                                                 bg = "white",
                                                 res = 72),
-                                quietly = FALSE) {
+                                quietly = FALSE, ...,
+                                bleed = FALSE) {
+
+    opt <- options(piecepackr.op_scale = 0)
+    on.exit(options(opt))
 
     stopifnot(is.null(dev) || is.function(dev))
     size <- match.arg(size)
     arrangement <- match.arg(arrangement)
+    if (is.null(pieces)) {
+        if (size == "4x6" || bleed)
+            pieces <- "piecepack"
+        else
+            pieces <- c("piecepack", "pyramids", "matchsticks")
+    }
+
     if ("all" %in% pieces)
         pieces <- c("piecepack", "pyramids", "matchsticks", "subpack")
 
@@ -77,7 +95,7 @@ save_print_and_play <- function(cfg = getOption("piecepackr.cfg", pp_cfg()),
     args <- list(filename = output_filename, width = width, height = height)
     args <- c(args, dev.args)
     args <- args[names(args) %in% names(formals(dev))]
-    onefile <- has_onefile(dev, dev.args)
+    onefile <- has_onefile(dev, args)
     if (!onefile && !has_c_integer_format(output_filename))
         abort(paste("`save_print_and_play()` generates multiple pages.",
                     'Either `dev` needs to support `onefile` and `isTRUE(dev.args[["onefile"]])`',
@@ -85,8 +103,8 @@ save_print_and_play <- function(cfg = getOption("piecepackr.cfg", pp_cfg()),
     do.call(dev, args)
 
     pl <- switch(size,
-                 `4x6` = print_and_play_4x6(cfg, pieces, quietly),
-                 print_and_play_paper(cfg, size, pieces, arrangement, quietly))
+                 `4x6` = print_and_play_4x6(cfg, pieces, quietly, bleed),
+                 print_and_play_paper(cfg, size, pieces, arrangement, quietly, bleed))
 
     invisible(grDevices::dev.off())
 
@@ -96,8 +114,8 @@ save_print_and_play <- function(cfg = getOption("piecepackr.cfg", pp_cfg()),
     invisible(NULL)
 }
 
-has_onefile <- function(dev, dev.args) {
-    hasName(formals(dev), "onefile") && isTRUE(dev.args[["onefile"]])
+has_onefile <- function(dev, args) {
+    hasName(formals(dev), "onefile") && isTRUE(args[["onefile"]])
 }
 has_c_integer_format <- function(filename) {
     grepl("%[[:digit:]]+d", filename)
@@ -132,4 +150,11 @@ add_pdf_metadata <- function(output_filename, cfg=pp_cfg(), pl=list()) {
               "-sDEVICE=pdfwrite", "-sAutoRotatePages=None",
               shQuote(temp_txt), shQuote(temp_pdf))
     system2(gs(), args)
+}
+
+print_and_play_paper <- function(cfg, size, pieces, arrangement, quietly, bleed) {
+    if (bleed)
+        print_and_play_paper_bleed(cfg, size, pieces, arrangement, quietly)
+    else
+        print_and_play_paper_compact(cfg, size, pieces, arrangement, quietly)
 }

@@ -49,9 +49,9 @@ can be retrieved by \code{base::dynGet()}.}
 
 \item{axis_y}{Second coordinate of the axis unit vector.}
 
-\item{width}{Width of piece (plus bleed if \code{bleed} is \code{TRUE})}
+\item{width}{Width of piece}
 
-\item{height}{Height of piece (plus bleed if \code{bleed} is \code{TRUE})}
+\item{height}{Height of piece}
 
 \item{depth}{Depth (thickness) of piece.  Has no effect if \code{op_scale} is \code{0}.}
 
@@ -71,7 +71,7 @@ A rayrender object.
 }
 \examples{
   \donttest{
-    if (require("rayrender")) {
+    if (require("rayrender") && all(capabilities(c("cairo", "png")))) {
         cfg <- game_systems("sans3d")$piecepack
         render_scene(piece("tile_face", suit = 3, rank = 3, cfg = cfg))
         render_scene(piece("coin_back", suit = 4, rank = 2, cfg = cfg))

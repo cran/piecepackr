@@ -1,3 +1,136 @@
+piecepackr 1.11.1
+=================
+
+Breaking changes
+----------------
+
+* Some tweaks to the "bleed" zone feature introduced in v1.10.1:
+
+  + In `grid.piece()` / `pieceGrob()` if `bleed = TRUE` and `width` or `height` is not `NA`
+    then `width` / `height` is now interpreted as the size of the piece *before* "bleed" zone is added.  
+  + A non-unitary `scale` factor will now be applied to piece dimensions *before* "bleed" zone is added.
+  + If one of the "named slots" of the `{grid}` "grob" returned by a custom
+    `grob_with_bleed_fn` function is `bleed` then `pieceGrob()` / `grid.piece()`
+    will adjust that grob's `bleed` slot to the requested "bleed" zone margins.
+
+* There were some tweaks on how custom function style elements
+  (i.e. `grob_fn`, `op_grob_fn`, `grob_with_bleed_fn`,
+  `obj_fn`, `rayrender_fn`, `rayvertex_fn`, `rgl_fn`)
+  in configurations lists are internally called by `{piecepackr}`.  
+  If you use custom *function* style elements it is possible you may be affected:
+
+  + The arguments of custom functions are now called by name (via `do.call()`)
+    instead of positionally.
+    If your custom function uses the same argument names 
+    as any of `{piecepackr}`'s internal custom functions then there should be no problem.
+    The order of arguments no longer matters but the names must match the
+    names `{piecepackr}` expects.
+
+  + If one of the "named slots" of the `{grid}` "grob" returned by a custom
+    `grob_fn` function is `border` then `pieceGrob()` / `grid.piece()` will 
+    adjust that named slot to `FALSE`
+    and manually draw new border lines whenever distorting the grob via the
+    affine transformation feature (#277).
+
+  + If one of the "named slots" of the `{grid}` "grob" returned by a custom
+    `grob_fn` function is `flip` then `pieceGrob()` / `grid.piece()` will
+    adjust that named slot to `TRUE` and draw it horizontally flipped
+    (via affine transformation feature) when drawing the "flip" side.
+    Currently most relevant when drawing on-their-side pyramids viewed from their bottom.
+
+  + If one of the "named slots" of the `{grid}` "grob" returned by a custom
+    `grob_fn`, `op_grob_fn`, or `grob_with_bleed_fn` function is `scale` then
+    `pieceGrob()` / `grid.piece()` will adjust that named slot rather than
+    adjusting that grob's `gp` slot's `cex` and `lex` values when `scale != 1`.
+    If your "grob" doesn't have a named slot `scale` you shouldn't be affected.
+
+* A couple `pp_cfg()` R6 class active bindings which were deprecated in v1.7.1 (2021-03-25)
+  have been removed:
+
+  + ``cache_shadow``.  Use the new ``cache_op_fn`` instead.
+  + ``i_unsuit``.  Add one to the ``n_suits`` field instead.
+
+New features
+------------
+
+* `cropmarkGrob()` / `grid.cropmark()` create/draw "crop mark" grobs (#262).
+  Intended for use in creating print-and-play layouts.
+
+* `save_print_and_play()` supports new argument `bleed` (#259).  
+  If `bleed = TRUE` we provide a new print-and-play layout with 
+  1/8" bleed zones and "crop marks" indicating where to cut the pieces.  
+  Currently this feature only supports `pieces = "piecepack"`, does
+  not support `size = "4x6"`, and requires more paper than the 
+  more compact legacy `bleed = FALSE` layout.
+
+* `geom_piece()`, `grid.piece()`, `pieceGrob()`, 
+  `pp_cfg()$get_grob()`, and `pp_cfg()$get_op_grob()` now support
+  argument `type = "transformation"` which uses
+  the new affine transformation feature introduced in R 4.2.
+
+  This should be a faster alternative to the existing "picture" and "raster" types when
+  wishing to "faithfully" draw game pieces outside their "normal" (viewport) sizes 
+  and/or dilate them in x/y directions
+  but will only work in select graphic devices in R 4.2 (or later).
+  You can tell if the active graphic device supports the affine transformation feature
+  with `isTRUE(dev.capabilities()$transformations)`.
+
+* `grid.piece()` / `pieceGrob()` now has support for
+  drawing two-sided tokens stood up on one of their sides 
+  i.e. ("top", "left", "right", or "base") in an oblique projection (#272).
+
+  `grid.piece()` / pieceGrob()` now also draws more sides of
+  die and pyramid pieces when drawn in an oblique projection (#173, #257).
+
+  Fully rendering the visible sides of the pieces requires the new "affine transformation" feature
+  which is only supported in select graphic devices in R 4.2 (most notably the "cairo" family of devices).  
+  If this feature is not detected
+  we will output an `inform()` `message()` of class `"piecepackr_affine_transformation"`
+  and fall back to either a `grImport2::pictureGrob()` or `grid::polygonGrob()` alternative.
+  These messages may be suppressed by setting `options(piecepackr.at.inform = FALSE)`.
+
+* ``pp_cfg()``'s `die_arrangement` "style" now supports comma-separated strings 
+  of six integers optionally followed by a `^`, `<`, `v`, `>` which can be
+  used to completely customize the arrangement of faces on six-sided dice (#175).
+  The `die_arrangement` "style" continues to also support the values `"counter_up"`,
+  `"opposites_sum_to_5"`, and `"counter_down"` (default) which provide aliases
+  for three popular arrangements.
+
+* The following enhancements to the configurations returned by `game_systems()`:
+
+  - New configuration ``dice_fudge`` which provide [Fudge dice](https://en.wikipedia.org/wiki/Fudge_(role-playing_game_system)#Fudge_dice)
+    in six color schemes (#287).
+
+Bug fixes and minor improvements
+--------------------------------
+
+* The `op_angle`, `op_scale`, `alpha`, and `scale` arguments of 
+  `pieceGrob()` / `grid.piece()` are now vectorized.
+* The `op_scale` threshold when `pieceGrob()` / `grid.piece()` switches from "oblique projection"
+  mode to "orthographic projection" mode has been lowered from `0.01` to `0.0001`.
+* If `isTRUE(capabilities("cairo"))` then `pp_cfg()$get_raster()`
+  now always uses `png(type = "cairo")`.
+* `grid::grobCoords()` now returns slightly better values for dice, pyramids, and convex
+  two-sided tokens when projected in an oblique projection by `pieceGrob()` / `grid.piece()` (#285).
+* `save_print_and_play()`'s `pieces` argument now defaults to `NULL`.  If the `size` / `bleed` 
+  arguments support the "matchsticks" and "pyramids" pieces it defaults to 
+  `c("piecepack", "pyramids", "matchsticks")` (as before) and if they 
+  do not suport those pieces it defaults to just "piecepack".
+  We are now more selective of which piecepack credits to include based on 
+  which components are in the `pieces` argument.
+* `save_print_and_play()` now shuffles tile back directions (#103).
+  If a user makes tiles by double-sided printing or folding over the "gutter" and the tile 
+  backs are not perfectly symmetric then the tile backs will now leak less information 
+  about the "direction" of the tile faces.
+* The default "bleed" function (as used by `pp_cfg()$get_grob_with_bleed()` and `pieceGrob(bleed=TRUE)`)
+  now better extends "mat" and "gridlines" from the default "grob" function (#288).
+* `animate_piece()` now correctly handles `n_pauses != 1`.
+* If the `file` argument of `animate_piece()` ends in ".bmp", ".jpg", ".jpeg", ".png", or ".tiff"
+  we will now save individual images of the animation frames.  
+  `file` must have a "C integer format" in the filename.
+* Fixes bug generating textures in `save_piece_obj()` if `options("piecepackr.op_scale")` was 
+  set to a positive number (#293).
+
 piecepackr 1.10.3
 =================
 
@@ -18,7 +151,7 @@ Breaking changes
     inherit the additional class "pp_grobCoords".
 
 Bug fixes
---------------------------------
+---------
 
 * Final page in "4x6" `size` layout produced by `save_print_and_play()`
   is no longer incorrectly rotated from landscape to portrait mode (#269).

@@ -5,8 +5,10 @@ test_that("no regressions in figures", {
     library("vdiffr")
     # standard d6 dice
     cfg <- game_systems()$dice
-    expect_doppelganger("dice_d6", function()
+    suppressMessages({
+      expect_doppelganger("dice_d6", function()
         grid.piece("die_face", x=1:6, default.units="in", rank=1:6, suit=1:6, op_scale=0.5, cfg=cfg))
+    }, classes="piecepackr_affine_transformation")
 
     # dominoes
     envir <- game_systems("dejavu")
@@ -150,5 +152,11 @@ test_that("no regressions in figures", {
                               suit = 1:6, rank = NA, cfg = "reversi")
         df <- rbind(df_board, df_bit_face, df_bit_back)
         pmap_piece(df, default.units="in", envir=envir, op_scale=0.5, trans=op_transform)
+    })
+
+    # fudge dice
+    cfg <- envir$dice_fudge
+    expect_doppelganger("fudge", function() {
+        grid.piece("die_face", x = 1:6, y = 2, suit = 1:6, rank = 1:6, cfg = cfg, default.units = "in")
     })
 })

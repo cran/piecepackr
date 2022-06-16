@@ -47,6 +47,8 @@ and the \dQuote{back} is a lined board.
 Color is controlled by suit and number of rows/columns by rank.
 \code{chess1} has one inch squares and \code{chess2} has two inch squares.}
 \item{dice}{Traditional six-sided pipped dice in six color schemes (color controlled by their suit).}
+\item{dice_fudge}{\dQuote{Fudge} dice in six color schemes (color controlled by their suit).
+\dQuote{Fudge} dice have three ranks "+", " ", and "-" repeated twice.}
 \item{dominoes, dominoes_black, dominoes_blue, dominoes_green, dominoes_red, dominoes_white, dominoes_yellow}{
 Traditional pipped dominoes in six color schemes (\code{dominoes} and \code{dominoes_white} are the same).
 In each color scheme the number of pips on the \dQuote{top} of the domino is
@@ -110,6 +112,10 @@ red paired with green, black paired with white, and blue paired with yellow.
        names(cfgs)
 
     if (require("grid")) {
+       op <- options()
+       on.exit(options(op))
+       options(piecepackr.at.inform = FALSE)
+
        # standard dice
        grid.newpage()
        grid.piece("die_face", x=1:6, default.units="in", rank=1:6, suit=1:6,

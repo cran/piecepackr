@@ -83,9 +83,9 @@ can be retrieved by \code{base::dynGet()}.}
 
 \item{use_pictureGrob}{Deprecated argument.  If \code{TRUE} sets \code{type} argument to \code{"picture"}.}
 
-\item{width}{Width of piece (plus bleed if \code{bleed} is \code{TRUE})}
+\item{width}{Width of piece}
 
-\item{height}{Height of piece (plus bleed if \code{bleed} is \code{TRUE})}
+\item{height}{Height of piece}
 
 \item{depth}{Depth (thickness) of piece.  Has no effect if \code{op_scale} is \code{0}.}
 
@@ -114,15 +114,21 @@ and \code{1.0} is the scale used in the \dQuote{cavalier} projection.}
 
 \item{alpha}{Alpha channel for transparency.}
 
-\item{type}{Type of grid grob to use.  Either \code{"normal"} (default), \code{"picture"}, or \code{"raster"}.
+\item{type}{Type of grid grob to use.  Either \code{"normal"} (default), \code{"picture"}, \code{"raster"}, or \code{"transformation"}.
 \code{"picture"} exports to (temporary) svg and re-imports as a \code{grImport2::pictureGrob}.
 \code{"raster"} exports to (temporary) png and re-imports as a \code{grid::rasterGrob}.
-The latter two can be useful if drawing pieces really big or small and don't want
+\code{"transformation"} uses the affine transformation feature only supported in
+R 4.2+ within select graphic devices.
+The latter three can be useful if drawing pieces really big or small and don't want
 to mess with re-configuring fontsizes and linewidths.}
 
-\item{bleed}{Whether to add a \dQuote{bleed} zone around the piece.
-If \code{width} or \code{height} is \code{NA} we will add 1/8 inch bleeds.
-\code{bleed = TRUE} is incompatible with \code{op_scale > 0}.}
+\item{bleed}{If \code{FALSE} do not add a \dQuote{bleed} zone around the piece,
+otherwise add a \dQuote{bleed} zone around the piece:\itemize{
+\item{If \code{bleed} is \code{TRUE} we will add 1/8 inch bleeds}
+\item{If \code{bleed} is a \code{\link[grid:unit]{grid::unit()}} we will use it as bleed size}
+\item{If \code{bleed} is numeric we will convert to \code{\link[grid:unit]{grid::unit()}} via \code{grid::unit(bleed, default.units)}}
+}
+A non-\code{FALSE} \code{bleed} is incompatible with \code{op_scale > 0} (drawing in an \dQuote{oblique projection}).}
 
 \item{draw}{A logical value indicating whether graphics output should be produced.}
 }
@@ -135,40 +141,44 @@ A \code{grid} grob object.  If \code{draw} is \code{TRUE} then as a side effect
 \code{pieceGrob()} is its \code{grid} \dQuote{grob} counterpart.
 }
 \examples{
-   if (require("grid")) {
-       draw_pp_diagram <- function(cfg=pp_cfg(), op_scale=0) {
-           g.p <- function(...) {
-               grid.piece(..., op_scale=op_scale, cfg=cfg, default.units="in")
-           }
-           g.p("tile_back", x=0.5+c(3,1,3,1), y=0.5+c(3,3,1,1))
-           g.p("tile_back", x=0.5+3, y=0.5+1, z=1/4+1/8)
-           g.p("tile_back", x=0.5+3, y=0.5+1, z=2/4+1/8)
-           g.p("die_face", suit=3, rank=5, x=1, y=1, z=1/4+1/4)
-           g.p("pawn_face", x=1, y=4, z=1/4+1/2, angle=90)
-           g.p("coin_back", x=3, y=4, z=1/4+1/16, angle=180)
-           g.p("coin_back", suit=4, x=3, y=4, z=1/4+1/8+1/16, angle=180)
-           g.p("coin_back", suit=2, x=3, y=1, z=3/4+1/8, angle=90)
-       }
+  if (require("grid")) {
+    op <- options()
+    on.exit(options(op))
+    options(piecepackr.at.inform = FALSE)
 
-       # default piecepack, orthogonal projection
-       draw_pp_diagram(cfg=pp_cfg())
+    draw_pp_diagram <- function(cfg=pp_cfg(), op_scale=0) {
+        g.p <- function(...) {
+            grid.piece(..., op_scale=op_scale, cfg=cfg, default.units="in")
+        }
+        g.p("tile_back", x=0.5+c(3,1,3,1), y=0.5+c(3,3,1,1))
+        g.p("tile_back", x=0.5+3, y=0.5+1, z=1/4+1/8)
+        g.p("tile_back", x=0.5+3, y=0.5+1, z=2/4+1/8)
+        g.p("die_face", suit=3, rank=5, x=1, y=1, z=1/4+1/4)
+        g.p("pawn_face", x=1, y=4, z=1/4+1/2, angle=90)
+        g.p("coin_back", x=3, y=4, z=1/4+1/16, angle=180)
+        g.p("coin_back", suit=4, x=3, y=4, z=1/4+1/8+1/16, angle=180)
+        g.p("coin_back", suit=2, x=3, y=1, z=3/4+1/8, angle=90)
+    }
 
-       # custom configuration, orthogonal projection
-       grid.newpage()
-       dark_colorscheme <- list(suit_color="darkred,black,darkgreen,darkblue,black",
-                            invert_colors.suited=TRUE, border_color="black", border_lex=2)
-       traditional_ranks <- list(use_suit_as_ace=TRUE, rank_text=",a,2,3,4,5")
-       cfg <- c(dark_colorscheme, traditional_ranks)
-       draw_pp_diagram(cfg=pp_cfg(cfg))
+    # default piecepack, orthogonal projection
+    draw_pp_diagram(cfg=pp_cfg())
 
-       # custom configuration, oblique projection
-       grid.newpage()
-       cfg3d <- list(width.pawn=0.75, height.pawn=0.75, depth.pawn=1,
-                          dm_text.pawn="", shape.pawn="convex6", invert_colors.pawn=TRUE,
-                          edge_color.coin="tan", edge_color.tile="tan")
-       cfg <- pp_cfg(c(cfg, cfg3d))
-       draw_pp_diagram(cfg=pp_cfg(cfg), op_scale=0.5)
-   }
+    # custom configuration, orthogonal projection
+    grid.newpage()
+    dark_colorscheme <- list(suit_color="darkred,black,darkgreen,darkblue,black",
+                         invert_colors.suited=TRUE, border_color="black", border_lex=2)
+    traditional_ranks <- list(use_suit_as_ace=TRUE, rank_text=",a,2,3,4,5")
+    cfg <- c(dark_colorscheme, traditional_ranks)
+    draw_pp_diagram(cfg=pp_cfg(cfg))
+
+    # custom configuration, oblique projection
+    grid.newpage()
+    cfg3d <- list(width.pawn=0.75, height.pawn=0.75, depth.pawn=1,
+                       dm_text.pawn="", shape.pawn="convex6", invert_colors.pawn=TRUE,
+                       edge_color.coin="tan", edge_color.tile="tan")
+    cfg <- pp_cfg(c(cfg, cfg3d))
+    draw_pp_diagram(cfg=pp_cfg(cfg), op_scale=0.5)
+  }
 }
 \seealso{
 \code{\link[=pmap_piece]{pmap_piece()}} which applies \code{pieceGrob()} over rows of a data frame.

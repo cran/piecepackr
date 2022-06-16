@@ -130,7 +130,7 @@ with various decks of playing cards.
 
 ![Playing Cards](man/figures/README-cards-1.png)
 
-### Other traditional abstracts
+### Other included games and components
 
 -   An `alquerque` configuration that produces "boards"/"bits" for
     [Alquerque](https://en.wikipedia.org/wiki/Alquerque) in a variety of
@@ -138,6 +138,11 @@ with various decks of playing cards.
 -   `chess1` and `chess2` configurations with checkered "boards" and
     matching chess "bits" (currently "disc" pieces instead of "Staunton"
     pieces).
+-   A `dice_fudge` configuration which can produce [Fudge
+    dice](https://en.wikipedia.org/wiki/Fudge_(role-playing_game_system)#Fudge_dice)
+    in a variety of colors.
+-   A `meeples` configuration that produces "meeple" bits in a variety
+    of colors.
 -   A `morris` configuration that can produce
     [Three/Six/Seven/Nine/Twelve men's
     morris](https://en.wikipedia.org/wiki/Nine_men%27s_morris)
@@ -383,15 +388,7 @@ projection](man/figures/README-ggplot2-1.png)
 `piece_mesh()` creates [rayvertex](https://www.rayvertex.com/) objects.
 
     library("ppgames") # remotes::install_github("piecepackr/ppgames")
-    library("rayvertex")
-
-    ## 
-    ## Attaching package: 'rayvertex'
-
-    ## The following object is masked from 'package:rayrender':
-    ## 
-    ##     r_obj
-
+    library("rayvertex", warn.conflicts = FALSE) # masks `rayrender::r_obj`
     df <- ppgames::df_international_chess()
     envir <- game_systems("dejavu3d", round=TRUE, pawn="joystick")
     l <- pmap_piece(df, piece_mesh, trans=op_transform, envir = envir, scale = 0.98, res = 150, as_top="pawn_face")

@@ -5,7 +5,7 @@
 #' @return A rayrender object.
 #' @examples
 #'   \donttest{
-#'     if (require("rayrender")) {
+#'     if (require("rayrender") && all(capabilities(c("cairo", "png")))) {
 #'         cfg <- game_systems("sans3d")$piecepack
 #'         render_scene(piece("tile_face", suit = 3, rank = 3, cfg = cfg))
 #'         render_scene(piece("coin_back", suit = 4, rank = 2, cfg = cfg))

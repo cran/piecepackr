@@ -51,9 +51,9 @@ can be retrieved by \code{base::dynGet()}.}
 
 \item{axis_y}{Second coordinate of the axis unit vector.}
 
-\item{width}{Width of piece (plus bleed if \code{bleed} is \code{TRUE})}
+\item{width}{Width of piece}
 
-\item{height}{Height of piece (plus bleed if \code{bleed} is \code{TRUE})}
+\item{height}{Height of piece}
 
 \item{depth}{Depth (thickness) of piece.  Has no effect if \code{op_scale} is \code{0}.}
 
@@ -70,9 +70,11 @@ A list with named elements "obj", "mtl", "png" with the created filenames.
 \code{save_piece_obj} saves Wavefront OBJ files (including associated MTL and texture image) of board game pieces.
 }
 \examples{
-    cfg <- game_systems("sans3d")$dominoes
-    files <- save_piece_obj("tile_face", suit = 3+1, rank=6+1, cfg = cfg)
-    print(files)
+    if (all(capabilities(c("cairo", "png")))) {
+      cfg <- game_systems("sans3d")$dominoes
+      files <- save_piece_obj("tile_face", suit = 3+1, rank=6+1, cfg = cfg)
+      print(files)
+    }
 }
 \seealso{
 See \code{\link{geometry_utils}} for a discussion of the 3D rotation parameterization.

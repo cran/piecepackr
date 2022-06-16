@@ -12,8 +12,10 @@
 #' @inheritParams grid.piece
 #' @examples
 #'
-#'  is_mac <- tolower(Sys.info()[["sysname"]]) == "darwin"
-#'  if (require("grid") && capabilities("cairo") && !is_mac) {
+#'  if (require("grid") && all(capabilities(c("cairo", "png")))) {
+#'     op <- options()
+#'     on.exit(options(op))
+#'     options(piecepackr.at.inform = FALSE)
 #'     cfg <- pp_cfg(list(invert_colors=TRUE))
 #'
 #'     pushViewport(viewport(width=unit(2, "in"), height=unit(2, "in")))
@@ -50,7 +52,21 @@
 basicPieceGrob <- function(piece_side, suit, rank, cfg=pp_cfg()) {
     cfg <- as_pp_cfg(cfg)
     opt <- cfg$get_piece_opt(piece_side, suit, rank)
-    gTree(opt=opt, name=NULL, gp=gpar(), vp=NULL, cl="basic_piece_side")
+    gTree(opt=opt, border=TRUE, flip=FALSE, scale=1,
+          name=NULL, gp=gpar(), vp=NULL, cl="basic_piece_side")
+}
+
+#' @export
+makeContext.basic_piece_side <- function(x) {
+    x <- update_gp(x, gp = gpar(cex = x$scale, lex = x$scale))
+    x
+}
+
+#' @export
+grobCoords.basic_piece_side <- function(x, closed, ...) {
+    opt <- x$opt
+    shape <- pp_shape(opt$shape, opt$shape_t, opt$shape_r, opt$back)
+    grobCoords(shape$shape(vp=x$vp), closed=closed, ...)
 }
 
 #' @export
@@ -76,9 +92,16 @@ makeContent.basic_piece_side <- function(x) {
     dm_grob <- textGrob(opt$dm_text, x=opt$dm_x, y=opt$dm_y, hjust = 0.5, vjust = 0.5,
                         gp = gp_dm, name = "directional_mark")
 
-    gp_border <- gpar(col=opt$border_color, fill=NA, lex=opt$border_lex)
-    border_grob <- shape$shape(gp=gp_border, name = "border")
-    gl <- gList(background_grob, gl_grob, mat_grob, ps_grob, dm_grob, border_grob)
+    if (x$border) {
+        gp_border <- gpar(col=opt$border_color, fill=NA, lex=opt$border_lex)
+        border_grob <- shape$shape(gp=gp_border, name = "border")
+    } else {
+        border_grob <- nullGrob(name = "border")
+    }
+    if (x$flip)
+        gl <- gList(dm_grob, ps_grob, mat_grob, gl_grob, background_grob, border_grob)
+    else
+        gl <- gList(background_grob, gl_grob, mat_grob, ps_grob, dm_grob, border_grob)
 
     setChildren(x, gl)
 }
@@ -124,19 +147,47 @@ piece_filename_helper <- function(directory, piece_side, format, suit, rank, cfg
 #' @rdname basicPieceGrobs
 #' @export
 pyramidTopGrob <- function(piece_side, suit, rank, cfg=pp_cfg()) {
-    g1 <- pieceGrob("pyramid_face",  suit, rank, cfg, type="picture",
-                    default.units = "npc",
-                    y=0.75, width=1.0, height=0.5, angle=180, name="face")
-    g2 <- pieceGrob("pyramid_back",  suit, rank, cfg, type="picture",
-                    default.units = "npc",
-                    y=0.25, width=1.0, height=0.5, angle=  0, name="back")
-    g3 <- pieceGrob("pyramid_left",  suit, rank, cfg, type="picture",
-                    default.units = "npc",
-                    x=0.25, width=1.0, height=0.5, angle=-90, name="left")
-    g4 <- pieceGrob("pyramid_right", suit, rank, cfg, type="picture",
-                    default.units = "npc",
-                    x=0.75, width=1.0, height=0.5, angle= 90, name="right")
-    grobTree(g3, g4, g1, g2, cl="pyramid_top")
+    gTree(suit = suit, rank = rank, cfg = cfg,
+          scale = 1, cl="pyramid_top")
+}
+
+#' @export
+makeContent.pyramid_top <- function(x) {
+    width <- convertWidth(unit(1, "npc"), "in", valueOnly = TRUE)
+    height <- convertHeight(unit(1, "npc"), "in", valueOnly = TRUE)
+
+    # face at top
+    xy_vp <- list(x = c(width, width, 0, 0), y = c(0.5 * height, height, height, 0.5 * height))
+    xy_polygon <- list(x = c(0.5 * height, width, 0), y = c(0.5 * height, height, height))
+    g1 <- at_ps_grob("pyramid_face", x$suit, x$rank, x$cfg, xy_vp, xy_polygon, "face")
+    g1$scale <- x$scale
+
+    # back at bottom
+    xy_vp <- list(x = width * rect_xy$x, y = 0.5 * height * rect_xy$y)
+    xy_polygon <- list(x = width * pyramid_xy$x, y = 0.5 * height * pyramid_xy$y)
+    g2 <- at_ps_grob("pyramid_back", x$suit, x$rank, x$cfg, xy_vp, xy_polygon, "back")
+    g2$scale <- x$scale
+
+    # left at left
+    xy_vp <- list(x = c(0.5 * width, 0, 0, 0.5 * width), y = c(height, height, 0, 0))
+    xy_polygon <- list(x = c(0.5 * width, 0, 0), y = c(0.5 * height, height, 0))
+    g3 <- at_ps_grob("pyramid_left", x$suit, x$rank, x$cfg, xy_vp, xy_polygon, "left")
+    g3$scale <- x$scale
+
+    # right at right
+    xy_vp <- list(x = c(0.5 * width, width, width, 0.5 * width), y = c(0, 0, height, height))
+    xy_polygon <- list(x = c(0.5 * width, width, width), y = c(0.5 * height, 0, height))
+    g4 <- at_ps_grob("pyramid_right", x$suit, x$rank, x$cfg, xy_vp, xy_polygon, "right")
+    g4$scale <- x$scale
+
+    gl <- gList(g1, g2, g3, g4)
+
+    setChildren(x, gl)
+}
+
+#' @export
+grobCoords.pyramid_top <- function(x, closed, ...) {
+    grobCoords(rectGrob(vp=x$vp), closed=closed, ...)
 }
 
 #' @rdname basicPieceGrobs
@@ -226,23 +277,10 @@ x_die_layoutRF <- c(1/4, 2/4, 2/4, 3/4, 3/4, 4/4) - 1/8
 x_die_layoutLF <- c(4/4, 3/4, 3/4, 2/4, 2/4, 1/4) - 1/8
 y_die_layout <- c(1/3, 1/3, 2/3, 2/3, 3/3, 3/3) - 1/6
 
-get_die_face_info <- function(suit, arrangement = "counter_down") { #### also angle #175
-    suit <- rep(suit, length.out=6)
-    if (arrangement == "opposites_sum_to_5") {
-        rank <- c(1, 2, 3, 6, 5, 4)
-        suit <- suit[rank]
-    } else if (arrangement == "counter_up") {
-        rank <- 6:1
-        suit <- rev(suit)
-    } else {
-        rank <- 1:6
-    }
-    list(rank = rank, suit = suit)
-}
-
 piecepackDieGrob <- function(suit, cfg, flip=FALSE,
                              arrangement=cfg$die_arrangement) {
     cfg <- as_pp_cfg(cfg)
+    rs <- get_die_face_info(suit, arrangement)
     angle <- rep(c(0, -90), 3)
     if (flip) {
         x <- x_die_layoutLF
@@ -250,7 +288,7 @@ piecepackDieGrob <- function(suit, cfg, flip=FALSE,
     } else {
         x <- x_die_layoutRF
     }
-    rs <- get_die_face_info(suit, arrangement)
+    angle <- angle + rs$angle
     gl <- gList()
     for (ii in 1:6) {
         gl[[ii]] <- pieceGrob("die_face", rs$suit[ii], rs$rank[ii], cfg,

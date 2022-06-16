@@ -22,7 +22,9 @@
 #'   \item{`piece_side`}{A string with piece and side separated by a underscore e.g. "coin_face".}
 #'   \item{`suit`}{Number of suit (starting from 1).}
 #'   \item{`rank`}{Number of rank (starting from 1).}
-#'   \item{`type`}{Which type of grob to return, either `"normal"`, `"picture"`, or `"raster"`.}
+#'   \item{`type`}{Which type of grob to return, either `"normal"`, `"picture"`, `"raster"`, or `"transformation"`.}
+#'   \item{`scale`}{"scale" factor}
+#'   \item{`alpha`}{"alpha" value}
 #' }
 #'
 #' @section `pp_cfg` R6 Class Methods:\describe{
@@ -160,11 +162,16 @@ Config <- R6Class("pp_cfg",
             # so different cfg objects can share the same cache (with high probability)
             private$prefix <- as.hexmode(sample.int(2147483647L, 1L, useHash=TRUE))
         },
-        get_grob = function(piece_side, suit, rank, type = "normal", ...) {
-            switch(type,
-                   normal = private$get_grob_normal(piece_side, suit, rank),
-                   picture = private$get_grob_picture(piece_side, suit, rank),
-                   raster = to_rasterGrob(self$get_raster(piece_side, suit, rank, ...)))
+        get_grob = function(piece_side, suit, rank,
+                            type = c("normal", "picture", "raster", "transformation"),
+                            ...) {
+            type <- match.arg(type)
+            grob <- switch(type,
+                           normal = private$get_grob_normal(piece_side, suit, rank),
+                           picture = private$get_grob_picture(piece_side, suit, rank),
+                           raster = to_rasterGrob(self$get_raster(piece_side, suit, rank, ...)),
+                           transformation = private$get_grob_transformation(piece_side, suit, rank))
+            grob
         },
         get_grob_with_bleed = function(piece_side, suit, rank) {
             rank <- impute_rank(piece_side, rank, self)
@@ -179,7 +186,9 @@ Config <- R6Class("pp_cfg",
                     grob_fn <- match.fun(grob_fn)
                 if (self$cache_grob_with_bleed_fn) self$cache$set(key, grob_fn)
             }
-            grob_fn(piece_side, suit, rank, self)
+            args <- list(piece_side = piece_side, suit = suit, rank = rank,
+                         cfg = self)
+            do.call(grob_fn, args)
         },
         get_piece_opt = function(piece_side, suit=NA, rank=NA) {
             if (is.na(rank)) rank <- 1L
@@ -350,22 +359,29 @@ Config <- R6Class("pp_cfg",
                                width, height, depth,
                                op_scale, op_angle) {
             key <- private$opt_cache_key(piece_side, suit, rank, "op_grob")
-            grobFn <- self$cache$get(key, key_missing())
-            if (is.key_missing(grobFn)) {
+            grob_fn <- self$cache$get(key, key_missing())
+            if (is.key_missing(grob_fn)) {
                 default_fn <- switch(piece_side,
+                                     die_face = basicDieGrob,
                                      pyramid_top = basicPyramidTop,
                                      pyramid_face = basicPyramidSide,
                                      pyramid_back = basicPyramidSide,
                                      pyramid_left = basicPyramidSide,
                                      pyramid_right = basicPyramidSide,
-                                     basicOpGrob)
-                grobFn <- get_style_element("op_grob_fn", piece_side, private$cfg,
+                                     basicTokenGrob)
+                grob_fn <- get_style_element("op_grob_fn", piece_side, private$cfg,
                                                 default_fn, suit, rank)
-                if (self$cache_op_fn) self$cache$set(key, grobFn)
+                if (self$cache_op_fn) self$cache$set(key, grob_fn)
             }
-            grobFn(piece_side, suit, rank, self,
-                   x, y, z, angle, type, width, height, depth,
-                   op_scale, op_angle)
+            args <- list(piece_side = piece_side,
+                         suit = suit,
+                         rank = rank,
+                         cfg = self,
+                         x = x, y = y , z = z,
+                         angle = angle, type = type,
+                         width = width, height = height, depth = depth,
+                         op_scale = op_scale, op_angle = op_angle)
+            grob <- do.call(grob_fn, args)
         },
         get_raster = function(piece_side, suit, rank, res=72) {
             grob <- private$get_grob_normal(piece_side, suit, rank)
@@ -375,7 +391,11 @@ Config <- R6Class("pp_cfg",
             on.exit(unlink(png_file))
             current_dev <- grDevices::dev.cur()
             if (current_dev > 1) on.exit(grDevices::dev.set(current_dev))
-            png(png_file, width=width, height=height, units="in", res=res, bg="transparent")
+            args <- list(filename=png_file, width=width, height=height,
+                         units="in", res=res, bg="transparent")
+            if (capabilities("cairo"))
+                args$type <- "cairo"
+            do.call(png, args)
             grid.draw(grob)
             invisible(grDevices::dev.off())
             as.raster(png::readPNG(png_file))
@@ -391,11 +411,13 @@ Config <- R6Class("pp_cfg",
                                                   rr_piece_helper, suit, rank)
                 if (self$cache_obj_fn) self$cache$set(key, rayrender_fn)
             }
-            rayrender_fn(piece_side, suit, rank, self,
-                         x, y, z,
-                         angle, axis_x, axis_y,
-                         width, height, depth,
+            args <- list(piece_side = piece_side,
+                         suit = suit, rank = rank, cfg = self,
+                         x = x, y = y, z = z,
+                         angle = angle, axis_x = axis_x, axis_y = axis_y,
+                         width = width, height = height, depth = depth,
                          scale = scale, res = res)
+            do.call(rayrender_fn, args)
         },
         rayvertex = function(piece_side, suit, rank,
                              x, y, z, angle, axis_x, axis_y,
@@ -408,14 +430,17 @@ Config <- R6Class("pp_cfg",
                                                   rv_piece_helper, suit, rank)
                 if (self$cache_obj_fn) self$cache$set(key, rayvertex_fn)
             }
-            rayvertex_fn(piece_side, suit, rank, self,
-                         x, y, z,
-                         angle, axis_x, axis_y,
-                         width, height, depth,
+            args <- list(piece_side = piece_side,
+                         suit = suit, rank = rank, cfg = self,
+                         x = x, y = y, z = z,
+                         angle = angle, axis_x = axis_x, axis_y = axis_y,
+                         width = width, height = height, depth = depth,
                          scale = scale, res = res)
+            do.call(rayvertex_fn, args)
         },
         rgl = function(piece_side, suit, rank,
-                       x, y, z, angle, axis_x, axis_y,
+                       x, y, z,
+                       angle, axis_x, axis_y,
                        width, height, depth,
                        scale = 1, res = 72,
                        alpha = 1.0, lit = FALSE,
@@ -427,13 +452,14 @@ Config <- R6Class("pp_cfg",
                                                 rgl_piece_helper, suit, rank)
                 if (self$cache_obj_fn) self$cache$set(key, rgl_fn)
             }
-            rgl_fn(piece_side, suit, rank, self,
-                   x, y, z,
-                   angle, axis_x, axis_y,
-                   width, height, depth,
-                   scale = scale, res = res,
-                   alpha = alpha, lit = lit,
-                   shininess = shininess, textype)
+            args <- list(piece_side = piece_side,
+                         suit = suit, rank = rank, cfg = self,
+                         x = x, y = y, z = z,
+                         angle = angle, axis_x = axis_x, axis_y = axis_y,
+                         width = width, height = height, depth = depth,
+                         scale = scale, res = res, alpha = alpha,
+                         lit = lit, shininess = shininess, textype = textype)
+            do.call(rgl_fn, args)
         },
         save_obj = function(piece_side, suit, rank,
                             x, y, z, angle, axis_x, axis_y,
@@ -459,11 +485,13 @@ Config <- R6Class("pp_cfg",
                 }
                 if (self$cache_obj_fn) self$cache$set(key, obj_fn)
             }
-            obj_fn(piece_side, suit, rank, self,
-                   x = x, y = y, z = z,
-                   angle = angle, axis_x = axis_x, axis_y = axis_y,
-                   width = width, height = height, depth = depth,
-                   filename = filename, res = res)
+            args <- list(piece_side = piece_side,
+                         suit = suit, rank = rank, cfg = self,
+                         x = x, y = y, z = z,
+                         angle = angle, axis_x = axis_x, axis_y = axis_y,
+                         width = width, height = height, depth = depth,
+                         filename = filename, res = res)
+            do.call(obj_fn, args)
         },
         # Deprecated public methods
         get_shadow_fn = function(piece_side, suit, rank) {
@@ -518,14 +546,6 @@ Config <- R6Class("pp_cfg",
             }
         },
         cache_op_fn = function(value) {
-            if (missing(value)) {
-                private$cache_op_fn_bool
-            } else {
-                private$cache_type(value, "cache_op_fn_bool", "shadow$|op_grob_fn$")
-            }
-        },
-        cache_shadow = function(value) {
-            .Deprecated("pp_cfg()$cache_op_fn")
             if (missing(value)) {
                 private$cache_op_fn_bool
             } else {
@@ -612,10 +632,6 @@ Config <- R6Class("pp_cfg",
             else
                 warn("Must set 'n_suits' at initialization")
         },
-        i_unsuit = function(value) {
-            .Deprecated("Add '1L' to 'n_suits'")
-            self$n_suits + 1L
-        },
         spdx_id = function(value) {
             if (missing(value)) {
                 private$cfg$spdx_id
@@ -669,7 +685,10 @@ Config <- R6Class("pp_cfg",
                                  default_fn)
                 if (is.character(grob_fn))
                     grob_fn <- match.fun(grob_fn)
-                grob <- grob_fn(piece_side, suit, rank, self)
+
+                args <- list(piece_side = piece_side,
+                             suit = suit, rank = rank, cfg = self)
+                grob <- do.call(grob_fn, args)
                 if (!inherits(grob, "pp_grobCoords"))
                     class(grob) <- c("pp_grobCoords", class(grob))
                 if (self$cache_grob) self$cache$set(key, grob)
@@ -681,6 +700,13 @@ Config <- R6Class("pp_cfg",
             width <- self$get_width(piece_side, suit, rank)
             height <- self$get_height(piece_side, suit, rank)
             as_picture(grob, width, height)
+        },
+        get_grob_transformation = function(piece_side, suit, rank) {
+            grob <- private$get_grob_normal(piece_side, suit, rank)
+            width <- self$get_width(piece_side, suit, rank)
+            height <- self$get_height(piece_side, suit, rank)
+            vp <- viewport(width = inch(width), height = inch(height))
+            transformationGrob(grob, vp.define=vp)
         },
         opt_cache_key = function(piece_side, suit, rank, type) {
             paste(private$prefix, piece_side, suit, rank, type, sep="-")

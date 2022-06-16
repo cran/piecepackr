@@ -27,7 +27,7 @@ pp_device <- function(filename, width, height, res=72, bg="transparent") {
 }
 
 pp_device_fn <- function(filename) {
-    format <- tools::file_ext(filename)
+    format <- tools::file_ext(tolower(filename))
     switch(format,
            bmp = grDevices::bmp,
            jpeg = grDevices::jpeg,
@@ -59,8 +59,7 @@ piece_filename <- function(directory, piece_side, format, angle,
 #' @param angle Numeric vector of angles to rotate images (in degrees)
 #' @examples
 #'   \donttest{
-#'     is_mac <- tolower(Sys.info()[["sysname"]]) == "darwin"
-#'     if (all(capabilities(c("cairo", "png"))) && !is_mac) {
+#'     if (all(capabilities(c("cairo", "png")))) {
 #'         cfg <- pp_cfg(list(suit_color="darkred,black,darkgreen,darkblue,grey"))
 #'         save_piece_images(cfg, directory=tempdir(), format="svg", angle=0)
 #'         save_piece_images(cfg, directory=tempdir(), format="png", angle=90)
@@ -71,6 +70,8 @@ save_piece_images <- function(cfg = getOption("piecepackr.cfg", pp_cfg()),
                               directory=tempdir(), format="svg", angle=0) {
     current_dev <- grDevices::dev.cur()
     if (current_dev > 1) on.exit(grDevices::dev.set(current_dev))
+    opt <- options(piecepackr.op_scale = 0)
+    on.exit(options(opt))
 
     stopifnot(dir.exists(directory))
 
