@@ -186,6 +186,7 @@ configure](https://trevorldavis.com/piecepackr/configuration-lists.html)
 to quickly adjust the appearance of the game components drawn by
 `grid.piece`:
 
+    library("piecepackr")
     dark_colorscheme <- list(suit_color="darkred,black,darkgreen,darkblue,black",
                          invert_colors.suited=TRUE, border_color="black", border_lex=2)
     piecepack_suits <- list(suit_text="\U0001f31e,\U0001f31c,\U0001f451,\u269c,\uaa5c", # 🌞,🌜,👑,⚜,꩜
@@ -220,6 +221,7 @@ powered by the suggested package
 
     library("grid")
     library("gridpattern")
+    library("piecepackr")
 
     tilings <- c("hexagonal", "snub_square", "pythagorean",
                  "truncated_square", "triangular", "trihexagonal")
@@ -257,6 +259,7 @@ function](man/figures/README-pattern-1.png)
 [oblique
 projection](https://trevorldavis.com/piecepackr/3d-projections.html):
 
+    library("piecepackr")
     cfg3d <- list(width.pawn=0.75, height.pawn=0.75, depth.pawn=1, 
                        dm_text.pawn="", shape.pawn="convex6", invert_colors.pawn=TRUE,
                        edge_color.coin="tan", edge_color.tile="tan")
@@ -297,6 +300,7 @@ z-coordinates and an appropriate re-ordering of the data frame given the
 desired angle of the oblique projection.
 
     library("dplyr", warn.conflicts=FALSE)
+    library("piecepackr")
     library("tibble")
     df_tiles <- tibble(piece_side="tile_back", x=0.5+c(3,1,3,1,1,1), y=0.5+c(3,3,1,1,1,1))
     df_coins <- tibble(piece_side="coin_back", x=rep(1:4, 4), y=rep(c(4,1), each=8),
@@ -315,6 +319,7 @@ input](man/figures/README-pmap-1.png)
 objects.
 
     library("ggplot2")
+    library("piecepackr")
     envir <- game_systems("sans")
     df_board <- tibble(piece_side = "board_face", suit = 3, rank = 12,
                        x = 4, y = 4)
@@ -334,6 +339,8 @@ objects.
 
 ![Twelve men's morris game diagram](man/figures/README-ggplot2_2d-1.png)
 
+    library("ggplot2")
+    library("piecepackr")
     library("ppgames") # remotes::install_github("piecepackr/ppgames")
     library("withr")
     new <- list(piecepackr.cfg = "piecepack",
@@ -354,6 +361,7 @@ projection](man/figures/README-ggplot2-1.png)
 `piece3d()` draws pieces using
 [rgl](https://www.rdocumentation.org/packages/rgl) graphics.
 
+    library("piecepackr")
     library("piecenikr") # remotes::install_github("piecepackr/piecenikr")
     library("rgl")
     invisible(rgl::open3d())
@@ -369,6 +377,7 @@ projection](man/figures/README-ggplot2-1.png)
 
 `piece()` creates [rayrender](https://www.rayrender.net/) objects.
 
+    library("piecepackr")
     library("ppgames") # remotes::install_github("piecepackr/ppgames")
     library("magrittr")
     library("rayrender", warn.conflicts = FALSE)
@@ -387,6 +396,7 @@ projection](man/figures/README-ggplot2-1.png)
 
 `piece_mesh()` creates [rayvertex](https://www.rayvertex.com/) objects.
 
+    library("piecepackr")
     library("ppgames") # remotes::install_github("piecepackr/ppgames")
     library("rayvertex", warn.conflicts = FALSE) # masks `rayrender::r_obj`
     df <- ppgames::df_international_chess()
@@ -433,12 +443,11 @@ projection](man/figures/README-ggplot2-1.png)
 
 A slightly longer [intro to piecepackr's
 API](https://trevorldavis.com/piecepackr/intro-to-piecepackrs-api.html)
-plus several [piecepackr
-demos](https://trevorldavis.com/piecepackr/category/demos.html) and
-other [piecpackr
-docs](https://trevorldavis.com/piecepackr/category/docs.html) are
-available at piecepackr's [companion
+plus several other [piecepackr
+articles](https://trevorldavis.com/piecepackr/tag/piecepackr-features.html)
+are available at piecepackr's [companion
 website](https://trevorldavis.com/piecepackr/) as well as some
+[demos](https://trevorldavis.com/piecepackr/pages/about.html#demos) and
 pre-configured [Print & Play
 PDFs](https://trevorldavis.com/piecepackr/pages/print-and-play-pdfs.html).
 More API documentation is also available in the package's built-in [man
@@ -716,6 +725,7 @@ Sans" and not "Noto Sans" as one may have expected). To help determine
 which fonts are actually being embedded you can use the
 `get_embedded_font()` helper function:
 
+    library("piecepackr")
     fonts <- c('Noto Sans Symbols2', 'Noto Emoji', 'sans')
     chars <- c('♥', '♠', '♣', '♦', '🌞' ,'🌜' ,'꩜')
     get_embedded_font(fonts, chars)
