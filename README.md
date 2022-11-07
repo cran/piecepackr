@@ -660,7 +660,7 @@ functions that depend on the system dependencies `ghostscript` and
 1.  `save_print_and_play()` will embed additional metadata into the pdf
     if `ghostscript` is available.
 2.  `get_embedded_font()` (a debugging helper function) needs `pdffonts`
-    (usually found in `poppler-utils`). If the suggeste R package
+    (usually found in `poppler-utils`). If the suggested R package
     `{systemfonts}` is not installed then `has_font()` also needs
     `pdffonts`.
 
