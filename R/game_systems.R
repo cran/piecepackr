@@ -8,16 +8,34 @@
 #' Contains the following game systems:\describe{
 #' \item{alquerque}{Boards and pieces in six color schemes for Alquerque}
 #' \item{checkers1, checkers2}{Checkers and checkered boards in six color schemes.
-#'       Checkers are represented by a piecepackr \dQuote{bit}.  The \dQuote{board} \dQuote{face} is a checkered board
-#'       and the \dQuote{back} is a lined board.
+#'       Checkers are represented by a piecepackr \dQuote{bit}.
+#'       The \dQuote{board} \dQuote{face} is a checkered board and the \dQuote{back} is a lined board.
 #'       Color is controlled by suit and number of rows/columns by rank.
 #'       \code{checkers1} has one inch squares and \code{checkers2} has two inch squares.}
-#' \item{chess1, chess2}{Chess pieces and checkered boards in six color schemes.
-#'       Chess pieces are represented by a \dQuote{bit} (face).   The \dQuote{board} \dQuote{face} is a checkered board
-#'       and the \dQuote{back} is a lined board.
+#' \item{chess1, chess2}{Chess pieces, boards, and dice in six color schemes.
+#'       Chess pieces are represented by a \dQuote{bit} (face).
+#'       The \dQuote{board} \dQuote{face} is a checkered board and the \dQuote{back} is a lined board.
 #'       Color is controlled by suit and number of rows/columns by rank.
-#'       \code{chess1} has one inch squares and \code{chess2} has two inch squares.}
+#'       \code{chess1} has one inch squares and \code{chess2} has two inch squares.
+#'       Currently uses print-and-play style discs instead of 3D Staunton chess pieces.}
 #' \item{dice}{Traditional six-sided pipped dice in six color schemes (color controlled by their suit).}
+#' \item{dice_d4, dice_numeral, dice_d8, dice_d10, dice_d10_percentile, dice_d12, dice_d20}{
+#'       Polyhedral dice most commonly used to play wargames, roleplaying games, and trading card games:\describe{
+#'   \item{dice_d4}{Four-sided dice in six color schemes (color controlled by their suit).
+#'                  Tetrahedrons with the rank as a numeral at the top point.}
+#'   \item{dice_numeral}{Six-sided dice with numerals instead of pips in six color schemes (color controlled by their suit).}
+#'   \item{dice_d8}{Eight-sided dice in six color schemes (color controlled by their suit).
+#'                  Octahedrons with the rank as a numeral at the top face.}
+#'   \item{dice_d10}{Ten-sided dice in six color schemes (color controlled by their suit).
+#'                  Pentagonal trapezohedrons with the rank as a numeral at the top face.
+#'                  The rank of ten is represented by a zero.}
+#'   \item{dice_d10_percentile}{Ten-sided dice in six color schemes (color controlled by their suit).
+#'                  Pentagonal trapezohedrons with the rank as a numeral followed by a zero at the top face.
+#'                  The rank of ten is represented by a zero.}
+#'   \item{dice_d12}{Twelve-sided dice in six color schemes (color controlled by their suit).
+#'                  Dodecahedrons with the rank as a numeral at the top face.}
+#'   \item{dice_d20}{Twenty-sided dice in six color schemes (color controlled by their suit).
+#'                   Icosahedrons with the rank as a numeral at the top face.}}}
 #' \item{dice_fudge}{\dQuote{Fudge} dice in six color schemes (color controlled by their suit).
 #'                   \dQuote{Fudge} dice have three ranks "+", " ", and "-" repeated twice.}
 #' \item{dominoes, dominoes_black, dominoes_blue, dominoes_green, dominoes_red, dominoes_white, dominoes_yellow}{
@@ -25,11 +43,14 @@
 #'      In each color scheme the number of pips on the \dQuote{top} of the domino is
 #'      controlled by their \dQuote{rank} and on the \dQuote{bottom} by their \dQuote{suit}.
 #'      Supports up to double-18 sets.}
+#' \item{dominoes_chinese, dominoes_chinese_black}{`dominoes_chinese` has Asian-style six-sided pipped dice with
+#'       white background and black and red pips.
+#'       The \dQuote{tile}'s are Chinese dominoes (1" x 2.5") whose number of pips are controlled
+#'       by both their \dQuote{rank} and their \dQuote{suit}. `dominoes_chinese_black` are like `dominoes_chinese` but the
+#'       dice and dominoes have a black background and white and red pips.}
 #' \item{go}{Go stones and lined boards in six color schemes.
 #'           Go stones are represented by a \dQuote{bit} and the board is a \dQuote{board}.
-#'           Color is controlled by suit and number of rows/columns by rank
-#'           Currently the "stones" look like "checkers" which is okay for 2D diagrams
-#'           but perhaps unsatisfactory for 3D diagrams.}
+#'           Color is controlled by suit and number of rows/columns by rank.}
 #' \item{meeples}{Standard 16mm x 16mm x 10mm \dQuote{meeples} in six colors represented by a \dQuote{bit}.}
 #' \item{morris}{Various morris aka mills aka merels games in six colors.
 #'               Color is controlled by suit and \dQuote{size} of morris board
@@ -88,38 +109,58 @@
 #'             if \code{"joystick"} the piecepack pawn will be a \dQuote{joystick} style pawn.
 #'             Note for the latter two pawn styles only \code{pawn_top} will work with \code{grid.piece}.
 #' @examples
-#'        cfgs <- game_systems()
-#'        names(cfgs)
+#'     cfgs <- game_systems(pawn = "joystick")
+#'     names(cfgs)
 #'
-#'     if (require("grid")) {
-#'        op <- options()
-#'        on.exit(options(op))
-#'        options(piecepackr.at.inform = FALSE)
+#'     op <- options()
+#'     on.exit(options(op))
+#'     options(piecepackr.at.inform = FALSE)
 #'
-#'        # standard dice
-#'        grid.newpage()
-#'        grid.piece("die_face", x=1:6, default.units="in", rank=1:6, suit=1:6,
+#'     \donttest{
+#'     # standard dice, meeples, and joystick pawns
+#'     if (requireNamespace("grid", quietly = TRUE)) {
+#'        grid::grid.newpage()
+#'        dice <-  c("d4", "numeral", "d8", "d10", "d12", "d20")
+#'        cfg <- paste0("dice_", dice)
+#'        grid.piece("die_face", suit = c(1:6, 1), rank = 1:6,
+#'                   cfg = cfg, envir = cfgs, x = 1:6, y = 1,
+#'                   default.units = "in", op_scale = 0.5)
+#'        grid.piece("die_face", rank=1:6, suit=1:6,
+#'                   x=1:6, y=2, default.units="in",
 #'                   op_scale=0.5, cfg=cfgs$dice)
-#'
-#'        # dominoes
-#'        grid.newpage()
+#'        grid.piece("bit_face", suit=1:6,
+#'                   x=1:6, y=3, default.units="in",
+#'                   op_scale=0.5, cfg=cfgs$meeple)
+#'        grid.piece("pawn_top", suit=1:6,
+#'                   x=1:6, y=4, default.units="in",
+#'                   op_scale=0.5, cfg=cfgs$piecepack)
+#'     }
+#'     }
+#'     # dominoes
+#'     if (requireNamespace("grid", quietly = TRUE)) {
+#'        grid::grid.newpage()
 #'        colors <- c("black", "red", "green", "blue", "yellow", "white")
 #'        cfg <- paste0("dominoes_", rep(colors, 2))
-#'        grid.piece("tile_face", x=rep(4:1, 3), y=rep(2*3:1, each=4), suit=1:12, rank=1:12+1,
-#'                   cfg=cfg, default.units="in", envir=cfgs, op_scale=0.5)
-#'
-#'        # various piecepack expansions
-#'        grid.newpage()
-#'        df_tiles <- data.frame(piece_side="tile_back", x=0.5+c(3,1,3,1), y=0.5+c(3,3,1,1),
-#'                               suit=NA, angle=NA, z=NA, stringsAsFactors=FALSE)
-#'        df_coins <- data.frame(piece_side="coin_back", x=rep(4:1, 4), y=rep(4:1, each=4),
+#'        grid.piece("tile_face",  suit=1:12, rank=1:12+1,
+#'                   cfg=cfg, envir=cfgs,
+#'                   x=rep(6:1, 2), y=rep(2*2:1, each=6),
+#'                   default.units="in", op_scale=0.5)
+#'     }
+#'     # piecepack "playing card expansion"
+#'     if (requireNamespace("grid", quietly = TRUE)) {
+#'        grid::grid.newpage()
+#'        df_tiles <- data.frame(piece_side="tile_back",
+#'                               x=0.5+c(3,1,3,1), y=0.5+c(3,3,1,1),
+#'                               suit=NA, angle=NA, z=1/8,
+#'                               stringsAsFactors=FALSE)
+#'        df_coins <- data.frame(piece_side="coin_back",
+#'                               x=rep(4:1, 4), y=rep(4:1, each=4),
 #'                               suit=c(1,4,1,4,4,1,4,1,2,3,2,3,3,2,3,2),
-#'                               angle=rep(c(180,0), each=8), z=1/4+1/16, stringsAsFactors=FALSE)
+#'                               angle=rep(c(180,0), each=8), z=1/4+1/16,
+#'                               stringsAsFactors=FALSE)
 #'        df <- rbind(df_tiles, df_coins)
-#'        pmap_piece(df, cfg = cfgs$playing_cards_expansion, op_scale=0.5, default.units="in")
-#'
-#'        grid.newpage()
-#'        pmap_piece(df, cfg = cfgs$dual_piecepacks_expansion, op_scale=0.5, default.units="in")
+#'        pmap_piece(df, cfg = cfgs$playing_cards_expansion, op_scale=0.5,
+#'                   default.units="in")
 #'     }
 #' @seealso \code{\link{pp_cfg}} for information about the \code{pp_cfg} objects returned by \code{game_systems}.
 #' @export
@@ -128,17 +169,7 @@ game_systems <- function(style = NULL, round = FALSE, pawn = "token") {
 
     is_3d <- grepl("3d$", style)
     rect_shape <- ifelse(round, "roundrect", "rect")
-    if (is_3d) {
-        color_list <- list(background_color="burlywood",
-                           suit_color = cb_suit_colors_pure,
-                           border_color = "transparent", border_lex = 0,
-                           edge_color.board = "black")
-    } else {
-        color_list <- list(background_color="white",
-                           suit_color = cb_suit_colors_impure,
-                           border_color = "black", border_lex = 4,
-                           edge_color.board = "white")
-    }
+    color_list <- color_list_fn(is_3d)
 
     cards <- playing_cards(style, rect_shape)
     packs <- piecepack(style, color_list, rect_shape, pawn)
@@ -149,7 +180,14 @@ game_systems <- function(style = NULL, round = FALSE, pawn = "token") {
          chess1 = chess(style, 1, color_list),
          chess2 = chess(style, 2, color_list),
          dice = dice(color_list, rect_shape),
+         dice_d4 = dice_d4(style, color_list),
+         dice_d8 = dice_d8(style, color_list),
+         dice_d10 = dice_d10(style, color_list),
+         dice_d10_percentile = dice_d10_percentile(style, color_list),
+         dice_d12 = dice_d12(style, color_list),
+         dice_d20 = dice_d20(style, color_list),
          dice_fudge = dice_fudge(color_list, rect_shape),
+         dice_numeral = dice_numeral(style, color_list, rect_shape),
          dominoes = dominoes(color_list$suit_color[6], "black", color_list$border_color, rect_shape),
          dominoes_black = dominoes(color_list$suit_color[2], "white", color_list$border_color, rect_shape),
          dominoes_blue = dominoes(color_list$suit_color[4], "white", color_list$border_color, rect_shape),
@@ -157,6 +195,8 @@ game_systems <- function(style = NULL, round = FALSE, pawn = "token") {
          dominoes_red = dominoes(color_list$suit_color[1], "white", color_list$border_color, rect_shape),
          dominoes_white = dominoes(color_list$suit_color[6], "black", color_list$border_color, rect_shape),
          dominoes_yellow = dominoes(color_list$suit_color[5], "black", color_list$border_color, rect_shape),
+         dominoes_chinese = dominoes_chinese(color_list, rect_shape),
+         dominoes_chinese_black = dominoes_chinese(color_list, rect_shape, invert = TRUE),
          dual_piecepacks_expansion = packs$dpe,
          go = go(1, color_list),
          hexpack = packs$hexpack,
@@ -172,7 +212,21 @@ game_systems <- function(style = NULL, round = FALSE, pawn = "token") {
          subpack = packs$subpack)
 }
 
-game_systems_style <- function(style) {
+color_list_fn <- function(is_3d = FALSE) {
+    if (is_3d) {
+        list(background_color="burlywood",
+             suit_color = cb_suit_colors_pure,
+             border_color = "transparent", border_lex = 0,
+             edge_color.board = "black")
+    } else {
+        list(background_color="white",
+             suit_color = cb_suit_colors_impure,
+             border_color = "black", border_lex = 4,
+             edge_color.board = "white")
+    }
+}
+
+game_systems_style <- function(style = "sans") {
     styles <- c("dejavu", "dejavu3d", "sans", "sans3d")
     if (!is.null(style) && is.na(match(style, styles))) {
         abort(paste("Don't have a customized configuration for style", style))
@@ -190,7 +244,7 @@ game_systems_style <- function(style) {
 cb_suit_colors_impure <- c("#D55E00", "grey30", "#009E73", "#56B4E9", "#E69F00", "#FFFFFF")
 cb_suit_colors_pure <- c("#D55E00", "#000000", "#009E73", "#56B4E9", "#E69F00", "#FFFFFF")
 
-dice <- function(color_list, rect_shape) {
+dice <- function(color_list = color_list_fn(), rect_shape = "rect") {
     dice_list <- list(n_suits = 6, n_ranks = 6,
                       rank_text = "1,2,3,4,5,6",
                       width.die = 16 / 25.4, # 16 mm dice most common
@@ -206,7 +260,32 @@ dice <- function(color_list, rect_shape) {
     dice
 }
 
-dice_fudge <- function(color_list, rect_shape) {
+dominoes_chinese <- function(color_list = color_list_fn(), rect_shape = "rect", invert = FALSE) {
+    dice_list <- list(n_suits = 6, n_ranks = 6,
+                      rank_text = "1,2,3,4,5,6",
+                      width.die = 16 / 25.4, # 16 mm dice most common
+                      background_color = ifelse(invert, color_list$suit_color[2], "white"),
+                      suit_color = ifelse(invert, "white", "black"),
+                      die_arrangement = "1,2,3,6>,5,4",
+                      grob_fn.die = pippedGrobFn(0, "die_chinese"),
+                      width.tile = 1,
+                      height.tile = 2.5,
+                      depth.tile = 0.5,
+                      gridline_color.tile_back = "transparent",
+                      gridline_color.tile_face = "transparent",
+                      gridline_lex.tile_face = 6,
+                      shape.tile = rect_shape,
+                      grob_fn.tile_face = dominoGrobFn(0, "domino_chinese"),
+                      shape.card = rect_shape,
+                      grob_fn.card = cardGrobFn(grob_type = "circle")
+    )
+    dice <- pp_cfg(c(dice_list, color_list))
+    dice$has_piecepack <- FALSE
+    dice$has_dice <- TRUE
+    dice
+}
+
+dice_fudge <- function(color_list = color_list_fn(), rect_shape = "rect") {
     dice_list <- list(n_suits = 6, n_ranks = 6,
                       rank_text = "-, ,+,+, ,-",
                       dm_text.die = "",
@@ -223,7 +302,198 @@ dice_fudge <- function(color_list, rect_shape) {
     dice
 }
 
-meeples <- function(color_list) {
+dice_d4 <- function(style = "sans", color_list = color_list_fn()) {
+    dice_list <- list(n_suits = 6, n_ranks = 4,
+                      rank_text.die = 1:4,
+                      dm_text.die = "",
+                      ps_cex.die = 1,
+                      fontfamily = ifelse(grepl("^dejavu", style), "DejaVu Sans", "sans"),
+                      grob_fn.die = d4Grob,
+                      op_grob_fn.die = d4TopGrob,
+                      obj_fn.die = save_d4_obj,
+                      width.die =  (21 / 25.4) / 0.8660254, # if 21 mm vertex to vertex
+                      height.die =  (21 / 25.4) / 0.8660254, # if 21 mm vertex to vertex
+                      depth.die = (sqrt(6) / 3) * (21 / 25.4),
+                      background_color = "white,white,white,white,black,black",
+                      shape.die = "convex3",
+                      shape_t.die = 90,
+                      invert_colors = TRUE)
+    dice <- pp_cfg(c(dice_list, color_list))
+    dice$has_piecepack <- FALSE
+    dice$has_dice <- TRUE
+    dice
+}
+
+dice_d8 <- function(style = "sans", color_list = color_list_fn()) {
+    dice_list <- list(n_suits = 6, n_ranks = 8,
+                      rank_text.die = 1:8,
+                      ps_cex.die = 1.15,
+                      ps_r.die = 0.03,
+                      ps_t.die = 90,
+                      dm_text.die = "",
+                      dm_text.r6.die = "\u2012",
+                      dm_r.die = ifelse(grepl("^dejavu", style), 0.14, 0.13),
+                      dm_t.die = 270,
+                      dm_cex.die = 1.5,
+                      fontfamily = ifelse(grepl("^dejavu", style), "DejaVu Sans", "sans"),
+                      op_grob_fn.die = d8TopGrob,
+                      obj_fn.die = save_d8_obj,
+                      width.die =  (18 / 25.4) / 0.8660254, # if 18 mm vertex to vertex
+                      height.die =  (18 / 25.4) / 0.8660254, # if 18 mm vertex to vertex
+                      depth.die = (sqrt(6) / 3) * (18 / 25.4), # inradius = sqrt(6) * a / 6
+                      background_color = "white,white,white,white,black,black",
+                      shape.die = "convex3",
+                      shape_t.die = 90,
+                      invert_colors = TRUE)
+    dice <- pp_cfg(c(dice_list, color_list))
+    dice$has_piecepack <- FALSE
+    dice$has_dice <- TRUE
+    dice
+}
+
+# We'll use alpha-90-beta-90 angle kites
+# See `utils-d10.R` for more notes on calculations
+dice_d10 <- function(style = "sans", color_list = color_list_fn()) {
+    dice_list <- list(n_suits = 6, n_ranks = 10,
+                      rank_text.die = c(1:9, 0),
+                      ps_cex.die = 1.15,
+                      ps_r.die = -0.08,
+                      ps_t.die = 90,
+                      dm_text.die = "",
+                      dm_text.r6.die = "\u2012",
+                      dm_text.r9.die = "\u2012",
+                      dm_r.die = ifelse(grepl("^dejavu", style), 0.29, 0.28),
+                      dm_t.die = 270,
+                      dm_cex.die = 1.5,
+                      fontfamily = ifelse(grepl("^dejavu", style), "DejaVu Sans", "sans"),
+                      op_grob_fn.die = d10TopGrob,
+                      obj_fn.die = save_d10_obj,
+                      width.die =  0.4913446110983896164548, # if kite height 5/8"
+                      height.die =  5 / 8,
+                      depth.die =  0.5621585749837085810299,
+                      background_color = "white,white,white,white,black,black",
+                      shape.die = "kite",
+                      shape_r.die = 0.5 - 0.1909830056250526320039,
+                      invert_colors = TRUE)
+    dice <- pp_cfg(c(dice_list, color_list))
+    dice$has_piecepack <- FALSE
+    dice$has_dice <- TRUE
+    dice
+}
+
+dice_d10_percentile <- function(style = "sans", color_list = color_list_fn()) {
+    dice_list <- list(n_suits = 6, n_ranks = 10,
+                      rank_text.die = c(1:9, 0),
+                      dm_text.die = "0",
+                      dm_cex.die = 1.15,
+                      dm_r.die = -0.05,
+                      dm_t.die = 180,
+                      ps_cex.die = 1.00,
+                      ps_r.die = 0.20,
+                      ps_t.die = 180,
+                      fontfamily = ifelse(grepl("^dejavu", style), "DejaVu Sans", "sans"),
+                      op_grob_fn.die = d10TopGrob,
+                      obj_fn.die = save_d10_obj,
+                      width.die =  5 / 8,
+                      height.die =  0.4913446110983896164548,
+                      depth.die =  0.5621585749837085810299,
+                      background_color = "white,white,white,white,black,black",
+                      shape.die = "kite",
+                      shape_r.die = 0.5 - 0.1909830056250526320039,
+                      shape_t.die = 0,
+                      invert_colors = TRUE)
+    dice <- pp_cfg(c(dice_list, color_list))
+    dice$has_piecepack <- FALSE
+    dice$has_dice <- TRUE
+    dice
+}
+
+dice_d12 <- function(style = "sans", color_list = color_list_fn()) {
+    dice_list <- list(n_suits = 6, n_ranks = 12,
+                      rank_text.die = 1:12,
+                      ps_cex.die = 1.15,
+                      ps_r.die = 0.01,
+                      ps_t.die = 90,
+                      dm_text.die = "",
+                      dm_text.r6.die = "\u2012",
+                      dm_text.r9.die = "\u2012",
+                      dm_r.die = ifelse(grepl("^dejavu", style), 0.25, 0.22),
+                      dm_t.die = 270,
+                      dm_cex.die = 1.5,
+                      fontfamily = ifelse(grepl("^dejavu", style), "DejaVu Sans", "sans"),
+                      op_grob_fn.die = d12TopGrob,
+                      obj_fn.die = save_d12_obj,
+                      width.die =  (5 / 16) / 0.5877853, # if 5/16" vertex to vertex
+                      height.die =  (5 / 16) / 0.5877853, # if 5/16" vertex to vertex
+                      depth.die = 2 * 1.113516364 * (5 / 16), # inradius = 1.113516364 * a
+                      background_color = "white,white,white,white,black,black",
+                      shape.die = "convex5",
+                      shape_t.die = 90,
+                      invert_colors = TRUE)
+    for (i in 10:12) {
+        dice_list[[paste0("ps_cex.r", i, ".die")]] <- 1.00
+        # dice_list[[paste0("ps_r.r", i, ".die")]] <- 0.02
+    }
+    dice <- pp_cfg(c(dice_list, color_list))
+    dice$has_piecepack <- FALSE
+    dice$has_dice <- TRUE
+    dice
+}
+
+dice_d20 <- function(style = "sans", color_list = color_list_fn()) {
+    dice_list <- list(n_suits = 6, n_ranks = 20,
+                      rank_text.die = 1:20,
+                      ps_cex.die = 0.65,
+                      ps_r.die =  -0.02,
+                      ps_t.die = 90,
+                      fontfamily = ifelse(grepl("^dejavu", style), "DejaVu Sans", "sans"),
+                      dm_text.die = "",
+                      dm_text.r6.die = "\u2012",
+                      dm_text.r9.die = "\u2012",
+                      dm_r.die = ifelse(grepl("^dejavu", style), 0.12, 0.13),
+                      dm_t.die = 270,
+                      dm_cex.die = 1.0,
+                      op_grob_fn.die = d20TopGrob,
+                      obj_fn.die = save_d20_obj,
+                      width.die =  0.5 / 0.8660254, # if 1/2" vertex to vertex
+                      height.die =  0.5 / 0.8660254, # if 1/2" vertex to vertex
+                      depth.die = 2 * 0.5 * (3 * sqrt(3) + sqrt(15)) / 12,
+                      background_color = "white,white,white,white,black,black",
+                      shape.die = "convex3",
+                      shape_t.die = 90,
+                      invert_colors = TRUE)
+    for (i in 1:9) {
+        dice_list[[paste0("ps_cex.r", i, ".die")]] <- 0.72
+        dice_list[[paste0("ps_r.r", i, ".die")]] <- 0.02
+    }
+    dice <- pp_cfg(c(dice_list, color_list))
+    dice$has_piecepack <- FALSE
+    dice$has_dice <- TRUE
+    dice
+}
+
+dice_numeral <- function(style = "sans", color_list = color_list_fn(), rect_shape = "rect") {
+    dice_list <- list(n_suits = 6, n_ranks = 6,
+                      fontfamily = ifelse(grepl("^dejavu", style), "DejaVu Sans", "sans"),
+                      rank_text = 1:6,
+                      ps_cex.die = 1.8,
+                      dm_text.die = "",
+                      dm_text.r6.die = "\u2012",
+                      dm_r.die = 0.315,
+                      dm_t.die = 270,
+                      dm_cex.die = 2.4,
+                      width.die = 16 / 25.4, # 16 mm dice most common
+                      background_color = "white,white,white,white,black,black",
+                      invert_colors = TRUE,
+                      die_arrangement = "1<,2>,3>,6v,5,4",
+                      shape.card = rect_shape)
+    dice <- pp_cfg(c(dice_list, color_list))
+    dice$has_piecepack <- FALSE
+    dice$has_dice <- TRUE
+    dice
+}
+
+meeples <- function(color_list = color_list_fn()) {
     meeples_list <- list(shape.bit = "meeple", n_suits = 6,
                          width.bit = 16 / 25.4, height.bit = 16 / 25.4, depth.bit = 10 / 25.4,
                          ps_text.bit = "", dm_text.bit = "",
@@ -234,7 +504,7 @@ meeples <- function(color_list) {
     meeples
 }
 
-alquerque <- function(cell_width = 1, color_list = 1) {
+alquerque <- function(cell_width = 1, color_list = color_list_fn()) {
     alquerque <- list(n_suits = 6, n_ranks = 1,
                       width.board = 5 * cell_width,
                       height.board = 5 * cell_width,
@@ -252,7 +522,7 @@ alquerque <- function(cell_width = 1, color_list = 1) {
     alquerque
 }
 
-morris <- function(cell_width = 1, color_list) {
+morris <- function(cell_width = 1, color_list = color_list_fn()) {
     morris <- list(n_suits = 6, n_ranks = 15,
                    width.board = 7 * cell_width,
                    height.board = 7 * cell_width,
@@ -294,7 +564,7 @@ go_stone <- function(cell_width) {
 }
 
 dominoes <- function(background_color = "white", suit_color = "black", border_color = "black",
-                     rect_shape, mat_width = 0) {
+                     rect_shape = "rect", mat_width = 0) {
     border_lex <- ifelse(border_color == "black", 4, 0)
     dominoes <- pp_cfg(list(n_suits = 18 + 1, n_ranks = 18 + 1,
                             width.tile = 1,
@@ -325,7 +595,7 @@ checker_piece <- function(cell_width) {
 
 }
 
-checkers <- function(cell_width = 1, color_list) {
+checkers <- function(cell_width = 1, color_list = color_list_fn()) {
     checkers <- list(n_suits = 6, n_ranks = 12,
                      width.board = 8 * cell_width,
                      height.board = 8 * cell_width,
@@ -351,11 +621,13 @@ checkers <- function(cell_width = 1, color_list) {
     checkers
 }
 
-chess <- function(style, cell_width = 1, color_list) {
+chess <- function(style = "sans", cell_width = 1, color_list = color_list_fn()) {
     if (grepl("^sans", style)) {
+        rank_cex_die <- 1.3
         black_chess_ranks <- c("p", "n", "b", "r", "q", "k")
         white_chess_ranks <- c("P", "N", "B", "R", "Q", "K")
     } else if (grepl("^dejavu", style)) {
+        rank_cex_die <- 1.5
         black_chess_ranks <- c("\u265f", "\u265e", "\u265d", "\u265c", "\u265b", "\u265a")
         white_chess_ranks <- c("\u2659", "\u2658", "\u2657", "\u2656", "\u2655", "\u2654")
     }
@@ -371,6 +643,7 @@ chess <- function(style, cell_width = 1, color_list) {
                      gridline_lex.board = 4,
                      suit_text = "",
                      rank_cex.bit = 1.4 * cell_width,
+                     rank_cex.die = rank_cex_die,
                      rank_text = black_chess_ranks,
                      rank_text.s6 = white_chess_ranks,
                      suit_color = cb_suit_colors_pure,
@@ -393,7 +666,7 @@ chess <- function(style, cell_width = 1, color_list) {
     chess
 }
 
-go <- function(cell_width = 1, color_list) {
+go <- function(cell_width = 1, color_list = color_list_fn()) {
     go <- list(n_suits = 6, n_ranks = 19,
                width.board = (18 + 1) * cell_width,
                height.board = (18 + 1) * cell_width,
@@ -417,7 +690,7 @@ go <- function(cell_width = 1, color_list) {
     go
 }
 
-piecepack <- function(style, color_list, rect_shape, pawn) {
+piecepack <- function(style = "sans", color_list = color_list_fn(), rect_shape = "rect", pawn = "token") {
     if (grepl("^sans", style)) {
         piecepack_suits <- list(suit_text="\u263c,\u25d8,\u0238,\u03ee,\u2202")
         pce_suit_text <- "\u2665,\u2660,\u2663,\u2666,\u2202"
@@ -442,8 +715,11 @@ piecepack <- function(style, color_list, rect_shape, pawn) {
     piecepack_base <- list(depth.coin=0.25,
                            invert_colors.matchstick = TRUE,
                            ps_cex.r2.matchstick = 0.7,
-                           dm_r.r1.matchstick = 0, dm_cex.r1.matchstick = 1.5, suit_color.s2.matchstick = "grey30",
-                           mat_color.tile_back="white", mat_width.tile_back=0.05, suit_color.unsuited="black",
+                           dm_r.r1.matchstick = 0, dm_cex.r1.matchstick = 1.5,
+                           suit_color.s2.matchstick = "grey30",
+                           suit_color.s2.bit = "grey30",
+                           mat_color.tile_back="white", mat_width.tile_back=0.05,
+                           suit_color.unsuited="black",
                            invert_colors.bit = TRUE,
                            rank_text=",a,2,3,4,5",
                            use_suit_as_ace=TRUE,
@@ -465,6 +741,9 @@ piecepack <- function(style, color_list, rect_shape, pawn) {
     playing_cards_expansion <- piecepack
     playing_cards_expansion$suit_text <- pce_suit_text
     playing_cards_expansion$suit_color <- "#D55E00,#000000,#000000,#D55E00,#000000"
+    playing_cards_expansion$suit_color.s3.matchstick <- "grey30"
+    playing_cards_expansion$suit_color.s3.bit <- "grey30"
+
 
     hexpack <- c(piecepack, list(shape.tile="convex6", border_lex=3,
                                  shape_t.tile="60",  dm_t.tile_face=-90,
@@ -472,18 +751,24 @@ piecepack <- function(style, color_list, rect_shape, pawn) {
                                  shape.coin="convex3"))
 
     dpe_base <- list(invert_colors.suited=TRUE,
-                     mat_color.tile_face="white", mat_width.tile_face=0.05,
-                     border_color.s2.die="grey40", border_color.s2.pawn="grey40")
+                     border_color.s2.die="black", border_color.s2.pawn="black",
+                     suit_color.s2.board_face = "black")
 
     dual_piecepacks_expansion <- c(piecepack, dpe_base)
     dual_piecepacks_expansion$suit_text <- pce_suit_text
 
-    pi_base <- c(invert_colors = TRUE,
-                 mat_color.tile="white", mat_width.tile=0.05,
-                 mat_color.coin="white", mat_width.coin=0.07,
-                 mat_color.die ="white", mat_width.die =0.09,
-                 mat_color.pawn="white", mat_width.pawn=0.08)
+    pi_base <- list(invert_colors = TRUE,
+                    invert_colors.matchstick = FALSE,
+                    suit_color.s2.matchstick = "black",
+                    suit_color.s2.board_face = "black",
+                    suit_color.card_back = "grey30",
+                    suit_color.coin_face = "grey30",
+                    edge_color.coin = "white",
+                    edge_color.tile = "white")
     piecepack_inverted <- c(pi_base, piecepack)
+
+    piecepack <- c(list(suit_color = cb_suit_colors_pure),
+                   piecepack)
 
     list(base = pp_cfg(piecepack),
          dpe = pp_cfg(dual_piecepacks_expansion),
@@ -493,7 +778,7 @@ piecepack <- function(style, color_list, rect_shape, pawn) {
          subpack = to_subpack(piecepack))
 }
 
-playing_cards <- function(style, rect_shape) {
+playing_cards <- function(style = "sans", rect_shape = "rect") {
     if (grepl("^sans", style)) {
         face_labels <- c("", "\u050a", "\u046a", "\u0238")
         fool_text <- "*"
@@ -556,7 +841,7 @@ playing_cards <- function(style, rect_shape) {
     list(base = playing_cards, color = playing_cards_colored, tarot = playing_cards_tarot)
 }
 
-reversi <- function(cell_width = 1, color_list) {
+reversi <- function(cell_width = 1, color_list = color_list_fn()) {
     reversi <- list(n_suits = 6, n_ranks = 12,
                      width.board = 8 * cell_width,
                      height.board = 8 * cell_width,
@@ -581,7 +866,7 @@ reversi <- function(cell_width = 1, color_list) {
     reversi
 }
 
-shapes_cfg <- function(color_list) {
+shapes_cfg <- function(color_list = color_list_fn()) {
     shapes <- list(n_suits = 6, n_ranks = 4,
                    invert_colors = TRUE,
                    ps_text = "", dm_text = "",
@@ -596,7 +881,7 @@ shapes_cfg <- function(color_list) {
     pp_cfg(c(shapes, color_list))
 }
 
-reversi_piece <- function(cell_width, color_list) {
+reversi_piece <- function(cell_width = 1, color_list = color_list_fn()) {
 
     shapes_top <- shapes_cfg(color_list)
     color_list$suit_color <- color_list$suit_color[c(3, 6, 1, 5, 4, 2)]

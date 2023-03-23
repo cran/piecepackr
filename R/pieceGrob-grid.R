@@ -15,7 +15,6 @@
 #' @param y Where to place piece on y axis of viewport
 #' @param z z-coordinate of the piece.  Has no effect if \code{op_scale} is \code{0}.
 #' @param angle Angle (on xy plane) to draw piece at
-#' @param use_pictureGrob Deprecated argument.  If `TRUE` sets `type` argument to `"picture"`.
 #' @param width Width of piece
 #' @param height Height of piece
 #' @param depth Depth (thickness) of piece.  Has no effect if \code{op_scale} is \code{0}.
@@ -73,7 +72,8 @@
 #'
 #'     # default piecepack, orthogonal projection
 #'     draw_pp_diagram(cfg=pp_cfg())
-#'
+#'   }
+#'   if (require("grid")) {
 #'     # custom configuration, orthogonal projection
 #'     grid.newpage()
 #'     dark_colorscheme <- list(suit_color="darkred,black,darkgreen,darkblue,black",
@@ -81,7 +81,8 @@
 #'     traditional_ranks <- list(use_suit_as_ace=TRUE, rank_text=",a,2,3,4,5")
 #'     cfg <- c(dark_colorscheme, traditional_ranks)
 #'     draw_pp_diagram(cfg=pp_cfg(cfg))
-#'
+#'   }
+#'   if (require("grid")) {
 #'     # custom configuration, oblique projection
 #'     grid.newpage()
 #'     cfg3d <- list(width.pawn=0.75, height.pawn=0.75, depth.pawn=1,
@@ -165,23 +166,18 @@ pieceGrobHelper <- function(piece_side="tile_back", suit=NA, rank=NA, cfg=pp_cfg
 pieceGrob <- function(piece_side="tile_back", suit=NA, rank=NA,
                          cfg=getOption("piecepackr.cfg", pp_cfg()),
                          x=unit(0.5, "npc"), y=unit(0.5, "npc"), z=NA,
-                         angle=0, use_pictureGrob=FALSE,
+                         angle=0, ...,
                          width=NA, height=NA, depth=NA,
                          op_scale = getOption("piecepackr.op_scale", 0),
                          op_angle = getOption("piecepackr.op_angle", 45),
                          default.units = getOption("piecepackr.default.units", "npc"),
                          envir = getOption("piecepackr.envir"),
-                         name=NULL, gp=NULL, vp=NULL, ...,
+                         name=NULL, gp=NULL, vp=NULL,
                          scale=1, alpha=1, type="normal",
                          bleed=FALSE) {
 
     stopifnot(!(bleed && op_scale > 0))
 
-    if (!missing(use_pictureGrob)) {
-        .Deprecated(msg = paste("`use_pictureGrob = TRUE` is deprecated.",
-                                'Use `type = "picture"` instead.'))
-        type <- ifelse(use_pictureGrob, "picture", "normal")
-    }
     gTree(piece_side=piece_side, suit=suit, rank=rank, cfg=cfg,
           x=x, y=y, z=z, angle=angle,
           width=width, height=height, depth=depth,
@@ -267,20 +263,15 @@ get_cfg <- function(cfg=pp_cfg(), envir=NULL) {
 grid.piece <- function(piece_side="tile_back", suit=NA, rank=NA,
                        cfg=getOption("piecepackr.cfg", pp_cfg()),
                        x=unit(0.5, "npc"), y=unit(0.5, "npc"), z=NA,
-                       angle=0, use_pictureGrob=FALSE,
+                       angle=0, ...,
                        width=NA, height=NA, depth=NA,
                        op_scale = getOption("piecepackr.op_scale", 0),
                        op_angle = getOption("piecepackr.op_angle", 45),
                        default.units = getOption("piecepackr.default.units", "npc"),
                        envir = getOption("piecepackr.envir"),
-                       name=NULL, gp=NULL, draw=TRUE, vp=NULL, ...,
+                       name=NULL, gp=NULL, draw=TRUE, vp=NULL,
                        scale=1, alpha=1, type="normal",
                        bleed=FALSE) {
-    if (!missing(use_pictureGrob)) {
-        .Deprecated(msg = paste("`use_pictureGrob = TRUE` is deprecated.",
-                                'Use `type = "picture"` instead.'))
-        type <- ifelse(use_pictureGrob, "picture", "normal")
-    }
     grob <- pieceGrob(piece_side, suit, rank, cfg,
                       x, y, z, angle,
                       width = width, height = height, depth = depth,

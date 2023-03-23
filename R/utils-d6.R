@@ -1,4 +1,3 @@
-#### also allow customization of angle #175
 get_die_face_info <- function(suit, arrangement = "counter_down") {
     angle <- rep(0, length.out=6)
     suit <- rep(suit, length.out=6)
@@ -42,7 +41,6 @@ get_die_rotation <- function(suit, rank, cfg) {
                  R_x(-90) %*% R_z(90))
     dR %*% R_z(-rs$angle[i])
 }
-
 
 get_die_faces <- function(suit, rank, cfg,
                           x, y, z,

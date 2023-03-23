@@ -37,16 +37,34 @@ subpack and (piecepack) hexpack \code{pp_cfg} R6 objects respectively given a pi
 Contains the following game systems:\describe{
 \item{alquerque}{Boards and pieces in six color schemes for Alquerque}
 \item{checkers1, checkers2}{Checkers and checkered boards in six color schemes.
-Checkers are represented by a piecepackr \dQuote{bit}.  The \dQuote{board} \dQuote{face} is a checkered board
-and the \dQuote{back} is a lined board.
+Checkers are represented by a piecepackr \dQuote{bit}.
+The \dQuote{board} \dQuote{face} is a checkered board and the \dQuote{back} is a lined board.
 Color is controlled by suit and number of rows/columns by rank.
 \code{checkers1} has one inch squares and \code{checkers2} has two inch squares.}
-\item{chess1, chess2}{Chess pieces and checkered boards in six color schemes.
-Chess pieces are represented by a \dQuote{bit} (face).   The \dQuote{board} \dQuote{face} is a checkered board
-and the \dQuote{back} is a lined board.
+\item{chess1, chess2}{Chess pieces, boards, and dice in six color schemes.
+Chess pieces are represented by a \dQuote{bit} (face).
+The \dQuote{board} \dQuote{face} is a checkered board and the \dQuote{back} is a lined board.
 Color is controlled by suit and number of rows/columns by rank.
-\code{chess1} has one inch squares and \code{chess2} has two inch squares.}
+\code{chess1} has one inch squares and \code{chess2} has two inch squares.
+Currently uses print-and-play style discs instead of 3D Staunton chess pieces.}
 \item{dice}{Traditional six-sided pipped dice in six color schemes (color controlled by their suit).}
+\item{dice_d4, dice_numeral, dice_d8, dice_d10, dice_d10_percentile, dice_d12, dice_d20}{
+Polyhedral dice most commonly used to play wargames, roleplaying games, and trading card games:\describe{
+\item{dice_d4}{Four-sided dice in six color schemes (color controlled by their suit).
+Tetrahedrons with the rank as a numeral at the top point.}
+\item{dice_numeral}{Six-sided dice with numerals instead of pips in six color schemes (color controlled by their suit).}
+\item{dice_d8}{Eight-sided dice in six color schemes (color controlled by their suit).
+Octahedrons with the rank as a numeral at the top face.}
+\item{dice_d10}{Ten-sided dice in six color schemes (color controlled by their suit).
+Pentagonal trapezohedrons with the rank as a numeral at the top face.
+The rank of ten is represented by a zero.}
+\item{dice_d10_percentile}{Ten-sided dice in six color schemes (color controlled by their suit).
+Pentagonal trapezohedrons with the rank as a numeral followed by a zero at the top face.
+The rank of ten is represented by a zero.}
+\item{dice_d12}{Twelve-sided dice in six color schemes (color controlled by their suit).
+Dodecahedrons with the rank as a numeral at the top face.}
+\item{dice_d20}{Twenty-sided dice in six color schemes (color controlled by their suit).
+Icosahedrons with the rank as a numeral at the top face.}}}
 \item{dice_fudge}{\dQuote{Fudge} dice in six color schemes (color controlled by their suit).
 \dQuote{Fudge} dice have three ranks "+", " ", and "-" repeated twice.}
 \item{dominoes, dominoes_black, dominoes_blue, dominoes_green, dominoes_red, dominoes_white, dominoes_yellow}{
@@ -54,11 +72,14 @@ Traditional pipped dominoes in six color schemes (\code{dominoes} and \code{domi
 In each color scheme the number of pips on the \dQuote{top} of the domino is
 controlled by their \dQuote{rank} and on the \dQuote{bottom} by their \dQuote{suit}.
 Supports up to double-18 sets.}
+\item{dominoes_chinese, dominoes_chinese_black}{\code{dominoes_chinese} has Asian-style six-sided pipped dice with
+white background and black and red pips.
+The \dQuote{tile}'s are Chinese dominoes (1" x 2.5") whose number of pips are controlled
+by both their \dQuote{rank} and their \dQuote{suit}. \code{dominoes_chinese_black} are like \code{dominoes_chinese} but the
+dice and dominoes have a black background and white and red pips.}
 \item{go}{Go stones and lined boards in six color schemes.
 Go stones are represented by a \dQuote{bit} and the board is a \dQuote{board}.
-Color is controlled by suit and number of rows/columns by rank
-Currently the "stones" look like "checkers" which is okay for 2D diagrams
-but perhaps unsatisfactory for 3D diagrams.}
+Color is controlled by suit and number of rows/columns by rank.}
 \item{meeples}{Standard 16mm x 16mm x 10mm \dQuote{meeples} in six colors represented by a \dQuote{bit}.}
 \item{morris}{Various morris aka mills aka merels games in six colors.
 Color is controlled by suit and \dQuote{size} of morris board
@@ -108,38 +129,58 @@ red paired with green, black paired with white, and blue paired with yellow.
 }
 }
 \examples{
-       cfgs <- game_systems()
-       names(cfgs)
+    cfgs <- game_systems(pawn = "joystick")
+    names(cfgs)
 
-    if (require("grid")) {
-       op <- options()
-       on.exit(options(op))
-       options(piecepackr.at.inform = FALSE)
+    op <- options()
+    on.exit(options(op))
+    options(piecepackr.at.inform = FALSE)
 
-       # standard dice
-       grid.newpage()
-       grid.piece("die_face", x=1:6, default.units="in", rank=1:6, suit=1:6,
+    \donttest{
+    # standard dice, meeples, and joystick pawns
+    if (requireNamespace("grid", quietly = TRUE)) {
+       grid::grid.newpage()
+       dice <-  c("d4", "numeral", "d8", "d10", "d12", "d20")
+       cfg <- paste0("dice_", dice)
+       grid.piece("die_face", suit = c(1:6, 1), rank = 1:6,
+                  cfg = cfg, envir = cfgs, x = 1:6, y = 1,
+                  default.units = "in", op_scale = 0.5)
+       grid.piece("die_face", rank=1:6, suit=1:6,
+                  x=1:6, y=2, default.units="in",
                   op_scale=0.5, cfg=cfgs$dice)
-
-       # dominoes
-       grid.newpage()
+       grid.piece("bit_face", suit=1:6,
+                  x=1:6, y=3, default.units="in",
+                  op_scale=0.5, cfg=cfgs$meeple)
+       grid.piece("pawn_top", suit=1:6,
+                  x=1:6, y=4, default.units="in",
+                  op_scale=0.5, cfg=cfgs$piecepack)
+    }
+    }
+    # dominoes
+    if (requireNamespace("grid", quietly = TRUE)) {
+       grid::grid.newpage()
        colors <- c("black", "red", "green", "blue", "yellow", "white")
        cfg <- paste0("dominoes_", rep(colors, 2))
-       grid.piece("tile_face", x=rep(4:1, 3), y=rep(2*3:1, each=4), suit=1:12, rank=1:12+1,
-                  cfg=cfg, default.units="in", envir=cfgs, op_scale=0.5)
-
-       # various piecepack expansions
-       grid.newpage()
-       df_tiles <- data.frame(piece_side="tile_back", x=0.5+c(3,1,3,1), y=0.5+c(3,3,1,1),
-                              suit=NA, angle=NA, z=NA, stringsAsFactors=FALSE)
-       df_coins <- data.frame(piece_side="coin_back", x=rep(4:1, 4), y=rep(4:1, each=4),
+       grid.piece("tile_face",  suit=1:12, rank=1:12+1,
+                  cfg=cfg, envir=cfgs,
+                  x=rep(6:1, 2), y=rep(2*2:1, each=6),
+                  default.units="in", op_scale=0.5)
+    }
+    # piecepack "playing card expansion"
+    if (requireNamespace("grid", quietly = TRUE)) {
+       grid::grid.newpage()
+       df_tiles <- data.frame(piece_side="tile_back",
+                              x=0.5+c(3,1,3,1), y=0.5+c(3,3,1,1),
+                              suit=NA, angle=NA, z=1/8,
+                              stringsAsFactors=FALSE)
+       df_coins <- data.frame(piece_side="coin_back",
+                              x=rep(4:1, 4), y=rep(4:1, each=4),
                               suit=c(1,4,1,4,4,1,4,1,2,3,2,3,3,2,3,2),
-                              angle=rep(c(180,0), each=8), z=1/4+1/16, stringsAsFactors=FALSE)
+                              angle=rep(c(180,0), each=8), z=1/4+1/16,
+                              stringsAsFactors=FALSE)
        df <- rbind(df_tiles, df_coins)
-       pmap_piece(df, cfg = cfgs$playing_cards_expansion, op_scale=0.5, default.units="in")
-
-       grid.newpage()
-       pmap_piece(df, cfg = cfgs$dual_piecepacks_expansion, op_scale=0.5, default.units="in")
+       pmap_piece(df, cfg = cfgs$playing_cards_expansion, op_scale=0.5,
+                  default.units="in")
     }
 }
 \seealso{

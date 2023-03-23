@@ -66,7 +66,7 @@
 #'                     to control appearance of the shape.
 #' @param back Whether the shape should be reflected across a vertical line in the middle of the viewport.
 #' @examples
-#'  if (require("grid")) {
+#'  if (require("grid", quietly = TRUE)) {
 #'      gp <- gpar(col="black", fill="yellow")
 #'      rect <- pp_shape(label="rect")
 #'      convex6 <- pp_shape(label="convex6")
@@ -92,7 +92,8 @@
 #'      grid.draw(rect$shape(gp=gp))
 #'      grid.draw(rect$mat(mat_width=c(0.2, 0.1, 0.3, 0.4), gp=gpar(fill="blue")))
 #'      popViewport()
-#'
+#'  }
+#'  if (require("grid", quietly = TRUE)) {
 #'      grid.newpage()
 #'      gp <- gpar(col="black", fill="yellow")
 #'
@@ -104,7 +105,8 @@
 #'      grid.draw(pp_shape("kite")$shape(gp=gp, vp=vp))
 #'      vp <- viewport(x=1/4, y=3/4, width=1/2, height=1/2)
 #'      grid.draw(pp_shape("meeple")$shape(gp=gp, vp=vp))
-#'
+#'  }
+#'  if (require("grid", quietly = TRUE)) {
 #'      grid.newpage()
 #'      vp <- viewport(x=1/4, y=1/4, width=1/2, height=1/2)
 #'      grid.draw(pp_shape("convex3", 0)$shape(gp=gp, vp=vp))
@@ -114,7 +116,8 @@
 #'      grid.draw(pp_shape("convex5", 180)$shape(gp=gp, vp=vp))
 #'      vp <- viewport(x=1/4, y=3/4, width=1/2, height=1/2)
 #'      grid.draw(pp_shape("convex6", 270)$shape(gp=gp, vp=vp))
-#'
+#'  }
+#'  if (require("grid", quietly = TRUE)) {
 #'      grid.newpage()
 #'      vp <- viewport(x=1/4, y=1/4, width=1/2, height=1/2)
 #'      grid.draw(pp_shape("concave3", 0, 0.1)$shape(gp=gp, vp=vp))
@@ -124,16 +127,16 @@
 #'      grid.draw(pp_shape("concave5", 180, 0.3)$shape(gp=gp, vp=vp))
 #'      vp <- viewport(x=1/4, y=3/4, width=1/2, height=1/2)
 #'      grid.draw(pp_shape("concave6", 270)$shape(gp=gp, vp=vp))
-#'
-#'      if (require("gridpattern")) {
-#'          grid.newpage()
-#'          hex <- pp_shape("convex6")
-#'          gp <- gpar(fill = c("blue", "yellow", "red"), col = "black")
-#'          grid.draw(hex$pattern("polygon_tiling", gp = gp, spacing = 0.1,
-#'                                type = "truncated_trihexagonal"))
-#'          gp <- gpar(fill = "black", col = NA)
-#'          grid.draw(hex$mat(mat_width = 0.025, gp = gp))
-#'      }
+#'  }
+#'  if (require("grid", quietly = TRUE) &&
+#'      requireNamespace("gridpattern", quietly = TRUE)) {
+#'      grid.newpage()
+#'      hex <- pp_shape("convex6")
+#'      gp <- gpar(fill = c("blue", "yellow", "red"), col = "black")
+#'      grid.draw(hex$pattern("polygon_tiling", gp = gp, spacing = 0.1,
+#'                            type = "truncated_trihexagonal"))
+#'      gp <- gpar(fill = "black", col = NA)
+#'      grid.draw(hex$mat(mat_width = 0.025, gp = gp))
 #'  }
 #' @export
 pp_shape <- function(label = "rect", theta = 90, radius = 0.2, back = FALSE) {
@@ -151,11 +154,12 @@ Shape <- R6Class("pp_shape",
             private$shape_radius <- radius
             private$shape_back <- back
         },
-        shape = function(name = NULL, gp = gpar(), vp = NULL) {
-            private$shape_grob_fn()(name = name, gp = gp, vp = vp)
+        shape = function(name = NULL, gp = gpar(), vp = NULL, mat_width = 0) {
+            private$shape_grob_fn(mat_width = mat_width)(name = name, gp = gp, vp = vp)
         },
-        gridlines = function(name = NULL, gp = gpar(), vp = NULL) {
-            gTree(shape = self, name = name, gp = gp, vp = vp, cl = "gridlines")
+        gridlines = function(name = NULL, gp = gpar(), vp = NULL, mat_width = 0) {
+            gTree(shape = self, mat_width = mat_width,
+                  name = name, gp = gp, vp = vp, cl = "gridlines")
         },
         mat = function(mat_width = 0, name = NULL, gp = gpar(), vp = NULL) {
             gTree(mat_width = mat_width, shape = self,
@@ -200,7 +204,8 @@ Shape <- R6Class("pp_shape",
                 xy$c <- rep("C1", length(xy$x))
                 xy
             } else if (label == "kite") {
-                kite_xy
+                if (back) theta <- 180 - theta
+                kite_xy(theta, radius)
             } else if (label == "halma") {
                 halma_xy()
             } else if (label == "meeple") {
@@ -225,20 +230,45 @@ Shape <- R6Class("pp_shape",
         shape_theta = NULL,
         shape_radius = NULL,
         shape_back = NULL,
-        shape_grob_fn = function() {
+        shape_grob_fn = function(mat_width = 0) {
             label <- self$label
-            if (label == "circle") {
-                circleGrob
-            } else if (label == "rect") {
-                rectGrob
+            theta <- self$theta
+            back <- self$back
+            if (label == "rect") {
+                rectGrobFn(mat_width)
+            } else if (label == "circle") {
+                circleGrobFn(r = 0.5 - mat_width[1])
             } else if (label == "roundrect") {
                 roundrectGrobFn(self$radius)
+            } else if (grepl("^convex", label)) {
+                if (back) theta <- 180 - theta
+                coords <- convex_xy(get_n_vertices(label), theta, 0.5 - mat_width[1])
+                polygonGrobFn(coords$x, coords$y)
+            } else if (label == "oval") {
+                coords <- convex_xy(72, 90, 0.5 - mat_width[1])
+                polygonGrobFn(coords$x, coords$y)
             } else {
+                #### for halma and roundrect no mat shrinkage (yet)
+                #### For other shapes no mat support at all
                 coords <- self$npc_coords
                 polygonGrobFn(coords$x, coords$y)
             }
         })
 )
+
+rectGrobFn <- function(mat_width = 0) {
+    mat_width <- rep(mat_width, length.out = 4L)
+    t <- 1 - mat_width[1]
+    r <- 1 - mat_width[2]
+    b <- mat_width[3]
+    l <- mat_width[4]
+    function(name=NULL, gp=gpar(), vp=NULL) polygonGrob(x = c(l, l, r, r), y = c(t, b, b, t),
+                                                       name=name, gp=gp, vp=vp)
+}
+
+circleGrobFn <- function(r = 0.5) {
+    function(name=NULL, gp=gpar(), vp=NULL) circleGrob(r = unit(r, "snpc"), name=name, gp=gp, vp=vp)
+}
 
 polygonGrobFn <- function(x, y) {
     function(name=NULL, gp=gpar(), vp=NULL) polygonGrob(x, y, name=name, gp=gp, vp=vp)
@@ -283,8 +313,9 @@ makeContent.gridlines <- function(x) {
     }
     gl <- gList()
     if (label %in% c("rect", "roundrect")) {
-        gl[[1]] <- linesGrob(x=0.5, name="line1")
-        gl[[2]] <- linesGrob(y=0.5, name="line2")
+        width <- rep(x$mat_width, 4)
+        gl[[1]] <- segmentsGrob(0.5, width[3] , 0.5, 1 - width[1], name="line1")
+        gl[[2]] <- segmentsGrob(width[4], 0.5, 1 - width[2] , 0.5, name="line2")
     } else {
         theta <- if (back) 180 - theta else theta
         n_vertices <- get_n_vertices(label)
@@ -292,7 +323,7 @@ makeContent.gridlines <- function(x) {
         t <- t[1:(length(t)-1)]
         nt <- length(t)
         n <- floor(nt / 2)
-        r <- 0.5 - 0.01
+        r <- (0.5 - x$mat_width[1]) - 0.01
         xc <- 0.5 + to_x(t, r)
         yc <- 0.5 + to_y(t, r)
         for (ii in 1:nt) {
@@ -325,7 +356,7 @@ makeContent.mat <- function(x) {
     } else if (label == "rect") {
         gl <- gList(rectMatGrobFn(mat_width)())
     } else if (label == "oval") {
-        gl <- gList(convexMatGrobFn(60, 0, mat_width[1])())
+        gl <- gList(convexMatGrobFn(72, 90, mat_width[1])())
     } else if (grepl("^convex", label)) {
         if (back) theta <- 180 - theta
         gl <- gList(convexMatGrobFn(get_n_vertices(label), theta, mat_width[1])())
@@ -436,13 +467,24 @@ roundrect_xy <- function(shape_r) {
     list(x = x, y = y, c = rep("C1", length(x)))
 }
 
-kite_xy <- list(x = c(0.5, 0, 0.5, 1), y = c(1, 0.25, 0, 0.25), c = rep("C0", 4))
+kite_xy <- function(t = 90, r = 0.25) {
+    t <- t %% 360
+    stopifnot(nigh(t, 0) || nigh(t, 90) || nigh(t, 180) || nigh(t, 270))
+    if (nigh(t, 0)) {
+        list(x = c(1, 0.5 - r, 0, 0.5 - r), y = c(0.5, 1, 0.5, 0), c = rep("C0", 4))
+    } else if (nigh(t, 90)) {
+        list(x = c(0.5, 0, 0.5, 1), y = c(1, 0.5 - r, 0, 0.5 - r), c = rep("C0", 4))
+    } else if (nigh(t, 180)) {
+        list(x = c(0, 0.5 + r, 1, 0.5 + r), y = c(0.5, 0, 0.5, 1), c = rep("C0", 4))
+    } else {
+        list(x = c(0.5, 1, 0.5, 0), y = c(0, 0.5 + r, 1, 0.5 + r), c = rep("C0", 4))
+    }
+}
 pyramid_xy <- list(x = c(0.5, 0, 1), y = c(1, 0, 0), c = rep("C0", 3))
 rect_xy <- list(x = c(0, 0, 1, 1), y = c(1, 0, 0, 1), c = rep("C0", 4))
 
-convex_xy <- function(n_vertices, t) {
+convex_xy <- function(n_vertices, t, r = 0.5) {
     t <- seq(0, 360, length.out = n_vertices + 1) + t
-    r <- 0.5
     x <- to_x(t, r) + 0.5
     y <- to_y(t, r) + 0.5
     list(x = utils::head(x, -1),

@@ -3,12 +3,67 @@ test_that("no regressions in figures", {
     skip_on_ci()
     skip_if_not_installed("vdiffr")
     library("vdiffr")
-    # standard d6 dice
-    cfg <- game_systems()$dice
+    # d6 dice
+    envir <- game_systems()
     suppressMessages({
-      expect_doppelganger("dice_d6", function()
-        grid.piece("die_face", x=1:6, default.units="in", rank=1:6, suit=1:6, op_scale=0.5, cfg=cfg))
-    }, classes="piecepackr_affine_transformation")
+      expect_doppelganger("dice_d6", function() {
+        grid.piece("die_face", x=1:6, y=1, default.units="in", rank=1:6, suit=1:6, op_scale=0.5, cfg=envir$dice)
+        grid.piece("die_face", x=1:6, y=2, default.units="in", rank=1:6, suit=1:6, op_scale=0.5, cfg=envir$dice_numeral)
+        grid.piece("die_face", x=1:6, y=3, default.units="in", rank=1:6, suit=1:6, op_scale=0.5, cfg=envir$dice_fudge)
+    })}, classes="piecepackr_affine_transformation")
+
+    # standard d4 dice
+    cfg <- envir$dice_d4
+    suppressMessages({
+      expect_doppelganger("dice_d4", function() {
+        grid.piece("die_face", x=1:4, y=1, default.units="in", rank=1:4, suit=1:4, op_scale=0.0, cfg=cfg)
+        grid.piece("die_face", x=1:4, y=2, default.units="in", rank=1:4, suit=1:4, op_scale=0.5, cfg=cfg)
+    })}, classes="piecepackr_affine_transformation")
+
+    # standard d8 dice
+    cfg <- envir$dice_d8
+    suppressMessages({
+      expect_doppelganger("dice_d8", function() {
+        grid.piece("die_face", x=1:8, y=1, default.units="in", rank=1:8, suit=c(1:6, 1:2), op_scale=0.0, cfg=cfg)
+        grid.piece("die_face", x=1:8, y=2, default.units="in", rank=1:8, suit=c(1:6, 1:2), op_scale=0.5, cfg=cfg)
+    })}, classes="piecepackr_affine_transformation")
+
+    # standard d10 dice
+    cfg <- envir$dice_d10
+    suppressMessages({
+      expect_doppelganger("dice_d10", function() {
+        grid.piece("die_face", x=rep(1:5, 2), y=rep(1:2, each=5),
+                   default.units="in", rank=1:10, suit=rep(1:5, 2),
+                   op_scale=0.5, cfg=cfg)
+    })}, classes="piecepackr_affine_transformation")
+
+    # percentile d10 dice
+    cfg <- envir$dice_d10_percentile
+    suppressMessages({
+      expect_doppelganger("dice_d10_percentile", function() {
+        grid.piece("die_face", x=rep(1:5, 2), y=rep(1:2, each=5),
+                   default.units="in", rank=1:10, suit=rep(1:5, 2),
+                   op_scale=0.5, cfg=cfg)
+    })}, classes="piecepackr_affine_transformation")
+
+    # standard d12 dice
+    cfg <- envir$dice_d12
+    suppressMessages({
+      expect_doppelganger("dice_d12", function() {
+        grid.piece("die_face", x=rep(1:6, 2), y=rep(1:2, each=6),
+                   default.units="in", rank=1:12, suit=rep(1:6, 2),
+                   op_scale=0.5, cfg=cfg)
+    })}, classes="piecepackr_affine_transformation")
+
+    # standard d20 dice
+    cfg <- envir$dice_d20
+    suppressMessages({
+      expect_doppelganger("dice_d20", function() {
+        grid.piece("die_face", x=rep(1:5, 4),
+                   y=rep(1:4, each=5), default.units="in", rank=1:20,
+                   suit=rep(1:6, length.out=20),
+                   op_scale=0.5, cfg=cfg)
+    })}, classes="piecepackr_affine_transformation")
 
     # dominoes
     envir <- game_systems("dejavu")
@@ -20,6 +75,25 @@ test_that("no regressions in figures", {
     expect_error(xya_pips_cards(11), "Don't know pip pattern for 11 pips")
     expect_error(xya_pips_dominoes(19), "Don't know pip pattern for 19 pips")
     for (i in 0:10) expect_equal(nrow(xya_pips_cards(i)), i)
+
+    # Chinese dominoes
+    suppressMessages({
+      expect_doppelganger("dominoes_chinese", function() {
+        df1 <- tibble(piece_side = "tile_face",
+                      suit = c(rep(1, 6L), 2L, rep(2, 4L), rep(3, 3L), 3, rep(4, 3), 5, 5, 6),
+                      rank = c(1:6, 2L, 3:6, 3:5, 6, 4:6, 5:6, 6),
+                      cfg = c(rep(c("dominoes_chinese", "dominoes_chinese_black", "dominoes_chinese"), each = 7L)),
+                      x = rep(1:7, 3L),
+                      y = c(rep(c(1.5, 4.0, 6.5), each = 7L)))
+        df2 <- tibble(piece_side = "die_face",
+                      suit = 1, rank = 1:6,
+                      cfg = rep(c("dominoes_chinese", "dominoes_chinese_black", "dominoes_chinese"), each = 2L),
+                      x = 8.5, y = c(1, 2.25, 3.5, 4.75, 6.0, 7.25))
+        df <- rbind(df1, df2)
+        pmap_piece(df, envir = game_systems(), default.units = "in",
+                   trans = op_transform, op_scale = 0.5)
+        })
+    }, classes="piecepackr_affine_transformation")
 
     # checkers
     expect_doppelganger("checkers", function() {
@@ -152,11 +226,5 @@ test_that("no regressions in figures", {
                               suit = 1:6, rank = NA, cfg = "reversi")
         df <- rbind(df_board, df_bit_face, df_bit_back)
         pmap_piece(df, default.units="in", envir=envir, op_scale=0.5, trans=op_transform)
-    })
-
-    # fudge dice
-    cfg <- envir$dice_fudge
-    expect_doppelganger("fudge", function() {
-        grid.piece("die_face", x = 1:6, y = 2, suit = 1:6, rank = 1:6, cfg = cfg, default.units = "in")
     })
 })

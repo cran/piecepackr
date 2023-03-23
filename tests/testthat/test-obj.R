@@ -21,6 +21,7 @@ test_that("save_piece_obj works", {
 
 test_that("rgl works", {
     skip_on_cran()
+    skip_if_not_installed("rgl")
     library("rgl")
     # go stone OBJ generation uses "rgl" in background
     files <- save_piece_obj("bit_face", cfg = game_systems("dejavu3d")$go)
@@ -38,6 +39,35 @@ test_that("rgl works", {
     l <- piece3d("pawn_top", x=-1:1, suit=1:3, cfg = cfg, lit=TRUE)
     expect_true(length(l) > 2)
 
+    clear3d()
+    cfg <- game_systems()$dice_d4
+    l <- piece3d("die_face", x=1:4, suit=1:4, rank=1:4, cfg=cfg)
+    expect_true(length(l) == 4)
+
+    clear3d()
+    l <- piece3d("die_face", x=1:8, suit=c(1:6, 1:2), rank=1:8, cfg=dice_d8())
+    expect_true(length(l) == 8)
+
+    clear3d()
+    l <- piece3d("die_face", x=rep(1:5, 2), y=rep(1:2, each=5),
+                 rank=1:10, suit=rep(1:5, 2), cfg=dice_d10())
+    expect_true(length(l) == 10)
+
+    clear3d()
+    l <- piece3d("die_face", x=rep(1:5, 2), y=rep(1:2, each=5),
+                 rank=1:10, suit=rep(1:5, 2), cfg=dice_d10_percentile())
+    expect_true(length(l) == 10)
+
+    clear3d()
+    l <- piece3d("die_face", x=rep(1:6, 2), y=rep(1:2, each=6),
+                 rank=1:12, suit=rep(1:6, length.out=12), cfg=dice_d12())
+    expect_true(length(l) == 12)
+
+    clear3d()
+    l <- piece3d("die_face", x=rep(1:5, 4), y=rep(1:4, each=5),
+                 rank=1:20, suit=rep(1:6, length.out=20), cfg=dice_d20())
+    expect_true(length(l) == 20)
+
     close3d()
 })
 
@@ -48,7 +78,7 @@ test_that("rayrender works", {
     scene <- piece("coin_face", x=-1:1, rank=1:3, cfg = cfg)
     f <- tempfile(fileext = ".jpeg")
     png(f)
-    render_scene(scene, samples = 1)
+    render_scene(scene, samples = 1, interactive = FALSE)
     dev.off()
     expect_true(file.exists(f))
     unlink(f)
