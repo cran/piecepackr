@@ -2,7 +2,7 @@ Encoding: UTF-8
 Package: piecepackr
 Type: Package
 Title: Board Game Graphics
-Version: 1.13.1
+Version: 1.13.3
 Description: Functions to make board game graphics with the 'ggplot2', 'grid', 'rayrender', 'rayvertex', and 'rgl' packages.  Specializes in game diagrams, animations, and "Print & Play" layouts for the 'piecepack' <https://www.ludism.org/ppwiki> but can make graphics for other board game systems.  Includes configurations for several public domain game systems such as checkers, (double-18) dominoes, go, 'piecepack', playing cards, etc.
 Authors@R: c(person("Trevor L", "Davis", role=c("aut", "cre"), 
              email="trevor.l.davis@gmail.com",
@@ -29,7 +29,7 @@ Suggests: animation (>= 2.7), ggplot2, gifski, gridpattern, magick,
 RoxygenNote: 7.2.3
 Config/testthat/edition: 3
 NeedsCompilation: no
-Packaged: 2023-03-22 23:46:07 UTC; trevor
+Packaged: 2023-06-19 22:39:28 UTC; trevor
 Author: Trevor L Davis [aut, cre] (<https://orcid.org/0000-0001-6341-4639>),
   Linux Foundation [dtc] (Uses some data from the "SPDX License List"
     <https://github.com/spdx/license-list-XML>),
@@ -42,4 +42,4 @@ Author: Trevor L Davis [aut, cre] (<https://orcid.org/0000-0001-6341-4639>),
 Maintainer: Trevor L Davis <trevor.l.davis@gmail.com>
 Depends: R (>= 2.10)
 Repository: CRAN
-Date/Publication: 2023-03-23 16:50:02 UTC
+Date/Publication: 2023-06-20 02:20:08 UTC
