@@ -1,3 +1,8 @@
+piecepackr 1.13.6
+=================
+
+* Tweak documentation examples to make CRAN happy (#332). 
+
 piecepackr 1.13.3
 =================
 

@@ -4,16 +4,16 @@
 #' It is a wrapper around `pmap_piece()` that can auto-size files and graphic devices,
 #' apply axes offsets, annotate coordinates, and set up `rayrender` / `rayvertex` scenes.
 #' @inheritParams aabb_piece
-#' @param file Filename to save animation unless `NULL`
+#' @param file Filename to save image unless `NULL`
 #'             in which case it either uses the current graphics device or opens a new device
 #'             (depending on `new_device` argument).
 #' @param ... Arguments to [pmap_piece()]
 #' @param .f Low level graphics function to use e.g. [grid.piece()], [piece3d()], [piece_mesh()], or [piece()].
 #' @param cfg A piecepackr configuration list
 #' @param envir Environment (or named list) of piecepackr configuration lists
-#' @param width Width of animation (in inches).  Inferred by default.
-#' @param height Height of animation (in inches).  Inferred by default.
-#' @param ppi Resolution of animation in pixels per inch.
+#' @param width Width of image (in inches).  Inferred by default.
+#' @param height Height of image (in inches).  Inferred by default.
+#' @param ppi Resolution of image in pixels per inch.
 #' @param bg Background color (use `"transparent"` for transparent)
 #' @param xoffset Number to add to the `x` column in `df`.  Inferred by default.
 #' @param yoffset Number to add to the `y` column in `df`.  Inferred by default.
@@ -30,20 +30,27 @@
 #' @return An invisible list of the dimensions of the image, as a side effect saves a graphic
 #' @seealso This function is a wrapper around [pmap_piece()].
 #' @examples
-#'  df_board <- data.frame(piece_side = "board_face", suit = 3, rank = 8,
-#'                         x = 4.5, y = 4.5, stringsAsFactors = FALSE)
+#'  df_board <- data.frame(piece_side = "board_face", suit = 3, rank = 5,
+#'                         x = 3.0, y = 3.0, stringsAsFactors = FALSE)
 #'  df_w <- data.frame(piece_side = "bit_face", suit = 6, rank = 1,
-#'                     x = rep(1:8, 2), y = rep(1:2, each=8),
+#'                     x = rep(1:5, 2), y = rep(1:2, each=5),
 #'                     stringsAsFactors = FALSE)
 #'  df_b <- data.frame(piece_side = "bit_face", suit = 1, rank = 1,
-#'                     x = rep(1:8, 2), y = rep(7:8, each=8),
+#'                     x = rep(1:5, 2), y = rep(4:5, each=5),
 #'                     stringsAsFactors = FALSE)
 #'  df <- rbind(df_board, df_w, df_b)
 #'  df$cfg <- "checkers1"
 #'
-#'  render_piece(df)
-#'  render_piece(df, op_scale = 0.5, trans = op_transform, annotate = "algrebraic")
-#'  \dontrun{ # May takes a while to render
+#'  if (requireNamespace("grid", quietly = TRUE)) {
+#'    render_piece(df, new_device = FALSE)
+#'  }
+#'  if (requireNamespace("grid", quietly = TRUE)) {
+#'    grid::grid.newpage()
+#'    render_piece(df, new_device = FALSE,
+#'                 op_scale = 0.5, trans = op_transform,
+#'                 annotate = "algrebraic")
+#'  }
+#'  \dontrun{# May take more than 5 seconds on CRAN servers
 #'  if (require(rayvertex)) {
 #'    envir3d <- game_systems("sans3d")
 #'    render_piece(df, .f = piece_mesh, envir = envir3d,
