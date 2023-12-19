@@ -1,4 +1,5 @@
-# piecepackr: Board Game Graphics
+piecepackr: Board Game Graphics
+===============================
 
 [![CRAN Status Badge](https://www.r-pkg.org/badges/version/piecepackr)](https://cran.r-project.org/package=piecepackr)
 
@@ -22,7 +23,8 @@ By default it is configured to make [piecepack](#piecepack) game
 diagrams, animations, and "Print & Play" layouts but can be configured
 to make graphics for other board game systems as well.
 
-## Built-in Game Systems
+Built-in Game Systems
+---------------------
 
 The function `game_systems()` returns configurations for multiple public
 domain game systems:
@@ -186,13 +188,15 @@ with various decks of playing cards.
     [Reversi](https://en.wikipedia.org/wiki/Reversi) in a variety of
     colors.
 
-## Looney Pyramids
+Looney Pyramids
+---------------
 
 Configurations for the proprietary Looney Pyramids aka Icehouse Pieces
 game system by Andrew Looney can be found in the companion R package
 `piecenikr`: <https://github.com/piecepackr/piecenikr>
 
-## API Intro
+API Intro
+---------
 
 ### grid.piece() ({grid})
 
@@ -388,13 +392,13 @@ objects.
 
     library("ggplot2")
     library("piecepackr")
-    library("ppgames") # remotes::install_github("piecepackr/ppgames")
+    library("ppdf") # remotes::install_github("piecepackr/ppdf")
     library("withr")
     new <- list(piecepackr.cfg = "piecepack",
                 piecepackr.envir = game_systems("dejavu", pawn="joystick"),
                 piecepackr.op_angle = 90,
                 piecepackr.op_scale = 0.80)
-    dfc <- ppgames::df_fujisan(seed = 42)
+    dfc <- ppdf::piecepack_fujisan(seed = 42)
     withr::with_options(new, {
       dft <- op_transform(dfc, as_top = "pawn_face", cfg_class = "character")
       ggplot(dft, aes_piece(dft)) + 
@@ -429,10 +433,10 @@ projection](man/figures/README-ggplot2-1.png)
 `piece()` creates [rayrender](https://www.rayrender.net/) objects.
 
     library("piecepackr")
-    library("ppgames") # remotes::install_github("piecepackr/ppgames")
+    library("ppdf") # remotes::install_github("piecepackr/ppdf")
     library("magrittr")
     library("rayrender", warn.conflicts = FALSE)
-    df <- ppgames::df_xiangqi()
+    df <- ppdf::piecepack_xiangqi()
     envir <- game_systems("dejavu3d", round=TRUE, pawn="peg-doll")
     l <- pmap_piece(df, piece, envir = envir, trans=op_transform, 
                     scale = 0.98, res = 150, as_top="pawn_face")
@@ -452,15 +456,15 @@ projection](man/figures/README-ggplot2-1.png)
 `piece_mesh()` creates [rayvertex](https://www.rayvertex.com/) objects.
 
     library("piecepackr")
-    library("ppgames") # remotes::install_github("piecepackr/ppgames")
+    library("ppdf") # remotes::install_github("piecepackr/ppdf")
     library("rayvertex", warn.conflicts = FALSE) # masks `rayrender::r_obj`
-    df <- ppgames::df_international_chess()
+    df <- ppdf::piecepack_international_chess()
     envir <- game_systems("dejavu3d", round=TRUE, pawn="joystick")
     l <- pmap_piece(df, piece_mesh, envir = envir, trans=op_transform, 
                     scale = 0.98, res = 150, as_top="pawn_face")
     table <- sphere_mesh(c(0, 0, -1e3), radius=1e3, 
                          material = material_list(diffuse="grey40"))
-    scene <- Reduce(rayvertex::add_shape, l, init=table)
+    scene <- rayvertex::scene_from_list(l) |> add_shape(table)
     light_info <- directional_light(c(5, -7, 7), intensity = 2.5)
     rayvertex::rasterize_scene(scene, 
                                lookat = c(4.5, 4, 0), 
@@ -475,7 +479,7 @@ projection](man/figures/README-ggplot2-1.png)
 
     library("gifski")
     library("piecepackr")
-    library("ppgames") # remotes::install_github("piecepackr/ppgames")
+    library("ppn") # remotes::install_github("piecepackr/ppn")
     library("tweenr")
 
     envir <- game_systems("dejavu")
@@ -489,7 +493,7 @@ projection](man/figures/README-ggplot2-1.png)
     cfg$background_color.r6 <- "#F079A7"
     envir$piecepack <- pp_cfg(cfg)
 
-    ppn_file <- system.file("ppn/relativity.ppn", package = "ppgames")
+    ppn_file <- system.file("ppn/relativity.ppn", package = "ppn")
     game <- read_ppn(ppn_file)[[1]]
     animate_piece(game$dfs, file = "man/figures/README-relativity.gif", 
                   annotate = FALSE,
@@ -497,7 +501,7 @@ projection](man/figures/README-ggplot2-1.png)
                   n_transitions = 3, n_pauses = 2, fps = 7)
 
 <figure>
-<img src="man/figures/README-relativity.gif" class="align-center" alt="Animation of Marty and Ron Hale-Evans&#39; abstract game Relativity" /><figcaption aria-hidden="true">Animation of Marty and Ron Hale-Evans' abstract game Relativity</figcaption>
+<img src="man/figures/README-relativity.gif" class="align-center" alt="" /><figcaption>Animation of Marty and Ron Hale-Evans' abstract game Relativity</figcaption>
 </figure>
 
 ### Further documentation
@@ -606,7 +610,8 @@ Then we'll draw an example Tak game diagram:
 
 ![Tak game diagram](man/figures/README-diagram-1.png)
 
-## Installation
+Installation
+------------
 
 To install the last version released on CRAN use the following command
 in [R](https://www.r-project.org/):
@@ -645,7 +650,9 @@ Required by the `{ggplot2}` bindings `geom_piece()` and its helper
 functions `aes_piece()`, `scale_x_piece()`, and `scale_y_piece()`.
 
 **gifski**  
-`animate_piece()` uses the `{gifski}` package to save "gif" animations.
+`animate_piece()` preferably uses the `{gifski}` package to save "gif"
+animations. If `{gifski}` is not available then `animate_piece()` can
+fall back on `{animation}` to make "gif" animations.
 
 **gridpattern**  
 The `pp_shape()` object's `pattern()` method uses `{gridpattern}` to
@@ -690,7 +697,7 @@ shaped token game pieces.
 
 **systemfonts**  
 `has_font()` preferably uses `{systemfonts}` to determine if a given
-font is available. If `{systemfonts}` is not available then `has_font`
+font is available. If `{systemfonts}` is not available then `has_font()`
 can fall back on `{pdftools}` if `capabilities("cairo") == TRUE`.
 
 **tweenr**  
@@ -752,7 +759,8 @@ confirm that R was compiled with support for Cairo via R's
     cairo
      TRUE
 
-## Frequently Asked Questions
+Frequently Asked Questions
+--------------------------
 
 ### Where should I ask questions?
 
