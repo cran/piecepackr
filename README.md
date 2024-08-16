@@ -772,7 +772,7 @@ Frequently Asked Questions
 ### What is the package licence?
 
 The **code** of this software package is licensed under the [MIT
-license](https://opensource.org/license/mit/).
+license](https://opensource.org/license/mit).
 
 Graphical assets generated using configurations returned by
 `game_systems()` should be usable without attribution:
