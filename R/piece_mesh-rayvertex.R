@@ -26,11 +26,13 @@
 #' @seealso See \url{https://www.rayvertex.com} for more information about the \code{rayvertex} package.
 #'          See \code{\link{geometry_utils}} for a discussion of the 3D rotation parameterization.
 piece_mesh <- function(piece_side = "tile_back", suit = NA, rank = NA, cfg = pp_cfg(), # nolint
-                           x = 0, y = 0, z = NA,
-                           angle = 0, axis_x = 0, axis_y = 0,
-                           width = NA, height = NA, depth = NA,
-                           envir = NULL, ..., scale = 1, res = 72) {
+                       x = 0, y = 0, z = NA,
+                       angle = 0, axis_x = 0, axis_y = 0,
+                       width = NA, height = NA, depth = NA,
+                       envir = NULL, ..., scale = 1, res = 72) {
     assert_suggested("rayvertex")
+    if (is_angle(angle))
+        angle <- as.double(angle, "degrees")
 
     nn <- max(lengths(list(piece_side, suit, rank, x, y, z, angle, axis_x, axis_y, width, height, depth)))
     piece_side <- rep(piece_side, length.out = nn)
@@ -57,13 +59,7 @@ piece_mesh <- function(piece_side = "tile_back", suit = NA, rank = NA, cfg = pp_
                      scale = scale[i], res = res)
     })
     l <- Filter(Negate(is.null), l)
-    if (length(l) == 1L) {
-        l[[1L]]
-    } else if (length(l) > 1L) {
-        rayvertex::scene_from_list(l)
-    } else {
-        NULL
-    }
+    rv_from_list(l)
 }
 
 rv_piece_helper <- function(piece_side = "tile_back", suit = NA, rank = NA, cfg = pp_cfg(), # nolint
@@ -71,10 +67,21 @@ rv_piece_helper <- function(piece_side = "tile_back", suit = NA, rank = NA, cfg 
                            angle = 0, axis_x = 0, axis_y = 0,
                            width = NA, height = NA, depth = NA, scale = 1, res = 72) {
     if (scale == 0) return(NULL)
-    obj <- save_piece_obj(piece_side, suit, rank, cfg,
+    l_obj <- save_piece_obj(piece_side, suit, rank, cfg,
                         x = x, y = y, z = z,
                         angle = angle, axis_x = axis_x, axis_y = axis_y,
                         width = width, height = height, depth = depth,
                         scale = scale, res = res)
-    rayvertex::obj_mesh(filename = obj$obj)
+    l <- lapply(l_obj$obj, rayvertex::obj_mesh)
+    rv_from_list(l)
+}
+
+rv_from_list <- function(l) {
+    if (length(l) == 1L) {
+        l[[1L]]
+    } else if (length(l) > 1L) {
+        rayvertex::scene_from_list(l)
+    } else {
+        NULL
+    }
 }

@@ -5,7 +5,7 @@ piecepackr: Board Game Graphics
 
 [![Coverage Status](https://codecov.io/github/piecepackr/piecepackr/branch/master/graph/badge.svg)](https://app.codecov.io/github/piecepackr/piecepackr?branch=master)
 
-[![R-CMD-check](https://github.com/piecepackr/piecepackr/workflows/R-CMD-check/badge.svg)](https://github.com/piecepackr/piecepackr/actions)
+[![R-CMD-check](https://github.com/piecepackr/piecepackr/actions/workflows/R-CMD-check.yaml/badge.svg?branch=master)](https://github.com/piecepackr/piecepackr/actions)
 
 <img src="man/figures/logo.png" align="right" width="200px" alt="piecepackr hex sticker">
 
@@ -620,8 +620,10 @@ in [R](https://www.r-project.org/):
 
 To install the development version use the following commands:
 
-    install.packages("remotes")
-    remotes::install_github("piecepackr/piecepackr")
+    options(repos = c(
+        piecepackr = 'https://piecepackr.r-universe.dev',
+        CRAN = 'https://cloud.r-project.org'))
+    install.packages("piecepackr")
 
 ### Suggested R packages
 
@@ -632,10 +634,13 @@ R packages use:
 
     install.packages("piecepackr", dependencies = TRUE)
 
-or (for the development version):
+or (for the development version from the [piecepackr
+universe](#piecepackr-universe)):
 
-    install.packages("remotes")
-    remotes::install_github("piecepackr/piecepackr", dependencies = TRUE)
+    options(repos = c(
+        piecepackr = 'https://piecepackr.r-universe.dev',
+        CRAN = 'https://cloud.r-project.org'))
+    install.packages("piecepackr", dependencies = TRUE)
 
 Suggested R packages:
 
@@ -712,6 +717,36 @@ class="title-ref">ghostscript</span>, <span
 class="title-ref">pdftk</span>, and/or <span
 class="title-ref">exiftool</span>.
 
+### piecepackr universe
+
+The [piecepackr universe](#piecepackr-universe) contains other R
+packages that may also be of interest to fans of `piecepackr`. To
+install them use:
+
+    # install.packages("piecepackr")
+    piecepackr::install_ppverse(free_libre_only = TRUE)
+
+**ppcli**  
+Functions to visualize board games in plaintext. Provides colorization
+support for the terminal and HTML via `cli`.
+
+**ppdf**  
+Generate `tibble` data frames indicating how to set up over a hundred
+board games playable with public domain game systems. Data format can be
+used by `piecepackr` to generate graphics or by `ppcli` to generate
+plaintext graphics with `cli`.
+
+**ppgamer**  
+Functions that provide players for piecepack games like a solver for
+"Fuji-san".
+
+**ppn**  
+Parses "Portable Piecepack Notation" files. This allows you to visualize
+the moves for over one hundred board games using `piecepackr`.
+
+**pprules**  
+Functions to generate piecepack game rulesets and books.
+
 ### Other suggested software
 
 The default piecepackr `pp_cfg()` configuration and the default game
@@ -721,7 +756,7 @@ their system fonts. However `game_systems(style = "dejavu")` requires
 that the [Dejavu Sans](https://dejavu-fonts.github.io/Download.html)
 font is installed.
 
-For more advanced `{piecepackr}` configurations you'll want to install
+For more advanced `piecepackr` configurations you'll want to install
 additional Unicode fonts and Windows users are highly recommended to use
 and install piecepackr on "Ubuntu on Bash on Windows" if planning on
 using Unicode symbols from multiple fonts. The following bash commands
@@ -737,15 +772,16 @@ Ubuntu:
     mv NotoEmoji-Regular.ttf $fonts_dir/
     rm NotoEmoji-unhinted.zip
 
-Certain `{piecepackr}` features works best if the version of R installed
+Certain `piecepackr` features works best if the version of R installed
 was compiled with support for Cairo:
 
 -   A subset of game system configurations use Unicode glyphs. The
     "cairo" graphics devices support Unicode glyphs.
--   3D `{grid}` renderings for certain pieces like dice and pyramids are
-    enhanced if the graphic device supports the "affine transformation"
-    feature. In recent versions of R the "cairo" graphics devices
-    support the "affine transformation" feature.
+-   3D [grid](https://www.rdocumentation.org/packages/grid) renderings
+    for certain pieces like dice and pyramids are enhanced if the
+    graphic device supports the "affine transformation" feature. In
+    recent versions of R the "cairo" graphics devices support the
+    "affine transformation" feature.
 -   The function `get_embedded_font()` needs support for the
     `cairo_pdf()` function (which embeds fonts in the pdf) and by
     default `render_piece()` and `save_print_and_play()` may try to use

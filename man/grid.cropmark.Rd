@@ -3,7 +3,7 @@
 \name{grid.cropmark}
 \alias{grid.cropmark}
 \alias{cropmarkGrob}
-\title{Crop Mark Grob}
+\title{Draw crop marks with grid}
 \usage{
 cropmarkGrob(
   ...,
@@ -20,7 +20,7 @@ cropmarkGrob(
   default.units = "npc",
   envir = getOption("piecepackr.envir"),
   name = NULL,
-  gp = NULL,
+  gp = gpar(),
   vp = NULL,
   bleed = unit(0.125, "in"),
   cm_select = "12345678",
@@ -98,7 +98,8 @@ Intended for use in adding crop marks around
 game pieces in print-and-play layouts.
 }
 \examples{
-if (requireNamespace("grid", quietly = TRUE) && piecepackr:::device_supports_unicode()) {
+if (requireNamespace("grid", quietly = TRUE) &&
+    piecepackr:::device_supports_unicode()) {
   cfg <- pp_cfg(list(mat_color = "pink", mat_width=0.05, border_color=NA))
   grid::grid.newpage()
   df <- data.frame(piece_side = "tile_face", suit = 2, rank = 2,
@@ -107,7 +108,8 @@ if (requireNamespace("grid", quietly = TRUE) && piecepackr:::device_supports_uni
   pmap_piece(df, grid.cropmark, cfg = cfg, default.units = "in")
   pmap_piece(df, grid.piece, cfg = cfg, default.units = "in", bleed=TRUE)
 }
-if (requireNamespace("grid", quietly = TRUE) && piecepackr:::device_supports_unicode()) {
+if (requireNamespace("grid", quietly = TRUE) &&
+    piecepackr:::device_supports_unicode()) {
   grid::grid.newpage()
   df <- data.frame(piece_side = "coin_back", suit = 2, rank = 2,
                    x = 2, y = 2, angle = 0,

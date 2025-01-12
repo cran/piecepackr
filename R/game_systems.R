@@ -239,8 +239,15 @@ game_systems_style <- function(style = "sans") {
     style
 }
 
-cb_suit_colors_impure <- c("#D55E00", "grey30", "#009E73", "#56B4E9", "#E69F00", "#FFFFFF")
+# Okabe-Ito palette i.e. `palette.colors(n = 8, palette = "Okabe-Ito", names=TRUE)` plus white
+#                         vermillion black    bluishgreen  skyblue    orange     white
 cb_suit_colors_pure <- c("#D55E00", "#000000", "#009E73", "#56B4E9", "#E69F00", "#FFFFFF")
+# Swap sky blue for blue and orange for yellow
+# cb_suit_colors_pure <- c("#D55E00", "#000000", "#009E73", "#0072B2", "#F0E442", "#FFFFFF")
+# Swap sky blue for blue (but keep orange)
+# cb_suit_colors_pure <- c("#D55E00", "#000000", "#009E73", "#0072B2", "#E69F00", "#FFFFFF")
+cb_suit_colors_impure <- cb_suit_colors_pure
+cb_suit_colors_impure[2L] <- "grey30"
 
 dice <- function(color_list = color_list_fn(), rect_shape = "rect") {
     dice_list <- list(n_suits = 6, n_ranks = 6,
@@ -630,26 +637,26 @@ chess <- function(style = "sans", cell_width = 1, color_list = color_list_fn()) 
         white_chess_ranks <- c("\u2659", "\u2658", "\u2657", "\u2656", "\u2655", "\u2654")
     }
     chess <- list(n_suits = 6, n_ranks = 12,
-                     width.board = 8 * cell_width,
-                     height.board = 8 * cell_width,
-                     width.bit = 0.75 * cell_width,
-                     ps_text.bit_back = "", dm_text.bit = "",
-                     grob_fn.r1.board_face = checkeredBoardGrobFn(8, 8),
-                     grob_fn.r1.board_back = linedBoardGrobFn(8, 8),
-                     gridline_color.board_face = cb_suit_colors_impure,
-                     gridline_color.board_back = cb_suit_colors_pure,
-                     gridline_lex.board = 4,
-                     suit_text = "",
-                     rank_cex.bit = 1.4 * cell_width,
-                     rank_cex.die = rank_cex_die,
-                     rank_text = black_chess_ranks,
-                     rank_text.s6 = white_chess_ranks,
-                     suit_color = cb_suit_colors_pure,
-                     suit_color.s6 = "black",
-                     background_color = "white",
-                     edge_color.bit = color_list$edge_color.board,
-                     gridline_color.s6.board_face = "grey80",
-                     gridline_color.s6.board_back = "grey80")
+                  width.board = 8 * cell_width,
+                  height.board = 8 * cell_width,
+                  width.bit = 0.75 * cell_width,
+                  ps_text.bit_back = "", dm_text.bit = "",
+                  grob_fn.r1.board_face = checkeredBoardGrobFn(8, 8),
+                  grob_fn.r1.board_back = linedBoardGrobFn(8, 8),
+                  gridline_color.board_face = cb_suit_colors_impure,
+                  gridline_color.board_back = cb_suit_colors_pure,
+                  gridline_lex.board = 4,
+                  suit_text = "",
+                  rank_cex.bit = 1.4 * cell_width,
+                  rank_cex.die = rank_cex_die,
+                  rank_text = black_chess_ranks,
+                  rank_text.s6 = white_chess_ranks,
+                  suit_color = cb_suit_colors_pure,
+                  suit_color.s6 = "black",
+                  background_color = "white",
+                  edge_color.bit = color_list$edge_color.board,
+                  gridline_color.s6.board_face = "grey80",
+                  gridline_color.s6.board_back = "grey80")
     for (i in seq(2, 12)) {
         chess[[paste0("width.r", i, ".board")]] <- i * cell_width
         chess[[paste0("height.r", i, ".board")]] <- i * cell_width
@@ -823,7 +830,6 @@ playing_cards <- function(style = "sans", rect_shape = "rect") {
     playing_cards_tarot$grob_fn.r15.card <- jokerCardGrobFn(TRUE)
     playing_cards_tarot$grob_fn.s3.r15.card <- jokerCardGrobFn(FALSE)
     playing_cards_tarot$grob_fn.s4.r15.card <- jokerCardGrobFn(FALSE)
-    playing_cards_tarot$rank_text.s5 <- c(1:21, fool_text)
     playing_cards_tarot$n_suits <- 5
     playing_cards_tarot$n_ranks <- 22
 
@@ -831,7 +837,13 @@ playing_cards <- function(style = "sans", rect_shape = "rect") {
     playing_cards_tarot$suit_text <- tarot_suit_text
     playing_cards_tarot$suit_text.r14 <- tarot_suit_text
     playing_cards_tarot$suit_color <- "#D55E00,#000000,#000000,#D55E00,#000000"
-    playing_cards_tarot$grob_fn.s5.card <- cardGrobFn(0)
+    playing_cards_tarot$rank_text.s5 <- c(1:21, fool_text)
+    playing_cards_tarot$grob_fn.s5.card <- cardGrobFn(has_pips = FALSE)
+    for (i in 11:15) {
+        name <- paste0("grob_fn.s5.r", i, ".card")
+        playing_cards_tarot[[name]] <- cardGrobFn(has_pips = FALSE)
+    }
+
     playing_cards_tarot <- pp_cfg(playing_cards_tarot)
     playing_cards_tarot$has_piecepack <- FALSE
     playing_cards_tarot$has_cards <- TRUE
@@ -898,10 +910,7 @@ reversi_piece <- function(cell_width = 1, color_list = color_list_fn()) {
          depth.bit = 0.25 * cell_width,
          grob_fn.bit = reversi_piece$grob_fn,
          obj_fn.bit = reversi_piece$obj_fn,
-         op_grob_fn.bit = reversi_piece$op_grob_fn,
-         rayrender_fn.bit = reversi_piece$rayrender_fn,
-         rayvertex_fn.bit = reversi_piece$rayvertex_fn,
-         rgl_fn.bit = reversi_piece$rgl_fn)
+         op_grob_fn.bit = reversi_piece$op_grob_fn)
 }
 
 peg_doll_pawn <- function(shapes) {
@@ -941,9 +950,6 @@ joystick_pawn <- function(shapes) {
     list(grob_fn.pawn = joystick$grob_fn,
          obj_fn.pawn = joystick$obj_fn,
          op_grob_fn.pawn = joystick$op_grob_fn,
-         rayrender_fn.pawn = joystick$rayrender_fn,
-         rayvertex_fn.pawn = joystick$rayvertex_fn,
-         rgl_fn.pawn = joystick$rgl_fn,
          width.pawn=5/8, height.pawn=1.0, depth.pawn=5/8)
 }
 

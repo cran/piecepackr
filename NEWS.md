@@ -1,3 +1,80 @@
+piecepackr 1.14.1
+=================
+
+Breaking changes
+----------------
+
+* Some features which were deprecated by v1.13.1 (2023-03-23) have been removed:
+
+  + `get_embedded_font()` no longer falls back on the use of the command-line utility `pdffonts`
+    if the suggested R package `{pdftools}` is not installed.
+    Please install the suggested R package `{pdftools}` to use `get_embedded_font()`.
+
+* Newly vectorized `save_piece_obj()` now returns a data frame (instead of a named list)
+  with (the same) "obj", "mtl", and "png" names.
+  Each row contains the file paths for a Wavefront ".obj" file and its associated ".mtl" and ".png" files.
+  Each piece may now be represented by one or several ".obj" files.
+  Previously `save_piece_obj()` was not vectorized and returned a list with names "obj", "mtl", and "png"
+  with the file paths for a single Wavefront ".obj" file and its associated ".mtl" and ".png" files and it used
+  to throw an error instead of saving multiple ".obj" files for certain "composite" pieces
+  (like the "joystick" pawn or "reversi" disc).
+
+New features
+------------
+
+* `crosshairGrob()` / `grid.crosshair()` create/draw "crosshair" grobs.
+  Intended for use in creating print-and-play layouts.
+
+  + `segmentsCrosshairGrob()` simply wraps `grid::segmentsGrob()`.
+  + `squaresCrosshairGrob()` wraps `grid::rectGrob()` and alternates
+  black/white squares for visibility on both light and dark backgrounds.
+
+* `install_ppverse()` installs non-CRAN packages
+  from the [piecepackr universe](https://piecepackr.r-universe.dev/builds).
+  `pkgs_ppverse()` returns a character vector of R packages
+  in the piecepackr universe (#351).
+
+Bug fixes and minor improvements
+--------------------------------
+
+* Although angles can continue to be numeric vectors of (usually) degrees they can now also
+  be `affiner::angle()` vectors (#350):
+
+  + The `angle` argument of:
+
+    - `AA_to_R()`
+    - `cropmarkGrob()` / `grid.cropmark()`
+    - `crosshairGrob()` / `grid.crosshair()`
+    - `geom_piece()`
+    - `piece()`
+    - `piece3d()`
+    - `pieceGrob()` / `grid.piece()`
+    - `piece_mesh()`
+    - `R_x()`, `R_y()`, and `R_z()`
+    - `save_piece_obj()`, `save_ellipsoid_obj()`, and `save_peg_doll_obj()`
+
+  + The `op_angle` argument of:
+
+    - `aabb_piece()`
+    - `geom_piece()`
+    - `pieceGrob()` / `grid.piece()`
+    - `op_transform()`
+
+  + The `t` argument of `to_x()`, `to_y()`, `to_degrees()`, and `to_radians()`.
+  + The `theta` argument of `pp_shape()`.
+
+* `cropmarkGrob()` / `grid.cropmark()` no longer ignores `name`, `gp`, and `vp` arguments (#340).
+* `cropmarkGrob()` / `grid.cropmark()` is now vectorized in most of its arguments.
+* `save_piece_obj()` improvements (#347):
+
+  + Most arguments are now vectorized and `save_piece_obj()` now returns a data frame with "obj", "mtl", and "png" names.
+  + Each row contains the file paths for a Wavefront ".obj" file and its associated ".mtl" and ".png" files.
+  + Each piece may now be represented by one or several ".obj" files.  In particular instead of throwing an error
+    we now generate (multiple) ".obj" files to represent "composite" pieces like the "joystick" pawns and "reversi" discs.
+* The following enhancements to the configurations returned by `game_systems()`:
+
+  - In ``playing_cards_tarot`` we have fixed problems with the tarot trump cards higher than 10 (#353).
+
 piecepackr 1.13.11
 ==================
 
@@ -53,7 +130,7 @@ Breaking changes
   you'll get message informing you that `{piecepackr}` was unable to embed certain metadata.
   These messages have class `"piecepackr_embed_metadata"` and can also be suppressed by setting
   `options(piecepackr.metadata.inform = FALSE)`.
-* Some features which were deprecated by v1.10.3 (2022-03-23) have been removed:
+* Some features which were deprecated by v1.10.3 (2022-03-22) have been removed:
 
   - The `use_pictureGrob` argument of `grid.piece()` / `pieceGrob()` which was deprecated in v1.8.1 (2021-08-11) has been removed.
     Use `type = "picture"` instead of `use_pictureGrob = TRUE`.
@@ -64,7 +141,7 @@ Breaking changes
     has been removed. The public method `get_op_grob()` returns the complete oblique projection grob.
   - `animate_pieces()`'s `annotate` argument must now always be set as a named argument
     (or rely on its default value).
-    Setting it positionally was deprecated in v1.10.3 (2022-03-23).
+    Setting it positionally was deprecated in v1.10.3 (2022-03-22).
 
 Deprecated features
 -------------------
