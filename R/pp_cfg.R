@@ -28,14 +28,14 @@
 #' }
 #'
 #' @section `pp_cfg` R6 Class Methods:\describe{
-#'   \item{`get_grob()`}{Returns a \code{grid} \dQuote{grob} for drawing the piece.}
+#'   \item{`get_grob()`}{Returns a `grid` \dQuote{grob} for drawing the piece.}
 #'   \item{`get_piece_opt()`}{Returns a list with info useful for drawing the piece.}
 #'   \item{`get_suit_color()`}{Returns the suit colors.}
 #'   \item{`get_width()`, `get_height()`, `get_depth()`}{
 #'         Dimensions (of the bounding cube) of the piece in inches}
 #' }
 #'
-#' @section \code{pp_cfg} R6 Class Fields and Active Bindings:\describe{
+#' @section `pp_cfg` R6 Class Fields and Active Bindings:\describe{
 #'   \item{`annotation_color`}{Suggestion of a good color to annotate with}
 #'   \item{`cache`}{Cache object which stores intermediate graphical calculations.
 #'                  Default is a memory-cache that does not prune.
@@ -197,6 +197,8 @@ Config <- R6Class("pp_cfg",
             opt <- self$cache$get(key, key_missing())
             if (is.key_missing(opt)) {
                 opt <- get_piece_opt_helper(piece_side, suit, rank, private$cfg)
+                opt$shape_w <- self$get_width(piece_side, suit, rank)
+                opt$shape_h <- self$get_height(piece_side, suit, rank)
                 if (self$cache_piece_opt) self$cache$set(key, opt)
             }
             opt
@@ -388,9 +390,9 @@ Config <- R6Class("pp_cfg",
             width <- self$get_width(piece_side, suit, rank)
             height <- self$get_height(piece_side, suit, rank)
             png_file <- tempfile(fileext=".png")
-            on.exit(unlink(png_file))
+            on.exit(unlink(png_file), add = TRUE)
             current_dev <- grDevices::dev.cur()
-            if (current_dev > 1) on.exit(grDevices::dev.set(current_dev))
+            if (current_dev > 1) on.exit(grDevices::dev.set(current_dev), add = TRUE)
             args <- list(filename=png_file, width=width, height=height,
                          units="in", res=res, bg="transparent")
             if (capabilities("cairo"))
@@ -652,7 +654,6 @@ Config <- R6Class("pp_cfg",
                                           board_face = checkeredBoardGrobFn(8, 8),
                                           board_back = linedBoardGrobFn(8, 8),
                                           card_face = cardGrobFn(-1),
-                                          card_back = cardGrobFn(-1),
                                           basicPieceGrob)
                 default_fn <- get_style_element("grob_fn", piece_side, private$cfg,
                                                 default_grob_fn, suit, rank)

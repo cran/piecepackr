@@ -6,32 +6,55 @@
 \alias{to_subpack}
 \title{Standard game systems}
 \usage{
-game_systems(style = NULL, round = FALSE, pawn = "token")
+game_systems(
+  font = style,
+  round = FALSE,
+  pawn = "token",
+  ...,
+  shading = FALSE,
+  border = TRUE,
+  background_color = ifelse(border, "white", "burlywood"),
+  edge_color = ifelse(border, "white", "black"),
+  style = NULL
+)
 
 to_hexpack(cfg = getOption("piecepackr.cfg", pp_cfg()))
 
 to_subpack(cfg = getOption("piecepackr.cfg", pp_cfg()))
 }
 \arguments{
-\item{style}{If \code{NULL} (the default) uses suit glyphs from the default \dQuote{sans} font.
+\item{font}{If \code{NULL} (the default) uses suit glyphs from the default \dQuote{sans} font.
 If \code{"dejavu"} it will use suit glyphs from the "DejaVu Sans" font
 (must be installed on the system).}
 
-\item{round}{If \code{TRUE} the \dQuote{shape} of \dQuote{tiles} and \dQuote{cards}
+\item{round}{If \code{TRUE} the \dQuote{shape} of \dQuote{tiles} and \dQuote{cards} (and some boards)
 will be \dQuote{roundrect} instead of \dQuote{rect} (the default).}
 
 \item{pawn}{If \code{"token"} (default) the piecepack pawn will be a two-sided token in a \dQuote{halma} outline,
 if \code{"peg-doll"} the piecepack pawn will be a \dQuote{peg doll} style pawn, and
 if \code{"joystick"} the piecepack pawn will be a \dQuote{joystick} style pawn.
-Note for the latter two pawn styles only \code{pawn_top} will work with \code{grid.piece}.}
+Note for the latter two pawn styles only \code{pawn_top} will work with \code{\link[=grid.piece]{grid.piece()}}.}
+
+\item{...}{Must be empty}
+
+\item{shading}{If \code{TRUE} add a shading effect to marbles and stones when drawn with \code{\link[=grid.piece]{grid.piece()}}.}
+
+\item{border}{If \code{TRUE} draw a black border line on piece edges.  Should normally be \code{TRUE} when
+drawing with \code{{grid}} graphics and \code{FALSE} when drawing with 3D graphic systems.}
+
+\item{background_color}{Background color to use for certain pieces like boards and piecepack tiles.}
+
+\item{edge_color}{Edge color to use for certain pieces like boards and piecepack tiles.}
+
+\item{style}{Deprecated argument.}
 
 \item{cfg}{List of configuration options}
 }
 \description{
-\code{game_systems} returns a list of \code{pp_cfg} objects
+\code{game_systems()} returns a list of \code{\link[=pp_cfg]{pp_cfg()}} objects
 representing several game systems and pieces.
-\code{to_subpack} and \code{to_hexpack} will attempt to generate matching (piecepack stackpack)
-subpack and (piecepack) hexpack \code{pp_cfg} R6 objects respectively given a piecepack configuration.
+\code{to_subpack()} and \code{to_hexpack()} will attempt to generate matching (piecepack stackpack)
+subpack and (piecepack) hexpack \code{\link[=pp_cfg]{pp_cfg()}} R6 objects respectively given a piecepack configuration.
 }
 \details{
 Contains the following game systems:\describe{
@@ -80,6 +103,11 @@ dice and dominoes have a black background and white and red pips.}
 \item{go}{Go stones and lined boards in six color schemes.
 Go stones are represented by a \dQuote{bit} and the board is a \dQuote{board}.
 Color is controlled by suit and number of rows/columns by rank.}
+\item{marbles}{Marbles in nine sizes and six colors represented by a \dQuote{bit}.
+Color is controlled by suit and size of marble by rank.
+Sizes go from 1/2" (rank 1) to 1" (rank 9) in 1/16" increments.
+There are also square holed boards spaced for 1" marbles: their color
+is controlled by suit and number of holes per row/column by rank.}
 \item{meeples}{Standard 16mm x 16mm x 10mm \dQuote{meeples} in six colors represented by a \dQuote{bit}.}
 \item{morris}{Various morris aka mills aka merels games in six colors.
 Color is controlled by suit and \dQuote{size} of morris board
@@ -111,7 +139,7 @@ See \url{https://boardgamegeek.com/boardgameexpansion/35424/hexpack}.}
 \dQuote{stackpack} diagrams.  See \url{https://www.ludism.org/ppwiki/StackPack}.}
 }}
 \item{playing_cards, playing_cards_colored, playing_cards_tarot}{
-Poker-sized \code{card} components for various playing card decks:\describe{
+Poker-sized \dQuote{card} components for various playing card decks:\describe{
 \item{playing_cards}{A traditional deck of playing cards with 4 suits
 and 13 ranks (A, 2-10, J, Q, K) plus a 14th \dQuote{Joker} rank.}
 \item{playing_cards_colored}{Like \code{playing_cards} but with five colored suits:
@@ -135,6 +163,7 @@ names(cfgs)
 \donttest{# May take more than 5 seconds on CRAN servers
 # standard dice, meeples, and joystick pawns
 if (requireNamespace("grid", quietly = TRUE) && piecepackr:::device_supports_unicode()) {
+
    opt <- options(piecepackr.at.inform = FALSE)
    grid::grid.newpage()
    dice <-  c("d4", "numeral", "d8", "d10", "d12", "d20")
@@ -182,5 +211,5 @@ if (requireNamespace("grid", quietly = TRUE) && piecepackr:::device_supports_uni
 }
 }
 \seealso{
-\code{\link{pp_cfg}} for information about the \code{pp_cfg} objects returned by \code{game_systems}.
+\code{\link[=pp_cfg]{pp_cfg()}} for information about the \code{\link[=pp_cfg]{pp_cfg()}} objects returned by \code{game_systems()}.
 }

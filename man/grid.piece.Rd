@@ -111,8 +111,8 @@ and \code{1.0} is the scale used in the \dQuote{cavalier} projection.}
 \item{alpha}{Alpha channel for transparency.}
 
 \item{type}{Type of grid grob to use.  Either \code{"normal"} (default), \code{"picture"}, \code{"raster"}, or \code{"transformation"}.
-\code{"picture"} exports to (temporary) svg and re-imports as a \code{grImport2::pictureGrob}.
-\code{"raster"} exports to (temporary) png and re-imports as a \code{grid::rasterGrob}.
+\code{"picture"} exports to (temporary) svg and re-imports as a \code{\link[grImport2:grid.picture]{grImport2::pictureGrob()}}.
+\code{"raster"} exports to (temporary) png and re-imports as a \code{\link[grid:grid.raster]{grid::rasterGrob()}}.
 \code{"transformation"} uses the affine transformation feature only supported in
 R 4.2+ within select graphic devices.
 The latter three can be useful if drawing pieces really big or small and don't want
@@ -139,7 +139,6 @@ A \code{grid} grob object.  If \code{draw} is \code{TRUE} then as a side effect
 \examples{
   if (requireNamespace("grid", quietly = TRUE) && piecepackr:::device_supports_unicode()) {
     opt <- options(piecepackr.at.inform = FALSE)
-    on.exit(options(opt))
 
     draw_pp_diagram <- function(cfg=pp_cfg(), op_scale=0) {
         g.p <- function(...) {
@@ -157,6 +156,8 @@ A \code{grid} grob object.  If \code{draw} is \code{TRUE} then as a side effect
 
     # default piecepack, orthogonal projection
     draw_pp_diagram(cfg=pp_cfg())
+
+    options(opt) # Reset options
   }
   if (requireNamespace("grid", quietly = TRUE) && piecepackr:::device_supports_unicode()) {
     # custom configuration, orthogonal projection

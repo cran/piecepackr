@@ -32,29 +32,31 @@ gdh <- function(piece_side, cfg, ..., suit=1, rank=1) cfg$get_depth(piece_side, 
 
 #' Oblique projection helper function
 #'
-#' Guesses \code{z} coordinates and
+#' `op_transform()` guesses `z` coordinates and
 #' sorting order to more easily
-#' make 3D graphics with \code{pmap_piece}.
+#' make 3D graphics with [pmap_piece()].
+#' `marbles_transform()` is a wrapper around `op_transform()` that handles the special case
+#' of stacking 1" marbles in a pyramid with a square base on a holed board.
 #'
 #' The heuristics used to generate guesses
-#' for \code{z} coordinates and sorting order
+#' for `z` coordinates and sorting order
 #' aren't guaranteed to work in every case.
 #' In some cases you may get better sorting results
-#' by changing the \code{op_angle} or the dimensions of pieces.
+#' by changing the `op_angle` or the dimensions of pieces.
 #' @seealso \url{https://trevorldavis.com/piecepackr/3d-projections.html} for more details
-#'   and examples of oblique projections in \code{piecepackr}.
+#'   and examples of oblique projections in `piecepackr`.
 #' @param df A data frame with coordinates and dimensions in inches
-#' @param ... Ignored
-#' @param cfg Piecepack configuration list or \code{pp_cfg} object,
-#'        a list of \code{pp_cfg} objects,
-#'        or a character vector of \code{pp_cfg} objects
+#' @param ... Ignored by `op_transform()`.  `marbles_transform()` passes to `op_transform()`.
+#' @param cfg Piecepack configuration list or [pp_cfg()] object,
+#'        a list of [pp_cfg()] objects,
+#'        or a character vector of the names of [pp_cfg()] objects contained in `envir`.
 #' @param envir Environment (or named list) containing configuration list(s).
 #' @param op_angle Intended oblique projection angle (used for re-sorting)
 #' @param pt_thickness Thickness of pyramid tip i.e. value to add to the z-value of a pyramid top
 #'                  if it is a (weakly) smaller ranked pyramid (top)
 #'                  placed on top of a larger ranked pyramid (top).
 #' @param as_top Character vector of components whose \dQuote{side}
-#'               should be converted to \dQuote{top} e.g. \code{c("pawn_face")}.
+#'               should be converted to \dQuote{top} e.g. `"pawn_face"`.
 #' @param cfg_class Either `"list"` (default) or `"character"`.
 #'                  Desired class of the `cfg` column in the returned tibble.
 #'                  `"list"` is more efficient for use with `pmap_piece()` but
@@ -85,6 +87,36 @@ op_transform <- function(df, ...,
     }
     df <- add_3d_info(df, cfg = cfg, envir = envir, pt_thickness = pt_thickness, cfg_class = cfg_class)
     df <- op_sort(df, op_angle = op_angle)
+    df
+}
+
+#' @rdname op_transform
+#' @export
+marbles_transform <- function(df, ...) {
+    # Make sure all pieces are from `marbles` with first piece `board` and the rest 1" marble `bits`
+    stopifnot(all(df$cfg == "marbles"),
+              grepl("^board_", df[1L, ]$piece_side),
+              all(grepl("^bit_", df[-1L, ]$piece_side)),
+              all(df[-1L, ]$rank == 9L))
+    df <- op_transform(df, ...)
+    levels <- as.integer(as.factor(df$z)) # note first level is board, rest bits
+    nlevels <- length(unique(levels))
+    # Board holes sized so first layer of marbles touches ground
+    # so subtract board height from all bits' height
+    df[-1L, ]$z <- df[-1L, ]$z - df[1L, ]$depth
+    df$zt <- df$z + 0.5 * df$depth
+    # > Each time you add a layer of balls to the bottom of the pyramid, the height increases by d√1/2
+    # https://www.had2know.org/academics/pyramid-of-balls-height-calculator.html
+    if (nlevels > 2L) {
+        id_prev <- which(levels == 2L)
+        for (i in seq.int(3L, nlevels)) {
+            id <- which(levels == i)
+            df$zt[id] <- max(df$zt[id_prev]) + sqrt(0.5) * df$depth[id]
+            df$z[id] <- df$zt[id] - 0.5 * df$depth[id]
+            id_prev <- id
+        }
+    }
+    df$zb <- df$z - 0.5 * df$depth
     df
 }
 
@@ -219,7 +251,7 @@ get_shapes <- function(df) {
         } else {
             label <- opt$shape
             if (grepl("^concave", label)) label <- gsub("concave", "convex", label)
-            shape <- pp_shape(label, opt$shape_t, opt$shape_r, opt$back)
+            shape <- pp_shape(label, opt$shape_t, opt$shape_r, opt$back, width = opt$shape_w, height = opt$shape_h)
             xy_c <- npc_to_in(as_coord2d(shape$npc_coords),
                               dfi$x, dfi$y, dfi$width, dfi$height, dfi$angle)
             shapes[[ii]] <- ConvexPolygon$new(xy_c$x, xy_c$y)

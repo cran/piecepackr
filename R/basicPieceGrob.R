@@ -1,14 +1,14 @@
 #' Piece Grob Functions
 #'
-#' \code{basicPieceGrob} is the most common
-#' \dQuote{grob} function that \code{grid.piece} uses
-#' to create \code{grid} graphical \code{grob} objects.
-#' \code{picturePieceGrobFn} is a function that returns a \dQuote{grob} function
-#' that imports graphics from files found in its \code{directory} argument.
+#' `basicPieceGrob()` is the most common
+#' \dQuote{grob} function that [grid.piece()] uses
+#' to create `grid` graphical `grob` objects.
+#' `picturePieceGrobFn()` is a function that returns a \dQuote{grob} function
+#' that imports graphics from files found in its `directory` argument.
 #'
 #' @rdname basicPieceGrobs
 #' @name basicPieceGrobs
-#' @param cfg Piecepack configuration list or \code{pp_cfg} object.
+#' @param cfg Piecepack configuration list or [pp_cfg()] object.
 #' @inheritParams grid.piece
 #' @examples
 #'
@@ -34,8 +34,31 @@
 basicPieceGrob <- function(piece_side, suit, rank, cfg=pp_cfg()) {
     cfg <- as_pp_cfg(cfg)
     opt <- cfg$get_piece_opt(piece_side, suit, rank)
-    gTree(opt=opt, border=TRUE, flip=FALSE, scale=1,
+    gTree(opt=opt, border=TRUE, flip=FALSE, scale=1, fill_stroke=FALSE,
           name=NULL, gp=gpar(), vp=NULL, cl="basic_piece_side")
+}
+
+basicPieceGrobFn <- function(fill_stroke = FALSE) {
+    force(fill_stroke)
+    function(piece_side, suit, rank, cfg=pp_cfg()) {
+        cfg <- as_pp_cfg(cfg)
+        opt <- cfg$get_piece_opt(piece_side, suit, rank)
+        gTree(opt=opt, border=TRUE, flip=FALSE, scale=1,
+              fill_stroke=fill_stroke,
+              name=NULL, gp=gpar(), vp=NULL, cl="basic_piece_side")
+    }
+}
+
+ellipsoidGrobFn <- function(shading = FALSE) {
+    force(shading)
+    function(piece_side, suit, rank, cfg=pp_cfg()) {
+        cfg <- as_pp_cfg(cfg)
+        opt <- cfg$get_piece_opt(piece_side, suit, rank)
+
+        gTree(opt=opt, border=TRUE, flip=FALSE, scale=1, shading=shading,
+              name=NULL, gp=gpar(), vp=NULL,
+              cl=c("basic_ellipsoid", "basic_piece_side"))
+    }
 }
 
 #' @export
@@ -47,14 +70,14 @@ makeContext.basic_piece_side <- function(x) {
 #' @export
 grobCoords.basic_piece_side <- function(x, closed, ...) {
     opt <- x$opt
-    shape <- pp_shape(opt$shape, opt$shape_t, opt$shape_r, opt$back)
+    shape <- pp_shape(opt$shape, opt$shape_t, opt$shape_r, opt$back, width = opt$shape_w, height = opt$shape_h)
     grobCoords(shape$shape(vp=x$vp), closed=closed, ...)
 }
 
 #' @export
 makeContent.basic_piece_side <- function(x) {
     opt <- x$opt
-    shape <- pp_shape(opt$shape, opt$shape_t, opt$shape_r, opt$back)
+    shape <- pp_shape(opt$shape, opt$shape_t, opt$shape_r, opt$back, width = opt$shape_w, height = opt$shape_h)
     # Possibly shrink background and gridlines to not overlap mat
     # which sometimes prevents visual glitch if no border line
     # but do not do this if mat color is transparent.
@@ -76,12 +99,18 @@ makeContent.basic_piece_side <- function(x) {
                   fontfamily=opt$ps_fontfamily, fontface=opt$ps_fontface)
     ps_grob <- textGrob(opt$ps_text, x=opt$ps_x, y=opt$ps_y, hjust = 0.5, vjust = 0.5,
                         gp = gp_ps, name = "primary_symbol")
+    if (isTRUE(x$fill_stroke)) {
+        ps_grob <- as_fill_stroke_grob(ps_grob, fill = opt$ps_color)
+    }
 
     # Directional mark
     gp_dm <- gpar(col=opt$dm_color, fontsize=opt$dm_fontsize,
                   fontfamily=opt$dm_fontfamily, fontface=opt$ps_fontface)
     dm_grob <- textGrob(opt$dm_text, x=opt$dm_x, y=opt$dm_y, hjust = 0.5, vjust = 0.5,
                         gp = gp_dm, name = "directional_mark")
+    if (isTRUE(x$fill_stroke)) {
+        dm_grob <- as_fill_stroke_grob(dm_grob, fill = opt$dm_color)
+    }
 
     if (x$border) {
         gp_border <- gpar(col=opt$border_color, fill=NA, lex=opt$border_lex)
@@ -93,6 +122,42 @@ makeContent.basic_piece_side <- function(x) {
         gl <- gList(dm_grob, ps_grob, mat_grob, gl_grob, background_grob, border_grob)
     else
         gl <- gList(background_grob, gl_grob, mat_grob, ps_grob, dm_grob, border_grob)
+
+    setChildren(x, gl)
+}
+
+#' @export
+makeContent.basic_ellipsoid <- function(x) {
+    opt <- x$opt
+    shape <- pp_shape(opt$shape, opt$shape_t, opt$shape_r, opt$back, width = opt$shape_w, height = opt$shape_h)
+
+    gp_background <- gpar(col=NA, fill=opt$background_color)
+    background_grob <- shape$shape(gp=gp_background, name = "background")
+
+    if (x$shading) {
+        if (has_radial_gradients()) {
+            rgr <- radialGradient(c(update_alpha_col(opt$background_color, 0.500), "#00000080"),
+                                  r1 = 0.1)
+            gp_gr <- gpar(col=opt$border_color, fill=rgr)
+            shading_grob <- shape$shape(gp = gp_gr, name = "shading")
+        } else {
+            rgr_inform()
+            shading_grob <- nullGrob(name = "shading")
+        }
+    } else {
+        shading_grob <- nullGrob(name = "shading")
+    }
+
+    if (x$border) {
+        gp_border <- gpar(col=opt$border_color, fill=NA, lex=opt$border_lex)
+        border_grob <- shape$shape(gp=gp_border, name = "border")
+    } else {
+        border_grob <- nullGrob(name = "border")
+    }
+    if (x$flip)
+        gl <- gList(background_grob, border_grob) # Do anything with shading?
+    else
+        gl <- gList(background_grob, shading_grob, border_grob)
 
     setChildren(x, gl)
 }

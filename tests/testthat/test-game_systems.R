@@ -1,4 +1,6 @@
-test_that("no regressions in figures", {
+test_that("no regressions in `game_systems()`", {
+    expect_error(game_systems("boobear"),
+                 "Don't have a customized configuration for font")
 
     skip_on_ci()
     skip_if_not_installed("vdiffr")
@@ -104,12 +106,24 @@ test_that("no regressions in figures", {
                       suit = c(1, 5), rank = c(2, 4), cfg = "checkers1")
         df1b <- tibble(piece_side = "board_back", x = 5, y=1,
                       suit = 1, rank = 2, cfg = "checkers1")
-        df_bit <- tibble(piece_side = "bit_face", x = c(rep(1, 6), 2:7), y = c(rep(1, 6), 2:7),
-                         suit = c(1:6, 6:1), rank = rep(1:6, 2), cfg = "checkers1")
-        df_bit2 <- tibble(piece_side = "bit_back", x = 6, y = 6, suit = 4, rank = 4, cfg = "checkers2")
-        df <- rbind(df2, df1f, df1b, df_bit2, df_bit)
+        df_bit1 <- tibble(piece_side = "bit_back", x = rep_len(1, 6L), y = rep_len(1, 6L),
+                         suit = 1:6, rank = 1:6, cfg = "checkers1")
+        df_bit2 <- tibble(piece_side = "bit_face", x = 2:7, y = 2:7,
+                         suit = 6:1, rank = 1:6, cfg = "checkers1")
+        df_bit3 <- tibble(piece_side = "bit_back", x = 5, y = 7, suit = 4L, rank = 4L, cfg = "checkers2")
+        df <- rbind(df2, df1f, df1b, df_bit3, df_bit2, df_bit1)
+        df_bit4 <- tibble(piece_side = "bit_face", x = 7, y = 5, suit = 2L, rank = 4L, cfg = "checkers2")
+        df <- rbind(df2, df1f, df1b, df_bit4, df_bit3, df_bit2, df_bit1)
         pmap_piece(df, default.units="in", envir=envir, op_scale=0.5, trans=op_transform)
     })
+
+    # chess
+    # df <- tibble(piece_side = "bit_face", x = rep(1:6, 6L), y = rep(6:1, each=6L),
+    #              rank = x, suit = y, cfg = "chess1")
+    # pmap_piece(df, default.units="in", envir=envir, op_scale=0.5, trans=op_transform)
+    # df <- tibble(piece_side = "bit_face", x = rep(seq.int(1, by=2, length.out=6L), 6L), y = rep(6:1, each=6L),
+    #              rank = x, suit = y, cfg = "chess2")
+    # pmap_piece(df, default.units="in", envir=envir, op_scale=0.5, trans=op_transform)
 
     # joystick pawns
     cfg <- game_systems(pawn = "joystick")$piecepack
@@ -164,17 +178,20 @@ test_that("no regressions in figures", {
     })
 
     # playing cards
-    cfg <- game_systems("sans3d")$playing_cards_colored
+    cfg <- game_systems("sans", border = FALSE)$playing_cards_colored
     expect_doppelganger("ten_of_clubs", function()
         grid.piece("card_face", suit = 3, rank = 10, cfg = cfg,
                    default.units = "npc"))
     expect_doppelganger("king_of_stars", function()
-        grid.piece("card_face", suit = 5, rank = 13, cfg = cfg,
-                   default.units = "npc"))
+        suppressMessages({
+                grid.piece("card_face", suit = 5, rank = 13, cfg = cfg,
+                           default.units = "npc")},
+            classes = "piecepackr_fill_stroke")
+    )
     expect_doppelganger("red_joker", function()
         grid.piece("card_face", suit = 1, rank = 14, cfg = cfg,
                    default.units = "npc"))
-    cfg <- game_systems("sans3d")$playing_cards_tarot
+    cfg <- game_systems("sans", border = FALSE)$playing_cards_tarot
     expect_doppelganger("black_joker_no_star", function()
         grid.piece("card_face", suit = 3, rank = 15, cfg = cfg,
                    default.units = "npc"))
@@ -229,4 +246,21 @@ test_that("no regressions in figures", {
         pmap_piece(df, default.units="in", envir=envir, op_scale=0.5, trans=op_transform)
     })
 
+    marbles_test <- function(..., round = FALSE, shading = FALSE, f = grid.piece) {
+        cur_seed <- .Random.seed
+        on.exit(.Random.seed <<- cur_seed)
+        set.seed(42)
+        envir <- game_systems(round = round, shading = shading)
+        dfb <- data.frame(piece_side = "board_face", x = 2.5, y = 2.5, suit = 4L, rank = 4L, cfg ="marbles")
+        dfm <- data.frame(piece_side = "bit_back",
+                          x = c(rep(1:4, 4L), rep(0.5 + rep(1:3, 3L)), rep(2:3, 2L), 2.5),
+                          y = c(rep(1:4, each = 4L), rep(0.5 + rep(1:3, each = 3L)), rep(2:3, each = 2L), 2.5),
+                          suit = sample.int(6L, 30L, replace = TRUE), rank = 9L,
+                          cfg = "marbles")
+        df <- rbind(dfb, dfm)
+        pmap_piece(df, f, envir = envir, ..., default.units = "in")
+    }
+    # marbles
+    expect_doppelganger("marbles", function() {marbles_test()})
+    expect_doppelganger("marbles_op", function() {marbles_test(op_scale = 0.5, trans = marbles_transform)})
 })

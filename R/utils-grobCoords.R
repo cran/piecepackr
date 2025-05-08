@@ -1,5 +1,6 @@
 # Simplify 'grobCoords' methods
 
+#### Undoes holes? #368
 coords_to_xylist <- function(coords) {
     if (inherits(coords, "GridGTreeCoords")) {
         xyl <- lapply(coords, coords_to_xylist)

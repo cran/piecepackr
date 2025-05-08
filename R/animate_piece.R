@@ -2,27 +2,31 @@
 #'
 #' `animate_piece()` animates board game pieces.
 #' @param dfs A list of data frames of game data to plot.
-#' @param file Filename to save animation unless \code{NULL}
+#' @param file Filename to save animation unless `NULL`
 #'             in which case it uses the current graphics device.
-#' @param annotate If `TRUE` or `"algebraic"` annotate the plot
-#'                  with \dQuote{algrebraic} coordinates,
-#'                 if `FALSE` or `"none"` don't annotate,
-#'                 if `"cartesian"` annotate the plot with \dQuote{cartesian} coordinates.
-#' @param ... Arguments to \code{pmap_piece}
+#' @param ... Arguments to [pmap_piece()]
 #' @param .f Low level graphics function to use e.g. [grid.piece()], [piece3d()], [piece()], or [piece_mesh()].
 #' @param cfg A piecepackr configuration list
 #' @param envir Environment (or named list) of piecepackr configuration lists
-#' @param n_transitions Integer, if over zero (the default)
-#'                how many transition frames to add between moves.
-#' @param n_pauses Integer, how many paused frames per completed move.
-#' @param fps Double, frames per second.
 #' @param width Width of animation (in inches).  Inferred by default.
 #' @param height Height of animation (in inches).  Inferred by default.
 #' @param ppi Resolution of animation in pixels per inch.
 #'            By default set so image max 600 pixels wide or tall.
-#' @param new_device If \code{file} is \code{NULL} should we open up a new graphics device?
+#' @param annotate If `TRUE` or `"algebraic"` annotate the plot
+#'                  with \dQuote{algrebraic} coordinates,
+#'                 if `FALSE` or `"none"` don't annotate,
+#'                 if `"cartesian"` annotate the plot with \dQuote{cartesian} coordinates.
 #' @param annotation_scale Multiplicative factor that scales (stretches) any annotation coordinates.
 #'                         By default uses `attr(df, "scale_factor") %||% 1`.
+#' @param open_device If `TRUE` open a new graphics device otherwise draw in the active graphics.
+#' @param n_transitions Integer, if over zero (the default)
+#'                how many transition frames to add between moves.
+#' @param n_pauses Integer, how many paused frames per completed move.
+#' @param fps Double, frames per second.
+#' @param xbreaks,ybreaks Subset (of integers) to provide axis labels for if `annotate` is `TRUE`.
+#'                        If `NULL` infer a reasonable choice.
+#' @param new_device If `file` is `NULL` should we open up a new graphics device?
+#'                   This argument is deprecated.  Use the `open_device` argument instead.
 #' @return Nothing, as a side effect creates an animation.
 #' @examples
 #'   # Basic tic-tac-toe animation
@@ -66,14 +70,19 @@
 #'
 #' @export
 animate_piece <- function(dfs, file = "animation.gif", ...,
-                          annotate = TRUE,
                           .f = piecepackr::grid.piece,
                           cfg = getOption("piecepackr.cfg", NULL),
                           envir = getOption("piecepackr.envir", game_systems("sans")),
-                          n_transitions = 0L, n_pauses = 1L, fps = n_transitions + n_pauses,
                           width = NULL, height = NULL, ppi = NULL,
-                          new_device = TRUE, annotation_scale = NULL) {
-
+                          annotate = TRUE, annotation_scale = NULL,
+                          open_device = new_device,
+                          n_transitions = 0L, n_pauses = 1L, fps = n_transitions + n_pauses,
+                          xbreaks = NULL, ybreaks = NULL,
+                          new_device = TRUE) {
+    if (!missing(new_device)) {
+        warn("The argument `new_device` is deprecated.  Use `open_device` instead.",
+             class = "deprecatedWarning")
+    }
     if (n_transitions > 0L)
         assert_suggested("tweenr")
 
@@ -107,15 +116,15 @@ animate_piece <- function(dfs, file = "animation.gif", ...,
     height <- height + (height %% 2)
     width <- width + (width %% 2)
     plot_fn <- plot_fn_helper(.f, xmax, ymax, xoffset, yoffset, width, height, m, ppi, envir,
-                              annotate, annotation_scale)
-    animation_fn(file, new_device)(lapply(dfs, plot_fn, ...), file, width, height, 1 / fps, ppi)
+                              annotate, annotation_scale, xbreaks, ybreaks)
+    animation_fn(file, open_device)(lapply(dfs, plot_fn, ...), file, width, height, 1 / fps, ppi)
     invisible(NULL)
 }
 #### How to handle empty tibbles??
-animation_fn <- function(file, new_device = TRUE) {
+animation_fn <- function(file, open_device = TRUE) {
     if (is.null(file)) {
         function(expr, file, width, height, delay, res) {
-            if (new_device) dev.new(width = width / res, height = height / res, unit = "in", noRstudioGD = TRUE)
+            if (open_device) dev.new(width = width / res, height = height / res, unit = "in", noRstudioGD = TRUE)
             devAskNewPage(TRUE)
             eval(expr)
             devAskNewPage(getOption("device.ask.default"))
@@ -190,59 +199,81 @@ tween_dfs <- function(df1, df2, n_transitions = 0L) {
     l <- tail(l, -1L)
     l
 }
+
 init_dfs <- function(df1, df2) {
-    if (nrow(df1) == 0) {
-        df1i <- get_tweenr_df(df2)
-        df1i$scale <- 0
-    } else {
-        df1i <- get_tweenr_df(df1)
+    if (nrow(df1) == 0L) {
+        df1 <- df2 <- get_tweenr_df(df2)
+        df1$scale <- 0
+        return(df1, df2)
     }
-    if (nrow(df2) == 0) {
-        df2i <- get_tweenr_df(df1)
-        df2i$scale <- 0
-    } else {
-        df2i <- get_tweenr_df(df2)
+    if (nrow(df2) == 0L) {
+        df1 <- df2 <- get_tweenr_df(df1)
+        df2$scale <- 0
+        return(df1, df2)
     }
-    df2_anti <- df2i[which(match(df2i$id, df1i$id, 0) == 0), , drop = FALSE]
-    df2_anti$scale <- rep(0, nrow(df2_anti))
-    df1 <- rbind(df1i, df2_anti) # 'added' pieces
-    df1_anti <- df1i[which(match(df1i$id, df2i$id, 0) == 0), , drop = FALSE]
-    df1_anti$scale <- rep(0, nrow(df1_anti))
-    df2 <- df2i # 'removed' pieces
+    df1i <- get_tweenr_df(df1)
+    df2i <- get_tweenr_df(df2)
+    # try to insert pieces 'removed' from `df1` back in order in `df2`
+    # with a scale of 0
+    df2 <- df2i
+    df1_anti <- df1i[which(match(df1i$id, df2i$id, 0L) == 0L), , drop = FALSE]
+    df1_anti$scale <- rep_len(0, nrow(df1_anti))
     while (nrow(df1_anti)) {
         row <- df1_anti[1L, ]
         df1_anti <- df1_anti[-1L, ]
-        prev_index <- find_good_prev_index(row, df1i, df2i)
-        df2 <- insert_df(df2, row, prev_index)
+        prev_id <- find_good_prev_id(row, df1i, df2i)
+        df2 <- insert_df(df2, row, prev_id)
     }
-    df1 <- df1[match(df2$id, df1$id), ] # re-sort to match df2
+    # for now add `df2`'s 'new' pieces to `df1` with a scale of 0
+    # and re-sort `df1` to match `df2` (after insertion of the 'removed' pieces)
+    df2_anti <- df2i[which(match(df2i$id, df1i$id, 0L) == 0L), , drop = FALSE]
+    df2_anti$scale <- rep_len(0, nrow(df2_anti))
+    df1 <- rbind(df1i, df2_anti)
+    df1 <- df1[match(df2$id, df1$id), ] # re-sort
     list(df1, df2)
 }
-find_good_prev_index <- function(row, df1i, df2i) {
-    prev_index <- Inf
+
+# If can't find good previous id return `NA_integer_`
+find_good_prev_id <- function(row, df1i, df2i) {
+    prev_id <- Inf
     index <- which(df1i$id == row$id)
-    while (is.infinite(prev_index)) {
+    while (is.infinite(prev_id)) {
         index <- index - 1
         if (index == 0) {
-            prev_index <- 0
+            prev_id <- NA_integer_
         } else {
             prev <- df1i[index, ]
             index2 <- which(df2i$id == prev$id)
             if (length(index2)) {
                 prev2 <- df2i[index2, ]
                 if (nigh(prev$x, prev2$x) && nigh(prev$y, prev2$y)) {
-                    prev_index <- index2
+                    prev_id <- df2i$id[index2]
                 }
             }
         }
     }
-    prev_index
+    prev_id
 }
+
+# Insert `df2` into `df1` after `index`
+# index = 0 means instead at beginning
+insert_df <- function(df1, df2, id = tail(df1$id, 1L)) {
+    if (is.na(id)) {
+        rbind(df2, df1)
+    } else if (id == tail(df1$id, 1L)) {
+        rbind(df1, df2)
+    } else {
+        index <- which(df1$id == id)
+        rbind(df1[seq.int(index), ], df2, df1[-seq.int(index), ])
+    }
+}
+
 get_id_cfg <- function(df1, df2) {
     df <- rbind(df1[, c("id", "cfg")],
                 df2[, c("id", "cfg")])
     unique(df)
 }
+
 get_tweenr_df <- function(df, ...) {
     stopifnot(all(hasName(df, c("id", "piece_side", "rank", "suit", "x", "y"))))
     if (!hasName(df, "alpha")) df$alpha <- 1
@@ -256,15 +287,3 @@ get_tweenr_df <- function(df, ...) {
 
     as.data.frame(df[, columns])
 }
-# Insert `df2` into `df1` after `index`
-# index = 0 means instead at beginning
-insert_df <- function(df1, df2, index = nrow(df1)) {
-    if (index == 0L) {
-        rbind(df2, df1)
-    } else if (index == nrow(df1)) {
-        rbind(df1, df2)
-    } else {
-        rbind(df1[seq(index), ], df2, df1[-seq(index), ])
-    }
-}
-

@@ -8,7 +8,7 @@ d4Grob <- function(piece_side, suit, rank, cfg=pp_cfg()) {
 #' @export
 makeContent.d4_die <- function(x) {
     opt <- x$opt
-    shape <- pp_shape(opt$shape, opt$shape_t, opt$shape_r, opt$back)
+    shape <- pp_shape(opt$shape, opt$shape_t, opt$shape_r, opt$back, width = opt$shape_w, height = opt$shape_h)
 
     # Background
     background_grob <- shape$shape(gp=gpar(col=NA, fill=opt$background_color), name = "background")
@@ -281,7 +281,7 @@ write_d4_texture <- function(piece_side = "die_face", suit = 1, rank = 1, cfg = 
                               ..., filename = tempfile(fileext = ".png"), res = 72) {
 
     current_dev <- grDevices::dev.cur()
-    if (current_dev > 1) on.exit(grDevices::dev.set(current_dev))
+    if (current_dev > 1) on.exit(grDevices::dev.set(current_dev), add = TRUE)
     width <- cfg$get_width("die_face", suit, rank)
 
     args <- list(filename = filename, height = 2 * width, width = 2 * width,

@@ -1,14 +1,14 @@
 #' Render board game pieces with rgl
 #'
-#' \code{piece3d} draws board games pieces using the rgl package.
+#' `piece3d()` draws board games pieces using the rgl package.
 #' @inheritParams grid.piece
 #' @inheritParams save_piece_obj
 #' @param lit logical, specifying if rgl lighting calculation should take place.
 #' @param shininess Properties for rgl lighting calculation.
-#' @param textype Use \code{"rgba"} when sure texture will have alpha transparency.
-#'                Use \code{"rgb"} when sure texture will not have alpha transparency
-#'                (in particular \code{rgl}'s WebGL export will likely work better).
-#'                If \code{NA} we will read the texture and figure out a reasonable value.
+#' @param textype Use `"rgba"` when sure texture will have alpha transparency.
+#'                Use `"rgb"` when sure texture will not have alpha transparency
+#'                (in particular `rgl`'s WebGL export will likely work better).
+#'                If `NA` we will read the texture and figure out a reasonable value.
 #' @return A numeric vector of rgl object IDs.
 #' @examples
 #' if (requireNamespace("rgl", quietly = TRUE) && all(capabilities(c("cairo", "png")))) {
@@ -22,8 +22,8 @@
 #'   invisible(NULL)
 #' }
 #' @export
-#' @seealso See \code{\link[rgl]{rgl-package}} for more information about the \code{rgl} package.
-#'          See [rgl::material3d()] for more info about setting \code{rgl} material properties.
+#' @seealso See \code{\link[rgl]{rgl-package}} for more information about the `rgl` package.
+#'          See [rgl::material3d()] for more info about setting `rgl` material properties.
 #'          See \code{\link{geometry_utils}} for a discussion of the 3D rotation parameterization.
 piece3d <- function(piece_side = "tile_back", suit = NA, rank = NA, # nolint
                     cfg = getOption("piecepackr.cfg", pp_cfg()),
@@ -61,6 +61,7 @@ piece3d <- function(piece_side = "tile_back", suit = NA, rank = NA, # nolint
 
     cfg <- get_cfg(cfg, envir)
     cfg <- rep(c(cfg), length.out = nn)
+
     l <- lapply(seq(nn), function(i) {
         cfg[[i]]$rgl(piece_side[i], suit[i], rank[i],
                      x[i], y[i], z[i],
@@ -80,12 +81,14 @@ rgl_piece_helper <- function(piece_side = "tile_back", suit = NA, rank = NA, cfg
                              scale = 1, res = 72,
                              alpha = 1, lit = FALSE,
                              shininess = 50.0, textype = NA) {
+
     if (scale == 0 || alpha == 0) return(invisible(numeric(0)))
     l_obj <- save_piece_obj(piece_side, suit, rank, cfg,
                             x = x, y = y, z = z,
                             angle = angle, axis_x = axis_x, axis_y = axis_y,
                             width = width, height = height, depth = depth,
                             scale = scale, res = res)
+
     l <- purrr::pmap(l_obj, rgl_piece_helper_obj, alpha = alpha, lit = lit, shininess = shininess, textype = textype)
     unlist(l)
 }

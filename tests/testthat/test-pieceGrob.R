@@ -1,12 +1,11 @@
 cfg_default <- pp_cfg(list(title="default cfg"))
-cfg_3d <- game_systems("sans3d")$piecepack
-test_that("pp_cfg works as expected", {
+test_that("`pp_cfg()` works as expected", {
     expect_true(inherits(cfg_default, "pp_cfg"))
     expect_equal(class(as.list(cfg_default)), "list")
     expect_output(print(cfg_default), "default cfg")
 })
 
-test_that("update_names works as expected", {
+test_that("`update_names()` works as expected", {
     df <- tibble(x = 1:4, name = 1:4)
     expect_equal(update_name(df)$name, as.character(1:4))
     df <- tibble(x = 1:4, id = 1:4)
@@ -19,7 +18,7 @@ test_that("update_names works as expected", {
     expect_warning(update_name(df)$name, "the id column in .l is not unique, generating new name column")
 })
 
-test_that("save_print_and_play works as expected", {
+test_that("`save_print_and_play()` works as expected", {
     skip_on_cran()
     pdf_deck_dir <- tempfile()
     dir.create(pdf_deck_dir)
@@ -61,7 +60,7 @@ test_that("save_print_and_play works as expected", {
     expect_equal(xmpdf::n_pages(pdf_deck_filename_bleed), 7, ignore_attr = "names")
 })
 
-test_that("save_piece_images works as expected", {
+test_that("`save_piece_images()` works as expected", {
     skip_if_not(capabilities("cairo"))
     directory <- tempfile()
     on.exit(unlink(directory))
@@ -245,14 +244,14 @@ test_that("no regressions in figures", {
                           "tile_face", 0.75, 0.25, 2, 2,
                           "tile_face", 0.25, 0.75, 3, 5,
                           "tile_face", 0.75, 0.75, 4, 6)
-    expect_doppelganger("draw_components", function() {
-                                    pushViewport(viewport(width=inch(4), height=inch(4)))
-                                    pmap_piece(df, cfg="default", envir=list(default=cfg_default))
-                          })
-    expect_doppelganger("draw_components.default", function() {
-                                    pushViewport(viewport(width=inch(4), height=inch(4)))
-                                    pmap_piece(df, envir=list())
-                          })
+    expect_doppelganger("pmap_piece", function() {
+                            pushViewport(viewport(width=inch(4), height=inch(4)))
+                            pmap_piece(df, cfg="default", envir=list(default=cfg_default))
+                        })
+    expect_doppelganger("pmap_piece.default", function() {
+                            pushViewport(viewport(width=inch(4), height=inch(4)))
+                            pmap_piece(df, envir=list())
+                        })
 
     # errors
     expect_error(dce("coin_face", rank = 3, cfg=list(gridline_color = "grey")),
@@ -262,8 +261,6 @@ test_that("no regressions in figures", {
     expect_error(dce("coin_face", rank = 3, cfg=list(mat_width=0.2, mat_color="green", shape="kite")),
                  "Don't know how to add mat to shape kite")
     expect_error(cfg_default$get_width("boo_back"), "Don't know width of piece boo")
-    expect_error(game_systems("boobear"),
-                 "Don't have a customized configuration for style boobear")
 
     # piecepack pyramids
     expect_doppelganger("pyramid_face.s1.r6", function() dc("pyramid_face", suit=1, rank=6))
@@ -300,7 +297,7 @@ test_that("oblique projection works", {
     expect_doppelganger("tile_face_op", function() dc("tile_face"))
     expect_doppelganger("tile_face_op_roundrect", function() dc("tile_face", cfg=list(shape.tile="roundrect")))
     expect_doppelganger("coin_face_op", function() dc("coin_face"))
-    expect_doppelganger("pawn_face_op", function() dc("pawn_face", cfg=cfg_3d))
+    expect_doppelganger("pawn_face_op", function() dc("pawn_face"))
     expect_doppelganger("matchstick_face_op", function() dc("matchstick_face"))
     suppressMessages({
       expect_doppelganger("die_face_op", function() dc("die_face"))
