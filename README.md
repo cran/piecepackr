@@ -68,9 +68,7 @@ Breakthrough](man/figures/README-breakthrough-1.png)
     with two plus, two minus, and two blank faces most commonly used in
     the
     [Fudge](https://en.wikipedia.org/wiki/Fudge_(role-playing_game_system))
-    and
-    [Fate](https://en.wikipedia.org/wiki/Fate_(role-playing_game_system))
-    roleplaying games.
+    and [Fate](https://fate-srd.com/) roleplaying games.
 
 <!-- -->
 
@@ -79,7 +77,7 @@ Breakthrough](man/figures/README-breakthrough-1.png)
     dice <-  c("d4", "numeral", "d8", "d10_percentile", "d10", "d12", "d20")
     cfg <- paste0("dice_", dice)
     grid.piece("die_face", suit = c(1:6, 1), rank = 1:7,
-               cfg = cfg, envir = envir, x = 1:7, y = 1, 
+               cfg = cfg, envir = envir, x = 1:7, y = 1,
                default.units = "in", op_scale = 0.5)
 
 ![Polyhedral dice](man/figures/README-polyhedral-1.png)
@@ -99,7 +97,7 @@ dominoes:
 
 The `dominoes_chinese` and `dominoes_chinese_black` configurations
 support [Chinese
-dominoes](https://en.wikipedia.org/wiki/Chinese_dominoes).
+dominoes](https://www.pagat.com/class/domino.html#chinese).
 
     library("piecepackr")
     library("tibble")
@@ -186,7 +184,7 @@ sized for the 1" diameter marbles.
     df <- rbind(dfb, dfm)
 
     envir <- game_systems(round = TRUE, shading = TRUE)
-    pmap_piece(df, default.units = "in", envir = envir, 
+    pmap_piece(df, default.units = "in", envir = envir,
                trans = marbles_transform, op_scale = 0.5)
 
 ![4x4 square pyramidal marble
@@ -216,8 +214,8 @@ with various decks of playing cards.
     library("piecepackr")
     library("tibble")
 
-    df <- tibble(piece_side = "card_face", 
-                 x=1.25 + 2.5 * 0:3, y=2, 
+    df <- tibble(piece_side = "card_face",
+                 x=1.25 + 2.5 * 0:3, y=2,
                  suit=1:4, rank=c(1,6,9,12),
                  cfg = "playing_cards")
 
@@ -241,7 +239,7 @@ with various decks of playing cards.
     morris](https://en.wikipedia.org/wiki/Nine_men%27s_morris)
     "board"/"bits" in a variety of colors.
 -   A `reversi` configuration that can produce "boards"/"bits" for
-    [Reversi](https://en.wikipedia.org/wiki/Reversi) in a variety of
+    [Reversi](http://www.cyningstan.com/game/73/reversi) in a variety of
     colors.
 
 Looney Pyramids
@@ -364,13 +362,13 @@ function](man/figures/README-pattern-1.png)
 projection](https://trevorldavis.com/piecepackr/3d-projections.html):
 
     library("piecepackr")
-    cfg3d <- list(width.pawn=0.75, height.pawn=0.75, depth.pawn=1, 
-                  dm_text.pawn="", shape.pawn="convex6", 
+    cfg3d <- list(width.pawn=0.75, height.pawn=0.75, depth.pawn=1,
+                  dm_text.pawn="", shape.pawn="convex6",
                   invert_colors.pawn=TRUE,
                   edge_color.coin="tan", edge_color.tile="tan")
     cfg <- pp_cfg(c(cfg, cfg3d))
-    g.p <- function(...) { 
-      grid.piece(..., op_scale=0.5, op_angle=45, cfg=cfg, default.units="in") 
+    g.p <- function(...) {
+      grid.piece(..., op_scale=0.5, op_angle=45, cfg=cfg, default.units="in")
     }
     g.p("tile_back", x=0.5+c(3,1,3,1), y=0.5+c(3,3,1,1))
     g.p("tile_back", x=0.5+3, y=0.5+1, z=1/4+1/8)
@@ -407,17 +405,17 @@ desired angle of the oblique projection.
     library("dplyr", warn.conflicts=FALSE)
     library("piecepackr")
     library("tibble")
-    df_tiles <- tibble(piece_side="tile_back", 
-                       x=0.5+c(3,1,3,1,1,1), 
+    df_tiles <- tibble(piece_side="tile_back",
+                       x=0.5+c(3,1,3,1,1,1),
                        y=0.5+c(3,3,1,1,1,1))
-    df_coins <- tibble(piece_side="coin_back", 
-                       x=rep(1:4, 4), 
+    df_coins <- tibble(piece_side="coin_back",
+                       x=rep(1:4, 4),
                        y=rep(c(4,1), each=8),
                        suit=1:16%%2+rep(c(1,3), each=8),
                        angle=rep(c(180,0), each=8))
     df <- bind_rows(df_tiles, df_coins)
     cfg <- game_systems("dejavu")$piecepack
-    pmap_piece(df, cfg=cfg, default.units="in", trans=op_transform, 
+    pmap_piece(df, cfg=cfg, default.units="in", trans=op_transform,
                op_scale=0.5, op_angle=135)
 
 !['pmap\_piece()' lets you use data frames as
@@ -460,9 +458,9 @@ objects.
     dfc <- ppdf::piecepack_fujisan(seed = 42)
     withr::with_options(new, {
       dft <- op_transform(dfc, as_top = "pawn_face", cfg_class = "character")
-      ggplot(dft, aes_piece(dft)) + 
-          geom_piece() + 
-          coord_fixed() + 
+      ggplot(dft, aes_piece(dft)) +
+          geom_piece() +
+          coord_fixed() +
           theme_void()
     })
 
@@ -498,14 +496,14 @@ projection](man/figures/README-ggplot2-1.png)
     df <- ppdf::piecepack_xiangqi() |>
         transform(cfg = "dual_piecepacks_expansion")
     envir <- game_systems("dejavu", border = FALSE, round = TRUE, pawn = "peg-doll")
-    l <- pmap_piece(df, piece, envir = envir, trans=op_transform, 
+    l <- pmap_piece(df, piece, envir = envir, trans=op_transform,
                     scale = 0.98, res = 150, as_top="pawn_face")
     light <- sphere(x=5,y=-4, z=30, material=light(intensity=420))
     table <- sphere(z=-1e3, radius=1e3, material=diffuse(color="green")) |>
              add_object(light)
     scene <- Reduce(rayrender::add_object, l, init=table)
     rayrender::render_scene(scene, preview = FALSE,
-                            lookat = c(5, 5, 0), lookfrom = c(5, -7, 25), 
+                            lookat = c(5, 5, 0), lookfrom = c(5, -7, 25),
                             sample_method = "sobol", clamp_value = 12,
                             width = 480, height = 480, samples = 200)
 
@@ -521,14 +519,14 @@ projection](man/figures/README-ggplot2-1.png)
     df <- ppdf::piecepack_international_chess() |>
         transform(cfg = "dual_piecepacks_expansion")
     envir <- game_systems("dejavu", border = FALSE, round = TRUE, pawn = "joystick")
-    l <- pmap_piece(df, piece_mesh, envir = envir, trans=op_transform, 
+    l <- pmap_piece(df, piece_mesh, envir = envir, trans=op_transform,
                     scale = 0.98, res = 150, as_top="pawn_face")
-    table <- sphere_mesh(c(0, 0, -1e3), radius=1e3, 
+    table <- sphere_mesh(c(0, 0, -1e3), radius=1e3,
                          material = material_list(diffuse="grey40"))
     scene <- rayvertex::scene_from_list(l) |> add_shape(table)
     light_info <- directional_light(c(5, -7, 7), intensity = 2.5)
-    rayvertex::rasterize_scene(scene, 
-                               lookat = c(4.5, 4, 0), 
+    rayvertex::rasterize_scene(scene,
+                               lookat = c(4.5, 4, 0),
                                lookfrom=c(4.5, -16, 20),
                                light_info = light_info)
 
@@ -556,9 +554,9 @@ projection](man/figures/README-ggplot2-1.png)
 
     ppn_file <- system.file("ppn/relativity.ppn", package = "ppn")
     game <- read_ppn(ppn_file)[[1]]
-    animate_piece(game$dfs, file = "man/figures/README-relativity.gif", 
+    animate_piece(game$dfs, file = "man/figures/README-relativity.gif",
                   annotate = FALSE,
-                  envir = envir, trans = op_transform, op_scale = 0.5, 
+                  envir = envir, trans = op_transform, op_scale = 0.5,
                   n_transitions = 3, n_pauses = 2, fps = 7)
 
 <figure>
@@ -582,9 +580,8 @@ pages](https://trevorldavis.com/R/piecepackr/reference/index.html).
 ### Tak Example
 
 Here we'll show an example of configuring piecepackr to draw diagrams
-for the abstract board game
-[Tak](https://en.wikipedia.org/wiki/Tak_(game)) (designed by James
-Ernest and Patrick Rothfuss).
+for the abstract board game [Tak](https://crabfragmentlabs.com/tak)
+(designed by James Ernest and Patrick Rothfuss).
 
 Since one often plays Tak on differently sized boards one common Tak
 board design is to have boards made with colored cells arranged in rings
@@ -601,14 +598,14 @@ draw the Tak board.
                   rep(c(g, rep(w, 3), g),3),
                   rep(g, 5))
         inner <- rectGrob(x = rep(1:5, 5), y = rep(5:1, each=5),
-                     width=1, height=1, default.units="in", 
+                     width=1, height=1, default.units="in",
                      gp=gpar(col="gold", fill=fill, lwd=3))
         outer <- rectGrob(gp=gpar(col="black", fill="grey", gp=gpar(lex=2)))
-        circles <- circleGrob(x=0.5+rep(1:4, 4), 
-                              y=0.5+rep(4:1, each=4), 
-                              r=0.1, default.units="in", 
+        circles <- circleGrob(x=0.5+rep(1:4, 4),
+                              y=0.5+rep(4:1, each=4),
+                              r=0.1, default.units="in",
                               gp=gpar(col=NA, fill="gold"))
-        rects <- rectGrob(x=0.5+c(0:5, rep(c(0,5), 4), 0:5), 
+        rects <- rectGrob(x=0.5+c(0:5, rep(c(0,5), 4), 0:5),
                           y=0.5+c(rep(5,6), rep(c(4:1), each=2), rep(0, 6)),
                           width=0.2, height=0.2,
                           gp=gpar(col=NA, fill="orange"), default.units="in")
@@ -620,30 +617,30 @@ Tak pieces with it.
 
     cfg <- pp_cfg(list(suit_text=",,,", suit_color="white,tan4,", invert_colors=TRUE,
                        ps_text="", dm_text="",
-                       width.board=6, height.board=6, 
+                       width.board=6, height.board=6,
                        depth.board=1/4, grob_fn.board=grobTakBoard,
-                       width.r1.bit=0.6, height.r1.bit=0.6, 
+                       width.r1.bit=0.6, height.r1.bit=0.6,
                        depth.r1.bit=1/4, shape.r1.bit="rect",
-                       width.r2.bit=0.6, height.r2.bit=1/4, 
-                       depth.r2.bit=0.6, shape.r2.bit="rect", 
-                       width.pawn=0.5, height.pawn=0.5, 
+                       width.r2.bit=0.6, height.r2.bit=1/4,
+                       depth.r2.bit=0.6, shape.r2.bit="rect",
+                       width.pawn=0.5, height.pawn=0.5,
                        depth.pawn=0.8, shape.pawn="circle",
                        edge_color="white,tan4", edge_color.board="tan",
                        border_lex=3, border_color="black"))
-    g.p <- function(...) { 
+    g.p <- function(...) {
         grid.piece(..., cfg=cfg, default.units="in",
                    op_scale=0.7, op_angle=45)
     }
-    draw_tak_board <- function(x, y) { 
-        g.p("board_back", x=x+0.5, y=y+0.5) 
+    draw_tak_board <- function(x, y) {
+        g.p("board_back", x=x+0.5, y=y+0.5)
     }
-    draw_flat_stone <- function(x, y, suit=1) { 
+    draw_flat_stone <- function(x, y, suit=1) {
         z <- 1/4*seq(along=suit)+1/8
         g.p("bit_back", x=x+0.5, y=y+0.5, z=z, suit=suit, rank=1)
     }
     draw_standing_stone <- function(x, y, suit=1, n_beneath=0, angle=0) {
         z <- (n_beneath+1)*1/4+0.3
-        g.p("bit_back", suit=suit, rank=2, 
+        g.p("bit_back", suit=suit, rank=2,
             x=x+0.5, y=y+0.5, z=z, angle=angle)
     }
     draw_capstone <- function(x, y, suit=1, n_beneath=0) {
@@ -824,7 +821,7 @@ using Unicode symbols from multiple fonts. The following bash commands
 will give you a good selection of fonts (Noto, Quivira, and Dejavu) on
 Ubuntu:
 
-    sudo apt install fonts-dejavu fonts-noto 
+    sudo apt install fonts-dejavu fonts-noto
     fonts_dir=${XDG_DATA_HOME:="$HOME/.local/share"}/fonts
     curl -O http://www.quivira-font.com/files/Quivira.otf
     mv Quivira.otf $fonts_dir/

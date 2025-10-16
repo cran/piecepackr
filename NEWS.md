@@ -1,3 +1,12 @@
+piecepackr 1.15.3
+=================
+
+Bug fixes and minor improvements
+--------------------------------
+
+* Tweaked examples so we don't use the deprecated `style` argument
+  of `game_systems()`.
+
 piecepackr 1.15.1
 =================
 
