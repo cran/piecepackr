@@ -1,3 +1,45 @@
+piecepackr 1.16.0 (development)
+===============================
+
+Breaking changes
+----------------
+
+* Some features which were deprecated by v1.15.1 (2025-05-08) have been removed:
+
+  + The `new_device` argument of `animate_piece()` and `render_piece()` has been removed.
+    Use the `open_device` argument instead.
+  + The `style` argument of `game_systems()` and the (undocumented) use of a `"3d"` suffix in the `font` argument have been removed.
+    Use the `font`, `border`, `background_color`, and/or `edge_color` arguments instead.
+
+Deprecated features
+-------------------
+
+* The `"preview_layout"` component of `grid.piece()` / `pieceGrob()` is now deprecated (#164).
+  Use `ppdf::piecepack_preview() |> pmap_piece(cfg = cfg, default.units = "in")` instead.
+* `save_print_and_play(size = "4x6")` is now deprecated (#300).
+  Due to scaling and trimming issues with photo printing services this experimental format never worked that well in practice.
+
+New features
+------------
+
+* `circledSegmentsCrosshairGrob()` and `squaredSegmentsCrosshairGrob()` are new crosshair grobs (e.g. for use as registration marks) (#331).
+* `grid.piece()` and `pieceGrob()` now support oblique projection rendering of rounded corners for six-sided dice when `shape.die_face = "roundrect"` (controlled by `shape_r.die_face`) (#298).
+* `game_systems()` now includes a `cubes` configuration which provides cubes in nine colors and six sizes represented by a "bit" (#376).
+
+  + Color is controlled by suit and size of cube by rank.
+  + Sizes go from 8mm (rank 1) to 25mm (rank 6): 8mm, 10mm, 12mm, 15mm, 20mm, 25mm.
+
+* `save_print_and_play()` with `bleed = TRUE` now adds registration marks to tiles, coins, and pawns to assist in aligning double-sided printing (#331).
+
+Bug fixes and minor improvements
+--------------------------------
+
+* Fixed a bug where `meeples` "bit_top", `hexpack` "tile_top", and `hexpack` "coin_top" were the wrong shape (as well as left/right/bottom sides)  (#385).
+* Fixed a family of related bugs in oblique projection rendering where previously a reference point used to determine face visibility and edge draw order was placed relative to the origin instead of the piece centroid.
+  This caused incorrect rendering when pieces were far from the origin.
+  We now sort these faces according to their oblique projection "painter's depth".
+* `grobCoords()` for a holed board (e.g. the marbles board) now correctly preserves holes so that `pp_shape()$polyclip()` subtracts the holed board correctly (#368).
+
 piecepackr 1.15.3
 =================
 
@@ -33,7 +75,7 @@ New features
 
 * The following enhancements to the configurations returned by `game_systems()`:
 
-  + New configuration `marbles` which provides marbles in nine sizes and six colors represented by a "bit" (#363).
+  + New configuration `marbles` which provides marbles in nine sizes and nine colors represented by a "bit" (#363).
 
     - Color is controlled by suit and size of marble by rank.
     - Sizes go from 1/2" (rank 1) to 1" (rank 9) in 1/16" increments.

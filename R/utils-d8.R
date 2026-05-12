@@ -31,12 +31,12 @@ d8TopGrob <- function(
 	axis_y <- 0
 	####
 	xyz <- d8t_xyz(x, y, z, angle, axis_x, axis_y, width, height, depth)
-	p <- Polygon$new(convex_xy(6, 0))
+	p <- regular_ngon_polygon2d(6, x = 0.5, y = 0.5, theta = degrees(0))
 	edge_types <- paste0(
 		"d8_",
 		c("right", "back", "left", "opposite_left", "opposite_back", "opposite_right")
 	)
-	order <- p$op_edge_order(op_angle)
+	order <- painter_order(p, alpha = degrees(op_angle))
 	df <- tibble(index = 1:6, edge = edge_types, level = c(2, 1, 2, 1, 2, 1))[order, ]
 	df <- df[order(df$level), ]
 	gl <- gList()
@@ -88,13 +88,11 @@ d8TopGrob <- function(
 }
 
 d8t_xyz <- function(x, y, z, angle, axis_x, axis_y, width, height, depth) {
-	xyz_t <- as_coord3d(convex_xy(3, 90), z = 0.0)$translate(as_coord3d(-0.5, -0.5, 0.5))
-	xyz_b <- convex_xy(3, -90)
+	xyz_t <- as_coord3d(regular_ngon_polygon2d(3, x = 0, y = 0, theta = degrees(90)), z = 0.5)
 	xyz_b <- as_coord3d(
-		x = xyz_b$x[c(1, 3, 2)],
-		y = xyz_b$y[c(1, 3, 2)],
-		z = 0.0
-	)$translate(as_coord3d(-0.5, -0.5, -0.5))
+		regular_ngon_polygon2d(3, x = 0, y = 0, theta = degrees(-90))[c(1, 3, 2)],
+		z = -0.5
+	)
 	xs <- c(xyz_t$x, xyz_b$x)
 	ys <- c(xyz_t$y, xyz_b$y)
 	zs <- c(xyz_t$z, xyz_b$z)
@@ -127,10 +125,10 @@ save_d8_obj <- function(
 	opt <- cfg$get_piece_opt(piece_side, suit, rank)
 	xyz <- d8_xyz(suit, rank, cfg, x, y, z, angle, axis_x, axis_y, width, height, depth)
 
-	cxy <- convex_xy(3, 90)
+	p <- regular_ngon_polygon2d(3, x = 0.5, y = 0.5, theta = degrees(90))
 	xy_vt <- list(
-		x = rep(cxy$x / 2, 8) + rep(rep(0:1 / 2, each = 3), 4),
-		y = rep(cxy$y / 4, 8) + rep(rep(3:0 / 4, each = 3), each = 2)
+		x = rep(p$x / 2, 8) + rep(rep(0:1 / 2, each = 3), 4),
+		y = rep(p$y / 4, 8) + rep(rep(3:0 / 4, each = 3), each = 2)
 	)
 
 	# textured face elements: face, left, right, back, opposite, opposite left, opposite right, opposite back
@@ -173,13 +171,11 @@ d8_rank <- function(x) {
 }
 
 d8_xyz <- function(suit, rank, cfg, x, y, z, angle, axis_x, axis_y, width, height, depth) {
-	xyz_t <- as_coord3d(convex_xy(3, 90), z = 0.0)$translate(as_coord3d(-0.5, -0.5, 0.5))
-	xyz_b <- convex_xy(3, -90)
+	xyz_t <- as_coord3d(regular_ngon_polygon2d(3, x = 0, y = 0, theta = degrees(90)), z = 0.5)
 	xyz_b <- as_coord3d(
-		x = xyz_b$x[c(1, 3, 2)],
-		y = xyz_b$y[c(1, 3, 2)],
-		z = 0.0
-	)$translate(as_coord3d(-0.5, -0.5, -0.5))
+		regular_ngon_polygon2d(3, x = 0, y = 0, theta = degrees(-90))[c(1, 3, 2)],
+		z = -0.5
+	)
 
 	# face
 	xs_f <- xyz_t$x

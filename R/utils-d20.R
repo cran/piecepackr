@@ -41,11 +41,10 @@ d20TopGrob <- function(
 		dfc <- rbind(dfc, as.data.frame(mean(xyz[idx])))
 	}
 
-	op_ref <- as_coord2d(mean(xyz))$translate(degrees(op_angle + 180), radius = 10 * radius(xyz))
-	xy_dists <- purrr::pmap_dbl(dfc, function(x, y, z, ...) abs(as_coord2d(x, y) - op_ref))
 	dfc$rank <- 1:20
-	dfc$xy_dists <- xy_dists
-	dfc <- dfc[order(round(dfc$z, 2), -xy_dists), ]
+	dfc <- dfc[
+		painter_order(as_coord3d(dfc$x, dfc$y, dfc$z), scale = op_scale, alpha = degrees(op_angle)),
+	]
 
 	gl <- gList()
 	for (i in 1:nrow(dfc)) {
@@ -142,7 +141,10 @@ d20_xyz <- function(suit, rank, cfg, x, y, z, angle, axis_x, axis_y, width, heig
 	xs <- numeric(0)
 	ys <- numeric(0)
 	zs <- numeric(0)
-	xyz_t <- as_coord3d(convex_xy(3, 90), z = 0.0)$translate(as_coord3d(-0.5, -0.5, 0.5))$scale(
+	xyz_t <- as_coord3d(
+		regular_ngon_polygon2d(3, x = 0, y = 0, theta = degrees(90)),
+		z = 0.5
+	)$scale(
 		width,
 		height,
 		depth
@@ -181,10 +183,10 @@ save_d20_obj <- function(
 
 	xyz <- d20_xyz(suit, rank, cfg, x, y, z, angle, axis_x, axis_y, width, height, depth)
 
-	cxy <- convex_xy(3, 90)
+	p <- regular_ngon_polygon2d(3, x = 0.5, y = 0.5, theta = degrees(90))
 	xy_vt <- list(
-		x = rep(cxy$x / 4, 20) + rep(rep(0:3 / 4, each = 3), 5),
-		y = rep(cxy$y / 5, 20) + rep(rep(4:0 / 5, each = 3), each = 4)
+		x = rep(p$x / 4, 20) + rep(rep(0:3 / 4, each = 3), 5),
+		y = rep(p$y / 5, 20) + rep(rep(4:0 / 5, each = 3), each = 4)
 	)
 
 	# textured face elements

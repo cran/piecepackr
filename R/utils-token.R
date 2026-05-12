@@ -58,12 +58,11 @@ Token2S <- R6Class(
 			self$edges <- edges
 		},
 		op_edge_order = function(angle) {
-			r <- 10 * radius(self$xyz)
-			op_ref <- as_coord3d(degrees(180 + angle), radius = r, z = 0)
-			op_plane <- as_plane3d(normal = op_ref, p1 = op_ref)
-			depths <- sapply(self$edges, function(x) mean(x$vertices)$z)
-			dists <- sapply(self$edges, function(x) distance3d(op_plane, mean(x$vertices)))
-			order(round(depths, 6), -dists) # `round()` avoids weird sorting errors
+			a <- degrees(angle)
+			depths <- sapply(self$edges, function(e) {
+				painter_depth(mean(e$vertices), scale = 1, alpha = a)
+			})
+			order(depths)
 		},
 		op_edges = function(angle) {
 			self$edges[self$op_edge_order(angle)]
@@ -78,12 +77,10 @@ Token2S <- R6Class(
 		},
 		#### Handle edge case for token (almost) parallel to xy-axis
 		visible_side = function(angle) {
-			r <- 10 * radius(self$xyz)
-			op_ref <- as_coord3d(degrees(180 + angle), radius = r, z = 0)
-			op_plane <- as_plane3d(normal = op_ref, p1 = op_ref)
+			a <- degrees(angle)
 			if (
-				distance3d(op_plane, mean(self$xyz_face)) <
-					distance3d(op_plane, mean(self$xyz_back))
+				painter_depth(mean(self$xyz_face), scale = 1, alpha = a) >
+					painter_depth(mean(self$xyz_back), scale = 1, alpha = a)
 			) {
 				"face"
 			} else {
@@ -175,12 +172,10 @@ Edge <- R6Class(
 		vertices = NULL,
 		initialize = function(vertices = NULL) self$vertices <- vertices,
 		visible_side = function(angle) {
-			r <- 10 * radius(self$vertices)
-			op_ref <- as_coord3d(degrees(180 + angle), radius = r, z = 0)
-			op_plane <- as_plane3d(normal = op_ref, p1 = op_ref)
+			a <- degrees(angle)
 			if (
-				distance3d(op_plane, mean(self$vertices_face)) <
-					distance3d(op_plane, mean(self$vertices_back))
+				painter_depth(mean(self$vertices_face), scale = 1, alpha = a) >
+					painter_depth(mean(self$vertices_back), scale = 1, alpha = a)
 			) {
 				"face"
 			} else {
@@ -271,13 +266,11 @@ RingEdge <- R6Class(
 				indices2 <- seq(i_max + 1, i_min - 1)
 			}
 			# figure out which part farthest
-			r <- 10 * radius(self$vertices)
-			op_diff <- as_coord2d(degrees(angle), r)
-			op_diff <- as_coord3d(op_diff$x, op_diff$y, z = r / sqrt(2))
-			op_ref <- mean(self$vertices)$translate(op_diff)
-			d1 <- abs(op_ref - mean(self$vertices[indices1]))
-			d2 <- abs(op_ref - mean(self$vertices[indices2]))
-			if (d1 > d2) {
+			a <- degrees(angle)
+			if (
+				painter_depth(mean(self$vertices[indices1]), scale = 1, alpha = a) >
+					painter_depth(mean(self$vertices[indices2]), scale = 1, alpha = a)
+			) {
 				indices_obscured <- indices2
 				indices_visible <- indices1
 			} else {
@@ -365,13 +358,9 @@ CurvedEdge <- R6Class(
 			id <- numeric(0)
 
 			# figure out which part farthest
-			r <- 10 * radius(self$vertices)
-			op_diff <- as_coord2d(degrees(angle), r)
-			op_diff <- as_coord3d(op_diff$x, op_diff$y, z = r / sqrt(2))
-			op_ref <- mean(self$vertices)$translate(op_diff)
+			a <- degrees(angle)
 			dists <- sapply(l_indices, function(x) {
-				indices <- full_indices(x, n)
-				abs(op_ref - mean(self$vertices[indices]))
+				painter_depth(mean(self$vertices[full_indices(x, n)]), scale = 1, alpha = a)
 			})
 			l_indices <- l_indices[order(dists)]
 			for (i in seq_along(l_indices)) {

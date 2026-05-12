@@ -65,8 +65,6 @@ d10TopGrob <- function(
 		dfc <- rbind(dfc, as.data.frame(mean(xyz[idx])))
 	}
 
-	op_ref <- as_coord2d(mean(xyz))$translate(degrees(op_angle + 180), radius = 10 * radius(xyz))
-	xy_dists <- purrr::pmap_dbl(dfc, function(x, y, z, ...) abs(as_coord2d(x, y) - op_ref))
 	dfc$edge <- paste0(
 		"d10_",
 		c(
@@ -83,9 +81,10 @@ d10TopGrob <- function(
 		)
 	)
 	dfc$rank <- vapply(dfc$edge, d10_edge_rank, numeric(1), rank = rank, USE.NAMES = FALSE)
-	dfc$xy_dists <- xy_dists
 	dfc$idx <- 1:10
-	dfc <- dfc[order(round(dfc$z, 2), -xy_dists), ]
+	dfc <- dfc[
+		painter_order(as_coord3d(dfc$x, dfc$y, dfc$z), scale = op_scale, alpha = degrees(op_angle)),
+	]
 
 	gl <- gList()
 	fn_idx <- function(idx) {

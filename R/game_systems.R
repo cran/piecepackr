@@ -6,37 +6,40 @@
 #'      subpack and (piecepack) hexpack [pp_cfg()] R6 objects respectively given a piecepack configuration.
 #'
 #' Contains the following game systems:\describe{
-#' \item{alquerque}{Boards and pieces in six color schemes for Alquerque}
-#' \item{checkers1, checkers2}{Checkers and checkered boards in six color schemes.
+#' \item{alquerque}{Boards and pieces in nine color schemes for Alquerque}
+#' \item{checkers1, checkers2}{Checkers and checkered boards in nine color schemes.
 #'       Checkers are represented by a piecepackr \dQuote{bit}.
 #'       The \dQuote{board} \dQuote{face} is a checkered board and the \dQuote{back} is a lined board.
 #'       Color is controlled by suit and number of rows/columns by rank.
 #'       `checkers1` has one inch squares and `checkers2` has two inch squares.}
-#' \item{chess1, chess2}{Chess pieces, boards, and dice in six color schemes.
+#' \item{chess1, chess2}{Chess pieces, boards, and dice in nine color schemes.
 #'       Chess pieces are represented by a \dQuote{bit} (face).
 #'       The \dQuote{board} \dQuote{face} is a checkered board and the \dQuote{back} is a lined board.
 #'       Color is controlled by suit and number of rows/columns by rank.
 #'       `chess1` has one inch squares and `chess2` has two inch squares.
 #'       Currently uses print-and-play style discs instead of 3D Staunton chess pieces.}
-#' \item{dice}{Traditional six-sided pipped dice in six color schemes (color controlled by their suit).}
+#' \item{cubes}{Cubes in six sizes and nine colors represented by a \dQuote{bit}.
+#'              Color is controlled by suit and size of cube by rank.
+#'              Sizes go from 8mm (rank 1) to 25mm (rank 6): 8mm, 10mm, 12mm, 15mm, 20mm, 25mm.}
+#' \item{dice}{Traditional six-sided pipped dice in nine color schemes (color controlled by their suit).}
 #' \item{dice_d4, dice_numeral, dice_d8, dice_d10, dice_d10_percentile, dice_d12, dice_d20}{
 #'       Polyhedral dice most commonly used to play wargames, roleplaying games, and trading card games:\describe{
-#'   \item{dice_d4}{Four-sided dice in six color schemes (color controlled by their suit).
+#'   \item{dice_d4}{Four-sided dice in nine color schemes (color controlled by their suit).
 #'                  Tetrahedrons with the rank as a numeral at the top point.}
-#'   \item{dice_numeral}{Six-sided dice with numerals instead of pips in six color schemes (color controlled by their suit).}
-#'   \item{dice_d8}{Eight-sided dice in six color schemes (color controlled by their suit).
+#'   \item{dice_numeral}{Six-sided dice with numerals instead of pips in nine color schemes (color controlled by their suit).}
+#'   \item{dice_d8}{Eight-sided dice in nine color schemes (color controlled by their suit).
 #'                  Octahedrons with the rank as a numeral at the top face.}
-#'   \item{dice_d10}{Ten-sided dice in six color schemes (color controlled by their suit).
+#'   \item{dice_d10}{Ten-sided dice in nine color schemes (color controlled by their suit).
 #'                  Pentagonal trapezohedrons with the rank as a numeral at the top face.
 #'                  The rank of ten is represented by a zero.}
-#'   \item{dice_d10_percentile}{Ten-sided dice in six color schemes (color controlled by their suit).
+#'   \item{dice_d10_percentile}{Ten-sided dice in nine color schemes (color controlled by their suit).
 #'                  Pentagonal trapezohedrons with the rank as a numeral followed by a zero at the top face.
 #'                  The rank of ten is represented by a zero.}
-#'   \item{dice_d12}{Twelve-sided dice in six color schemes (color controlled by their suit).
+#'   \item{dice_d12}{Twelve-sided dice in nine color schemes (color controlled by their suit).
 #'                  Dodecahedrons with the rank as a numeral at the top face.}
-#'   \item{dice_d20}{Twenty-sided dice in six color schemes (color controlled by their suit).
+#'   \item{dice_d20}{Twenty-sided dice in nine color schemes (color controlled by their suit).
 #'                   Icosahedrons with the rank as a numeral at the top face.}}}
-#' \item{dice_fudge}{\dQuote{Fudge} dice in six color schemes (color controlled by their suit).
+#' \item{dice_fudge}{\dQuote{Fudge} dice in nine color schemes (color controlled by their suit).
 #'                   \dQuote{Fudge} dice have three ranks "+", " ", and "-" repeated twice.}
 #' \item{dominoes, dominoes_black, dominoes_blue, dominoes_green, dominoes_red, dominoes_white, dominoes_yellow}{
 #'      Traditional pipped dominoes in six color schemes (`dominoes` and `dominoes_white` are the same).
@@ -48,16 +51,16 @@
 #'       The \dQuote{tile}'s are Chinese dominoes (1" x 2.5") whose number of pips are controlled
 #'       by both their \dQuote{rank} and their \dQuote{suit}. `dominoes_chinese_black` are like `dominoes_chinese` but the
 #'       dice and dominoes have a black background and white and red pips.}
-#' \item{go}{Go stones and lined boards in six color schemes.
+#' \item{go}{Go stones and lined boards in nine color schemes.
 #'           Go stones are represented by a \dQuote{bit} and the board is a \dQuote{board}.
 #'           Color is controlled by suit and number of rows/columns by rank.}
-#' \item{marbles}{Marbles in nine sizes and six colors represented by a \dQuote{bit}.
+#' \item{marbles}{Marbles in nine sizes and nine colors represented by a \dQuote{bit}.
 #'                Color is controlled by suit and size of marble by rank.
 #'                Sizes go from 1/2" (rank 1) to 1" (rank 9) in 1/16" increments.
 #'                There are also square holed boards spaced for 1" marbles: their color
 #'                is controlled by suit and number of holes per row/column by rank.}
-#' \item{meeples}{Standard 16mm x 16mm x 10mm \dQuote{meeples} in six colors represented by a \dQuote{bit}.}
-#' \item{morris}{Various morris aka mills aka merels games in six colors.
+#' \item{meeples}{Standard 16mm x 16mm x 10mm \dQuote{meeples} in nine colors represented by a \dQuote{bit}.}
+#' \item{morris}{Various morris aka mills aka merels games in nine colors.
 #'               Color is controlled by suit and \dQuote{size} of morris board
 #'               is controlled by rank e.g. \dQuote{Six men's morris} corresponds to a rank of 6 and
 #'               \dQuote{Nine men's morris} corresponds to a rank of 9.
@@ -119,7 +122,6 @@
 #'               drawing with `{grid}` graphics and `FALSE` when drawing with 3D graphic systems.
 #' @param background_color Background color to use for certain pieces like boards and piecepack tiles.
 #' @param edge_color Edge color to use for certain pieces like boards and piecepack tiles.
-#' @param style Deprecated argument.
 #' @examples
 #' cfgs <- game_systems(pawn = "joystick")
 #' names(cfgs)
@@ -176,40 +178,16 @@
 #' @seealso [pp_cfg()] for information about the [pp_cfg()] objects returned by `game_systems()`.
 #' @export
 game_systems <- function(
-	font = style,
+	font = NULL,
 	round = FALSE,
 	pawn = "token",
 	...,
 	shading = FALSE,
 	border = TRUE,
 	background_color = ifelse(border, "white", "burlywood"),
-	edge_color = ifelse(border, "white", "black"),
-	style = NULL
+	edge_color = ifelse(border, "white", "black")
 ) {
 	check_dots_empty()
-	if (!missing(style)) {
-		warn(
-			"The argument `style` is deprecated.  Use the `font`, `border`, `background_color`, and/or `edge_color` arguments instead.",
-			class = "deprecatedWarning"
-		)
-	}
-	if (is.character(font) && grepl("3d$", font)) {
-		warn(
-			"Including a '3d' at the end of the `font` or `style` argument is deprecated.  Use the `border`, `background_color`, and/or `edge_color` arguments instead.",
-			class = "deprecatedWarning"
-		)
-
-		if (missing(border)) {
-			border <- FALSE
-		}
-		if (missing(background_color)) {
-			background_color <- ifelse(border, "white", "burlywood")
-		}
-		if (missing(edge_color)) {
-			edge_color <- ifelse(border, "white", "black")
-		}
-		font <- gsub("3d$", "", font)
-	}
 	font <- game_systems_font(font)
 
 	rect_shape <- ifelse(round, "roundrect", "rect")
@@ -224,6 +202,7 @@ game_systems <- function(
 		checkers2 = checkers(font, 2, color_list),
 		chess1 = chess(font, 1, color_list),
 		chess2 = chess(font, 2, color_list),
+		cubes = cubes(color_list),
 		dice = dice(color_list, rect_shape),
 		dice_d4 = dice_d4(font, color_list),
 		dice_d8 = dice_d8(font, color_list),
@@ -427,7 +406,7 @@ dice_d4 <- function(font = "sans", color_list = color_list_fn()) {
 		height.die = (21 / 25.4) / 0.8660254, # if 21 mm vertex to vertex
 		depth.die = (sqrt(6) / 3) * (21 / 25.4),
 		background_color = DICE_PIP_COLORS,
-		shape.die = "convex3",
+		shape.die_face = "convex3",
 		shape_t.die = 90,
 		invert_colors = TRUE
 	)
@@ -457,7 +436,7 @@ dice_d8 <- function(font = "sans", color_list = color_list_fn()) {
 		height.die = (18 / 25.4) / 0.8660254, # if 18 mm vertex to vertex
 		depth.die = (sqrt(6) / 3) * (18 / 25.4), # inradius = sqrt(6) * a / 6
 		background_color = DICE_PIP_COLORS,
-		shape.die = "convex3",
+		shape.die_face = "convex3",
 		shape_t.die = 90,
 		invert_colors = TRUE
 	)
@@ -490,7 +469,7 @@ dice_d10 <- function(font = "sans", color_list = color_list_fn()) {
 		height.die = 5 / 8,
 		depth.die = 0.5621585749837085810299,
 		background_color = DICE_PIP_COLORS,
-		shape.die = "kite",
+		shape.die_face = "kite",
 		shape_r.die = 0.5 - 0.1909830056250526320039,
 		invert_colors = TRUE
 	)
@@ -519,7 +498,7 @@ dice_d10_percentile <- function(font = "sans", color_list = color_list_fn()) {
 		height.die = 0.4913446110983896164548,
 		depth.die = 0.5621585749837085810299,
 		background_color = DICE_PIP_COLORS,
-		shape.die = "kite",
+		shape.die_face = "kite",
 		shape_r.die = 0.5 - 0.1909830056250526320039,
 		shape_t.die = 0,
 		invert_colors = TRUE
@@ -551,7 +530,7 @@ dice_d12 <- function(font = "sans", color_list = color_list_fn()) {
 		height.die = (5 / 16) / 0.5877853, # if 5/16" vertex to vertex
 		depth.die = 2 * 1.113516364 * (5 / 16), # inradius = 1.113516364 * a
 		background_color = DICE_PIP_COLORS,
-		shape.die = "convex5",
+		shape.die_face = "convex5",
 		shape_t.die = 90,
 		invert_colors = TRUE
 	)
@@ -586,7 +565,7 @@ dice_d20 <- function(font = "sans", color_list = color_list_fn()) {
 		height.die = 0.5 / 0.8660254, # if 1/2" vertex to vertex
 		depth.die = 2 * 0.5 * (3 * sqrt(3) + sqrt(15)) / 12,
 		background_color = DICE_PIP_COLORS,
-		shape.die = "convex3",
+		shape.die_face = "convex3",
 		shape_t.die = 90,
 		invert_colors = TRUE
 	)
@@ -624,9 +603,33 @@ dice_numeral <- function(font = "sans", color_list = color_list_fn(), rect_shape
 	dice
 }
 
+cubes <- function(color_list = color_list_fn()) {
+	sizes_mm <- c(8, 10, 12, 15, 20, 25)
+	cubes_list <- list(
+		shape.bit = "rect",
+		n_suits = N_SUITS_COLOR,
+		n_ranks = 6L,
+		ps_text.bit = "",
+		dm_text.bit = "",
+		invert_colors.bit = TRUE,
+		background_color = "white"
+	)
+	for (i in seq_along(sizes_mm)) {
+		size_in <- sizes_mm[i] / 25.4
+		cubes_list[[str_glue("width.r{i}.bit")]] <- size_in
+		cubes_list[[str_glue("height.r{i}.bit")]] <- size_in
+		cubes_list[[str_glue("depth.r{i}.bit")]] <- size_in
+	}
+	cubes <- pp_cfg(c(cubes_list, color_list))
+	cubes$has_piecepack <- FALSE
+	cubes$has_bits <- TRUE
+	cubes
+}
+
 meeples <- function(color_list = color_list_fn()) {
 	meeples_list <- list(
-		shape.bit = "meeple",
+		shape.bit_face = "meeple",
+		shape.bit_back = "meeple",
 		n_suits = N_SUITS_COLOR,
 		width.bit = 16 / 25.4,
 		height.bit = 16 / 25.4,
@@ -1020,13 +1023,15 @@ piecepack <- function(
 	hexpack <- c(
 		piecepack,
 		list(
-			shape.tile = "convex6",
+			shape.tile_face = "convex6",
+			shape.tile_back = "convex6",
 			border_lex = 3,
 			shape_t.tile = "60",
 			dm_t.tile_face = -90,
 			width.tile = 4 / sqrt(3),
 			height.tile = 4 / sqrt(3),
-			shape.coin = "convex3"
+			shape.coin_face = "convex3",
+			shape.coin_back = "convex3"
 		)
 	)
 
@@ -1219,14 +1224,13 @@ shapes_cfg <- function(color_list = color_list_fn()) {
 		width = 1,
 		height = 1,
 		depth = 1,
-		shape.r1.bit = "circle",
+		shape.r1.bit_face = "circle",
+		shape.r1.bit_back = "circle",
 		shape.r2.bit = "circle",
 		# don't shade joystick sphere at top if rest of joystick isn't shaded?
 		grob_fn.r2.bit = ellipsoidGrobFn(FALSE),
 		op_grob_fn.r2.bit = basicEllipsoidFn(FALSE),
-		obj_fn.r2.bit = function(...) save_ellipsoid_obj(..., subdivide = 4),
-		shape.r3.bit = "pyramid",
-		shape.r4.bit = "rect"
+		obj_fn.r2.bit = function(...) save_ellipsoid_obj(..., subdivide = 4)
 	)
 	pp_cfg(c(shapes, color_list))
 }
@@ -1323,13 +1327,15 @@ joystick_pawn <- function(shapes) {
 to_hexpack <- function(cfg = getOption("piecepackr.cfg", pp_cfg())) {
 	cfg <- as_pp_cfg(cfg)
 	hexpack <- as.list(cfg)
-	hexpack$shape.tile <- "convex6"
+	hexpack$shape.tile_face <- "convex6"
+	hexpack$shape.tile_back <- "convex6"
 	hexpack$border_lex <- 3
 	hexpack$shape_t.tile <- 60
 	hexpack$dm_t.tile_face <- -90
 	hexpack$width.tile <- 4 / sqrt(3)
 	hexpack$height.tile <- 4 / sqrt(3)
-	hexpack$shape.coin <- "convex3"
+	hexpack$shape.coin_face <- "convex3"
+	hexpack$shape.coin_back <- "convex3"
 	pp_cfg(hexpack)
 }
 
