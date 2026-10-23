@@ -1,5 +1,93 @@
-piecepackr 1.16.0 (development)
-===============================
+piecepackr 1.17.1
+=================
+
+New features
+------------
+
+* `game_systems()` gains a `systems` argument to build just the named game systems,
+  e.g. `game_systems(systems = c("checkers1", "dice"))`, instead of all of them.
+
+* `save_print_and_play()` now supports `bleed = "grouped"` which gives same-type pieces a shared bleed zone (#336).
+  Adjacent tiles share a cut line; coins and dice keep a gap within their shared zone so each can be punched out or cut to size without touching its neighbor.
+
+* Can now draw all six sides of "composite" pieces with `grid.piece()` / `pieceGrob()` (#263).
+  In particular a peg-doll "pawn", joystick "pawn", and reversi disc "bit" from `game_systems()` can now be drawn from any side in 2D orthographic or 3D oblique projection.
+
+* `game_systems(pawn = "peg-doll")` now renders the peg-doll with a belt (#391).
+
+* `save_piece_obj()` (and by extension `piece3d()`, `piece()`, and `piece_mesh()`) now supports six-sided dice with rounded corners when `shape.die_face = "roundrect"` (curvature controlled by `shape_r.die_face`) (#298).
+
+Bug fixes and minor improvements
+--------------------------------
+
+* `animate_piece()` no longer errors when `n_transitions` is positive and the data frames lack a `cfg` column.
+
+* `basicPieceGrob()` now correctly uses `dm_fontface` (instead of `ps_fontface`) when drawing the directional mark grob.
+
+* `game_systems()` now builds its configurations about four times faster.
+
+* `game_systems(border = FALSE)` now also removes the border line from the
+  `playing_cards`, `playing_cards_colored`, and `playing_cards_tarot` configurations (#400).
+  Previously these three systems ignored `border` and always drew a black border line.
+
+* `game_systems()$reversi` disc "bits" are now circular instead of (slightly) oval.
+
+* `has_font()` no longer returns `FALSE` for installed fonts whose family name contains characters (such as hyphens) that don't appear in its resolved font file's basename.
+
+* `pmap_piece()` no longer builds a default `envir` with all of `game_systems()`.
+  It now holds just `cfg` (if given, as `"piecepack"`) plus the game systems named by a `cfg` column of `.l`.
+  This saves tens of milliseconds per call and speeds up functions built on top of it such as `save_print_and_play()`.
+
+* `pp_cfg()` now validates the names of its configuration list about three times faster
+  and computes a piece's drawing options about three times as fast the first time they are needed
+  (they were already cached afterwards), so the first draw with a new configuration is faster.
+
+* `pp_cfg()` now warns about configuration names whose suit or rank part has extra characters,
+  e.g. `cex.s1x` or `cex.tiles1`, which it previously accepted silently and then ignored when drawing.
+
+* `render_piece()` and `animate_piece()` now draw the pieces with the `cfg` argument (or `piecepackr.cfg` option) when given.
+  Previously only the image size was computed from it while the pieces themselves were drawn with `envir$piecepack`.
+  Their default `envir` is now `NULL` instead of `game_systems("sans")`, which is now only built when needed;
+  if `cfg` is also `NULL` the pieces are still drawn with the "piecepack" configuration from `game_systems()`.
+
+* `save_print_and_play()` no longer leaves its graphics device open when it errors.
+  Unsupported `bleed` combinations (e.g. `pieces` not supported by `bleed = TRUE`) are now caught before the output file is created.
+
+* `save_print_and_play()` now renders its credits and cutting instructions from markdown with `marquee::marquee_grob()`,
+  which wraps them to the page width.
+  `cfg$credit` is now interpreted as markdown;
+  credits in the previous layout (a `"\u25cf "` bullet line followed by tab-indented lines) are converted automatically.
+  If the suggested package `{marquee}` isn't installed, or the graphics device doesn't support glyph rendering,
+  the credits and instructions are omitted with a message (which can be disabled with `options(piecepackr.marquee.inform = FALSE)`).
+
+* `save_print_and_play(bleed = TRUE)` now errors if the die faces are wider than 3/4".
+  Previously they overflowed their 3/4" slots.
+
+* `save_print_and_play(bleed = TRUE, size = "A5")` now prints the A5 cutting instructions.
+  Previously it described the letter/A4 layout instead, telling the reader to fold along a
+  central "gutter" line that an A5 page doesn't have.
+
+* `save_print_and_play(bleed = FALSE)` now adds registration marks in the outer page margin
+  beside the tiles on letter and A4 pages to assist in aligning double-sided printing (#331).
+
+* `save_print_and_play(bleed = FALSE)` now replaces its "Piece Anatomy" page with cutting and assembly instructions.
+
+* `save_print_and_play(bleed = FALSE)` now draws a solid rule on each piecepack page between the top row (dice, pawn, and belt) and the tiles, coins, and saucer below it
+  plus a dashed "gutter" line between the two halves of letter and A4 pages that stops at that rule.
+
+* `save_print_and_play(size = "A5")` now centers its layout on the A5 page.
+
+* `save_print_and_play(arrangement = "double-sided")` now embeds correct pdf bookmark pages for the
+  "Pyramids" and "Subpack" sections when `pieces` includes "matchsticks" and/or "pyramids".
+  Previously the "Matchsticks" and "Pyramids" sections each reported half their true page count.
+
+* `to_hexpack()` now inherits the border line width of `cfg` instead of always setting `border_lex = 3`.
+  In particular `game_systems()$hexpack` now uses the same border line width as `game_systems()$piecepack`.
+
+* `"pawn_left"` and `"pawn_right"` are now drawn in "portrait" mode instead of "landscape" mode.
+
+piecepackr 1.16.1
+=================
 
 Breaking changes
 ----------------

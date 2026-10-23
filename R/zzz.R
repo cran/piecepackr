@@ -1,9 +1,10 @@
 #' @import grid
-#' @importFrom affiner as_coord2d as_coord3d as_ellipse2d as_plane3d as_polygon2d as_segment2d convex_hull2d distance2d distance3d degrees has_overlap2d is_angle painter_depth painter_order regular_ngon_polygon2d
+#' @importFrom affiner as_coord2d as_coord3d as_ellipse2d as_plane3d as_polygon2d as_segment2d convex_hull2d distance2d distance3d degrees has_overlap2d is_angle normal3d painter_depth painter_order regular_ngon_polygon2d
 #' @importFrom grDevices col2rgb dev.capabilities dev.list dev.new devAskNewPage rgb
 #' @importFrom R6 R6Class
 #' @importFrom rlang .data abort inform warn %||% check_dots_empty
-#' @importFrom stringr str_count str_glue str_pad str_split
+#' @importFrom stringr fixed str_count str_flatten str_glue str_pad str_replace
+#' @importFrom stringr str_split str_split_fixed str_trim
 #' @importFrom tibble tibble
 #' @importFrom utils hasName head packageDescription packageVersion tail
 NULL

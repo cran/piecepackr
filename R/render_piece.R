@@ -9,8 +9,12 @@
 #'             (depending on `open_device` argument).
 #' @param ... Arguments to [pmap_piece()]
 #' @param .f Low level graphics function to use e.g. [grid.piece()], [piece3d()], [piece_mesh()], or [piece()].
-#' @param cfg A piecepackr configuration list
-#' @param envir Environment (or named list) of piecepackr configuration lists
+#' @param cfg A piecepackr configuration list.  If `NULL` (the default) and
+#'            `envir` is also `NULL` then the pieces are drawn with the
+#'            "piecepack" configuration from [game_systems()].
+#' @param envir Environment (or named list) of piecepackr configuration lists.
+#'              If `NULL` (the default) one is built from `cfg` and, when a
+#'              `cfg` column names other configurations, [game_systems()].
 #' @param width Width of image (in inches).  Inferred by default.
 #' @param height Height of image (in inches).  Inferred by default.
 #' @param ppi Resolution of image in pixels per inch.
@@ -18,7 +22,7 @@
 #' @param xoffset Number to add to the `x` column in `df`.  Inferred by default.
 #' @param yoffset Number to add to the `y` column in `df`.  Inferred by default.
 #' @param annotate If `TRUE` or `"algebraic"` annotate the plot
-#'                 with \dQuote{algrebraic} coordinates,
+#'                 with \dQuote{algebraic} coordinates,
 #'                 if `FALSE` or `"none"` don't annotate,
 #'                 if `"cartesian"` annotate the plot with \dQuote{cartesian} coordinates.
 #' @param annotation_scale Multiplicative factor that scales (stretches) any annotation coordinates.
@@ -58,7 +62,7 @@
 #'    grid::grid.newpage()
 #'    render_piece(df, open_device = FALSE,
 #'                 op_scale = 0.5, trans = op_transform,
-#'                 annotate = "algrebraic")
+#'                 annotate = "algebraic")
 #'  }
 #'  \dontrun{# May take more than 5 seconds on CRAN servers
 #'  if (require(rayvertex)) {
@@ -75,7 +79,7 @@ render_piece <- function(
 	...,
 	.f = piecepackr::grid.piece,
 	cfg = getOption("piecepackr.cfg", NULL),
-	envir = getOption("piecepackr.envir", game_systems("sans")),
+	envir = getOption("piecepackr.envir"),
 	width = NULL,
 	height = NULL,
 	ppi = 72,
@@ -92,7 +96,7 @@ render_piece <- function(
 	xbreaks = NULL,
 	ybreaks = NULL
 ) {
-	stopifnot(is.null(dev) || is.function(dev))
+	stopifnot("`dev` must be NULL or a function" = is.null(dev) || is.function(dev))
 	image <- match.arg(image)
 	if (image == "NULL") {
 		image <- NULL
@@ -113,7 +117,7 @@ render_piece <- function(
 		}
 	}
 
-	ce <- default_cfg_envir(cfg, envir)
+	ce <- default_cfg_envir(cfg, envir, cfg_lookups(df), systems = TRUE)
 	cfg <- ce$cfg
 	envir <- ce$envir
 
@@ -160,6 +164,7 @@ render_piece <- function(
 		height,
 		m,
 		ppi,
+		cfg,
 		envir,
 		annotate,
 		annotation_scale,
@@ -199,6 +204,7 @@ plot_fn_helper <- function(
 	height,
 	m,
 	ppi,
+	cfg,
 	envir,
 	annotate,
 	annotation_scale,
@@ -212,7 +218,7 @@ plot_fn_helper <- function(
 			df$y <- df$y + yoffset
 			df$scale <- if (hasName(df, "scale")) scale * df$scale else scale
 			grid::grid.newpage()
-			pmap_piece(df, default.units = "in", ..., envir = envir)
+			pmap_piece(df, default.units = "in", ..., cfg = cfg, envir = envir)
 			annotate_plot(
 				annotate,
 				xmax,
@@ -227,15 +233,17 @@ plot_fn_helper <- function(
 	} else if (identical(.f, piece3d)) {
 		assert_suggested("rgl")
 		if (Sys.which("wmctrl") != "") {
-			cmd <- paste0("wmctrl -r RGL -e 0,-1,-1,", ceiling(width), ",", ceiling(height))
-			system(cmd)
+			system2(
+				"wmctrl",
+				c("-r", "RGL", "-e", paste0("0,-1,-1,", ceiling(width), ",", ceiling(height)))
+			)
 		}
 		f <- tempfile(fileext = ".png")
 		function(df, ..., scale = 1) {
 			df$scale <- if (hasName(df, "scale")) scale * df$scale else scale
 			rgl::clear3d()
 			rgl::points3d(x = rep(c(0, xmax), 2), y = rep(c(0, ymax), each = 2), z = 0, alpha = 0)
-			pmap_piece(df, piece3d, ..., envir = envir)
+			pmap_piece(df, piece3d, ..., cfg = cfg, envir = envir)
 			Sys.sleep(2)
 			rgl::snapshot3d(f, top = FALSE, webshot = FALSE)
 			grid::grid.newpage()
@@ -258,7 +266,7 @@ plot_fn_helper <- function(
 			df$scale <- if (hasName(df, "scale")) scale * df$scale else scale
 			df$x <- df$x + xoffset
 			df$y <- df$y + yoffset
-			l <- pmap_piece(df, piece, ..., envir = envir)
+			l <- pmap_piece(df, piece, ..., cfg = cfg, envir = envir)
 			if (all(is.na(table))) {
 				table <- rayrender::sphere(
 					z = -1e3,
@@ -307,7 +315,7 @@ plot_fn_helper <- function(
 			df$scale <- if (hasName(df, "scale")) scale * df$scale else scale
 			df$x <- df$x + xoffset
 			df$y <- df$y + yoffset
-			l <- pmap_piece(df, piece_mesh, ..., envir = envir)
+			l <- pmap_piece(df, piece_mesh, ..., cfg = cfg, envir = envir)
 			if (all(is.na(table))) {
 				table <- rayvertex::sphere_mesh(
 					c(0, 0, -1e3),

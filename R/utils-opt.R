@@ -68,6 +68,29 @@ MATCHSTICK_HEIGHTS <- c(
 
 style_ordering <- c(1, 7, 13, 4, 10, 16, 2, 8, 14, 5, 11, 17, 3, 9, 15, 6, 12, 18)
 
+# The suffixes to try, in priority order, when looking up a style for a piece.
+# They depend only on the piece, suit, rank, and whether the piece is suited
+# (not on the configuration's values) so we memoize them across configurations:
+# `get_piece_opt()` looks up about 77 styles and each entry is 18 short strings.
+style_affixes_cache <- new.env(parent = emptyenv())
+
+style_affixes <- function(piece_side, suit, rank, suited) {
+	key <- paste(piece_side, suit, rank, suited)
+	affixes <- style_affixes_cache[[key]]
+	if (is.null(affixes)) {
+		piece <- if (is.na(piece_side)) NULL else get_piece(piece_side)
+		piece_affixes <- c(paste0(".", piece_side), paste0(".", piece), "")
+		rank_affixes <- c(paste0(".r", rank), "")
+		suit_affixes <- c(paste0(".s", suit), ifelse(suited, ".suited", ".unsuited"), "")
+		# every combination, with the piece affix varying fastest and then the rank
+		suit_rank <- paste0(rep(suit_affixes, each = length(rank_affixes)), rank_affixes)
+		affixes <- paste0(rep(suit_rank, each = length(piece_affixes)), piece_affixes)
+		affixes <- affixes[style_ordering]
+		style_affixes_cache[[key]] <- affixes
+	}
+	affixes
+}
+
 get_style_element <- function(
 	style,
 	piece_side = NA,
@@ -76,28 +99,22 @@ get_style_element <- function(
 	suit = 0,
 	rank = 0
 ) {
-	if (is.na(piece_side)) {
-		piece <- NULL
-	} else {
-		piece <- get_piece(piece_side)
-	}
+	stopifnot(
+		"`piece_side`, `suit`, and `rank` must each be a single value" = length(piece_side) == 1L &&
+			length(suit) == 1L &&
+			length(rank) == 1L
+	)
 	suited <- is_suited(piece_side, suit, rank, cfg) %||% FALSE
-
-	piece_affixes <- c(paste0(".", piece_side), paste0(".", piece), "")
-	rank_affixes <- c(paste0(".r", rank), "")
-	suit_affixes <- c(paste0(".s", suit), ifelse(suited, ".suited", ".unsuited"), "")
-	dfs <- expand.grid(piece_affixes, rank_affixes, suit_affixes, stringsAsFactors = FALSE)
-	names(dfs) <- c("piece", "rank", "suit")
-	affixes <- paste0(dfs$suit, dfs$rank, dfs$piece)[style_ordering]
-
-	for (affix in affixes) {
-		string <- paste0(style, affix)
-		value <- cfg[[string]]
+	keys <- paste0(style, style_affixes(piece_side, suit, rank, suited))
+	# `[[` scans every name for each key so first find the few keys that are set
+	for (key in keys[keys %in% names(cfg)]) {
+		value <- cfg[[key]] # a list can hold an explicit `NULL` for a key
 		if (!is.null(value)) return(value)
 	}
-	return(default)
+	default
 }
 
+# Vectorized over `cfg_style` since `pp_cfg()` checks every name of its input
 is_legit_cfg_style <- function(cfg_style) {
 	# style
 	# style.suit
@@ -107,26 +124,24 @@ is_legit_cfg_style <- function(cfg_style) {
 	# style.suit.piece
 	# style.rank.piece
 	# style.suit.rank.piece
-	ss <- cleave2(cfg_style, sep = "\\.")
-	if (!is_legit_style(ss[1])) {
-		return(FALSE)
+	cfg_style <- as.character(cfg_style)
+	if (!length(cfg_style)) {
+		return(logical(0))
 	}
-	if (length(ss) == 2) {
-		return(is_legit_suit(ss[2]) || is_legit_rank(ss[2]) || is_legit_piece(ss[2]))
-	}
-	if (length(ss) == 3) {
-		return(
-			(is_legit_suit(ss[2]) && (is_legit_rank(ss[3]) || is_legit_piece(ss[3]))) ||
-				(is_legit_rank(ss[2]) && is_legit_piece(ss[3]))
-		)
-	}
-	if (length(ss) == 4) {
-		return(is_legit_suit(ss[2]) && is_legit_rank(ss[3]) && is_legit_piece(ss[4]))
-	}
-	if (length(ss) > 4) {
-		return(FALSE)
-	}
-	TRUE
+	n <- str_count(cfg_style, fixed(".")) + 1L
+	ss <- str_split_fixed(cfg_style, fixed("."), 4L)
+	suit2 <- is_legit_suit(ss[, 2L])
+	rank2 <- is_legit_rank(ss[, 2L])
+	piece2 <- is_legit_piece(ss[, 2L])
+	rank3 <- is_legit_rank(ss[, 3L])
+	piece3 <- is_legit_piece(ss[, 3L])
+	piece4 <- is_legit_piece(ss[, 4L])
+	legit <- is_legit_style(ss[, 1L]) &
+		((n == 1L) |
+			(n == 2L & (suit2 | rank2 | piece2)) |
+			(n == 3L & ((suit2 & (rank3 | piece3)) | (rank2 & piece3))) |
+			(n == 4L & suit2 & rank3 & piece4))
+	legit & !is.na(legit)
 }
 
 styles <- c(
@@ -180,10 +195,10 @@ is_legit_style <- function(style) {
 	style %in% styles
 }
 is_legit_rank <- function(rank) {
-	grepl("r[[:digit:]]+", rank)
+	grepl("^r[[:digit:]]+$", rank)
 }
 is_legit_suit <- function(suit) {
-	(suit %in% c("suited", "unsuited")) || grepl("s[[:digit:]]", suit)
+	(suit %in% c("suited", "unsuited")) | grepl("^s[[:digit:]]+$", suit)
 }
 pieces <- c(
 	paste0(
@@ -204,10 +219,9 @@ is_legit_piece <- function(piece) {
 	piece %in% pieces
 }
 warn_cfg <- function(cfg) {
-	for (nn in names(cfg)) {
-		if (!is_legit_cfg_style(nn)) {
-			warn(paste(nn, "is not a recognized configuration"))
-		}
+	nn <- names(cfg)
+	for (bad in nn[!is_legit_cfg_style(nn)]) {
+		warn(paste(bad, "is not a recognized configuration"))
 	}
 	if (!is.null(cfg$spdx_id)) {
 		check_spdx_id(cfg$spdx_id)

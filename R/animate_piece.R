@@ -6,8 +6,12 @@
 #'             in which case it uses the current graphics device.
 #' @param ... Arguments to [pmap_piece()]
 #' @param .f Low level graphics function to use e.g. [grid.piece()], [piece3d()], [piece()], or [piece_mesh()].
-#' @param cfg A piecepackr configuration list
-#' @param envir Environment (or named list) of piecepackr configuration lists
+#' @param cfg A piecepackr configuration list.  If `NULL` (the default) and
+#'            `envir` is also `NULL` then the pieces are drawn with the
+#'            "piecepack" configuration from [game_systems()].
+#' @param envir Environment (or named list) of piecepackr configuration lists.
+#'              If `NULL` (the default) one is built from `cfg` and, when a
+#'              `cfg` column names other configurations, [game_systems()].
 #' @param width Width of animation (in inches).  Inferred by default.
 #' @param height Height of animation (in inches).  Inferred by default.
 #' @param ppi Resolution of animation in pixels per inch.
@@ -73,7 +77,7 @@ animate_piece <- function(
 	...,
 	.f = piecepackr::grid.piece,
 	cfg = getOption("piecepackr.cfg", NULL),
-	envir = getOption("piecepackr.envir", game_systems("sans")),
+	envir = getOption("piecepackr.envir"),
 	width = NULL,
 	height = NULL,
 	ppi = NULL,
@@ -90,7 +94,7 @@ animate_piece <- function(
 		assert_suggested("tweenr")
 	}
 
-	ce <- default_cfg_envir(cfg, envir)
+	ce <- default_cfg_envir(cfg, envir, unlist(lapply(dfs, cfg_lookups)), systems = TRUE)
 	cfg <- ce$cfg
 	envir <- ce$envir
 
@@ -135,6 +139,7 @@ animate_piece <- function(
 		height,
 		m,
 		ppi,
+		cfg,
 		envir,
 		annotate,
 		annotation_scale,
@@ -201,7 +206,11 @@ animation_fn <- function(file, open_device = TRUE) {
 			)
 		}
 	} else if (grepl(".bmp$|.jpg$|.jpeg$|.png$|.tiff$", file)) {
-		stopifnot(has_c_integer_format(file))
+		stopifnot(
+			'`file` must contain a C integer format like "%03d" (e.g. "frame%03d.png")' = has_c_integer_format(
+				file
+			)
+		)
 		function(expr, file, width, height, delay, res) {
 			pp_device(file, width = width / res, height = height / res, res = res)
 			eval(expr)
@@ -335,12 +344,17 @@ insert_df <- function(df1, df2, id = tail(df1$id, 1L)) {
 }
 
 get_id_cfg <- function(df1, df2) {
-	df <- rbind(df1[, c("id", "cfg")], df2[, c("id", "cfg")])
-	unique(df)
+	cols <- intersect(c("id", "cfg"), names(df1))
+	unique(rbind(df1[, cols, drop = FALSE], df2[, cols, drop = FALSE]))
 }
 
 get_tweenr_df <- function(df, ...) {
-	stopifnot(all(hasName(df, c("id", "piece_side", "rank", "suit", "x", "y"))))
+	stopifnot(
+		'`df` must have columns: "id", "piece_side", "rank", "suit", "x", "y"' = all(hasName(
+			df,
+			c("id", "piece_side", "rank", "suit", "x", "y")
+		))
+	)
 	if (!hasName(df, "alpha")) {
 		df$alpha <- 1
 	}

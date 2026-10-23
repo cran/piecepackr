@@ -3,39 +3,16 @@ print_and_play_paper_bleed <- function(cfg, size, pieces, arrangement, quietly, 
 	n_ranks <- cfg$n_ranks
 
 	stopifnot(n_ranks <= 6)
-	if ("matchsticks" %in% pieces) {
-		abort('"matchsticks" `pieces` not currently supported for `bleed = TRUE`')
-	}
-	if ("pyramids" %in% pieces) {
-		abort('"pyramids" `pieces` not currently supported for `bleed = TRUE`')
-	}
-	if ("subpack" %in% pieces) {
-		abort('"subpack" `pieces` not currently supported for `bleed = TRUE`')
-	}
 
-	if (size == "letter") {
-		xl <- inch(LETTER_HEIGHT / 2 - A5W / 2 + size_bleed$left)
-		xr <- inch(LETTER_HEIGHT / 2 + A5W / 2 + size_bleed$left)
-		y <- inch(LETTER_WIDTH / 2 + size_bleed$bottom)
-	} else if (size == "A4") {
-		xl <- inch(A4_HEIGHT / 2 - A5W / 2 + size_bleed$left)
-		xr <- inch(A4_HEIGHT / 2 + A5W / 2 + size_bleed$left)
-		y <- inch(A4_WIDTH / 2 + size_bleed$bottom)
-	} else {
-		# size is "A5"
-		xl <- inch(A5W / 2 + size_bleed$left)
-		xr <- inch(A5W / 2 + size_bleed$left)
-		y <- inch(A5H / 2 + size_bleed$bottom)
-	}
-
-	vpl <- viewport(x = xl, y = y, width = inch(A5W), height = inch(A5H))
-	vpr <- viewport(x = xr, y = y, width = inch(A5W), height = inch(A5H))
+	vps <- a5_panel_viewports(size, size_bleed)
+	vpl <- vps$vpl
+	vpr <- vps$vpr
 	gl <- list()
 	pl <- list()
 
 	## Front Matter
-	gl <- gappend(gl, a5_title_grob(cfg, pieces, quietly, bleed = TRUE))
-	gl <- gappend(gl, a5_inst_grob_bleed(cfg, pieces, arrangement, size))
+	gl <- gappend(gl, a5_title_grob(cfg, pieces, quietly, saucers = FALSE))
+	gl <- gappend(gl, pnp_inst_grob(a5_inst_md_bleed(pieces, arrangement, size)))
 	if (arrangement == "double-sided" && size != "A5") {
 		gl <- gappend(gl, blank_grob)
 		gl <- gappend(gl, blank_grob)
@@ -110,115 +87,78 @@ print_and_play_paper_bleed <- function(cfg, size, pieces, arrangement, quietly, 
 	pl
 }
 
-a5_inst_grob_bleed <- function(cfg, pieces, arrangement, size) {
-	y_inst <- unit(1, "npc") - unit(0.2, "in")
-	inst <- c("\u25cf See https://www.ludism.org/ppwiki/MakingPiecepacks for general advice")
-
-	# Settings
-	components <- paste(paste0('"', pieces, '"'), collapse = ", ")
-	if (TRUE) {
-		arrangement <- sprintf('\t\u25cb "%s" arrangement with "bleed" zones', arrangement)
-	}
-	inst <- c(
-		inst,
-		"\u25cf This print-and-play layout was generated for:",
-		sprintf('\t\u25cb %s components', components),
-		arrangement,
-		sprintf('\t\u25cb "%s" paper size', size)
-	)
-
+a5_inst_md_bleed <- function(pieces, arrangement, size) {
 	# Tiles
-	tile_crop <- c('\t\u25cb Use "crop" marks as guide to where to cut them out')
-	if (size == "a5") {
+	tile_crop <- c('  * Use "crop" marks as guide to where to cut them out')
+	if (size == "A5") {
 		inst <- c(
-			inst,
-			'\u25cf For each suit we have a page of tile "faces" then a page of tile "backs"',
+			'* For each suit we have a page of tile "faces" then a page of tile "backs"',
 			tile_crop,
-			'\t\u25cb May place whole sheet on one side and next sheet on the opposite side',
-			'\t\t of target material before cutting out'
+			'  * May place whole sheet on one side and next sheet on the opposite side of target material before cutting out'
 		)
 	} else {
 		inst <- c(
-			inst,
-			'\u25cf We have a page of tiles for each suit: "faces" on left and "backs" on right',
+			'* We have a page of tiles for each suit: "faces" on left and "backs" on right',
 			tile_crop,
-			'\t\u25cb Central "gutter" line may help place sheet on both sides of target material',
-			'\t\t  Line up "gutter" line on the center of edge of target material, fold,',
-			'\t\t  and cut tiles out.',
-			'\t\u25cb Alternatively place whole sheet on one side and another on the opposite side'
+			'  * Central "gutter" line may help place sheet on both sides of target material: line up "gutter" line on the center of edge of target material, fold, and cut tiles out',
+			'  * Alternatively place whole sheet on one side and another on the opposite side'
 		)
 	}
 
 	# Coins
 	coin_crop <- c(
-		'\t\u25cb For those lacking circular cutting tools one may use "crop" marks',
-		'\t\t as guide to cut out (inferior) square coins',
-		'\t\u25cb Otherwise use "crop" marks to help center placement of circular cutting tool'
+		'  * For those lacking circular cutting tools one may use "crop" marks as guide to cut out (inferior) square coins',
+		'  * Otherwise use "crop" marks to help center placement of circular cutting tool'
 	)
-	if (size == "a5") {
+	if (size == "A5") {
 		inst <- c(
 			inst,
-			"\u25cf We have a page of coin faces then a page of coin backs (per 4 suits)",
+			"* We have a page of coin faces then a page of coin backs (per 4 suits)",
 			coin_crop
 		)
 	} else {
 		inst <- c(
 			inst,
-			'\u25cf We have a page of coins (per 4 suits): "backs" on left and "faces" on right',
+			'* We have a page of coins (per 4 suits): "backs" on left and "faces" on right',
 			coin_crop,
-			'\t\u25cb Central "gutter" line may help place sheet on both sides of target material',
-			'\t\t  Line up "gutter" line on the center of edge of target material, fold,',
-			'\t\t  and cut coins out.',
-			'\t\u25cb Alternatively place whole sheet on one side and a copy on the opposite side'
+			'  * Central "gutter" line may help place sheet on both sides of target material: line up "gutter" line on the center of edge of target material, fold, and cut coins out',
+			'  * Alternatively place whole sheet on one side and a copy on the opposite side'
 		)
 	}
 
 	# Dice and Pawns
 	dice_crop <- c(
-		'\t\u25cb Depending on size of target dice use inner or outer "crop" marks',
-		'\t\t as guide to cut out dice',
-		'\t\u25cb Alternatively use "crop" marks to help center placement of circular cutting tool',
-		'\t\u25cb Use "crop" marks to cut out pawn "belts"',
-		'\t\u25cb Use "crop" marks to cut out pawn "tokens" (depending on shape of token)',
-		'\t\t "gutter" line can be used to help place pawn "tokens" on both sides',
-		'\t\t  of target material ("gutter" line on center of edge of target material)'
+		'  * Depending on size of target dice use inner or outer "crop" marks as guide to cut out dice',
+		'  * Alternatively use "crop" marks to help center placement of circular cutting tool',
+		'  * Use "crop" marks to cut out pawn "belts"',
+		'  * Use "crop" marks to cut out pawn "tokens" (depending on shape of token); "gutter" line can be used to help place pawn "tokens" on both sides of target material ("gutter" line on center of edge of target material)'
 	)
-	if (size == "a5") {
+	if (size == "A5") {
 		inst <- c(
 			inst,
-			"\u25cf We have a page of dice faces then a page of pawn belts and pawn tokens (per 4 suits)",
+			"* We have a page of dice faces then a page of pawn belts and pawn tokens (per 4 suits)",
 			dice_crop
 		)
 	} else {
 		inst <- c(
 			inst,
-			'\u25cf We have a page of dice faces, pawn belts, and pawn tokens (per 4 suits):',
-			'\t\u25cb Dice faces on left, pawn "belts" on top right, pawn "tokens" on bottom right',
+			'* We have a page of dice faces, pawn belts, and pawn tokens (per 4 suits):',
+			'  * Dice faces on left, pawn "belts" on top right, pawn "tokens" on bottom right',
 			dice_crop
 		)
 	}
 
-	inst <- paste(inst, collapse = "\n")
-
-	gTree(
-		name = "instructions",
-		children = gList(
-			# rectGrob(gp=gpar(fill="grey90")),
-			textGrob(
-				"Instructions",
-				x = unit(0.5, "cm"),
-				y = y_inst,
-				just = "left",
-				gp = gp_header
-			),
-			textGrob(
-				inst,
-				x = unit(0.5, "cm"),
-				y = y_inst - unit(0.2, "in"),
-				just = c(0, 1),
-				gp = gp_text
-			)
-		)
+	# {marquee} needs a blank line around each sub-list to nest its bullets
+	run <- cumsum(c(TRUE, diff(startsWith(inst, "  ")) != 0))
+	inst <- vapply(split(inst, run), paste, character(1L), collapse = "\n")
+	paste(
+		c(
+			"## Instructions",
+			"* For general advice: <https://www.ludism.org/ppwiki/MakingPiecepacks> ",
+			pnp_generated_for_md(pieces, arrangement, size, "individual"),
+			inst
+		),
+		collapse = "\n\n"
 	)
 }
 
@@ -241,7 +181,7 @@ a5_tile_grob <- function(i_suit, cfg, front, arrangement, size) {
 	)
 
 	if (!front) {
-		df$piece_side = "tile_back"
+		df$piece_side <- "tile_back"
 		df$x <- A5W - df$x
 		# Rotate tile backs to partially hide direction of face if tile back are not fully symmetric
 		df$angle <- 90 * ((df$suit + df$rank) %% 4)
@@ -273,19 +213,13 @@ a5_tile_grob <- function(i_suit, cfg, front, arrangement, size) {
 	side_x <- if (front) xtr - tile_width / 2 else A5W - xtr + tile_width / 2
 	top_y <- ytt + tile_width / 2 + 1 / 4
 	bottom_y <- ytb - tile_width / 2 - 1 / 4
-	reg_grob <- gList(
-		circledSegmentsCrosshairGrob(
-			x = inch(side_x),
-			y = inch(top_y),
-			width = inch(ch_size),
-			height = inch(ch_size)
-		),
-		squaredSegmentsCrosshairGrob(
-			x = inch(side_x),
-			y = inch(bottom_y),
-			width = inch(ch_size),
-			height = inch(ch_size)
-		)
+	reg_grob <- reg_marks_grob(
+		side_x,
+		top_y,
+		side_x,
+		bottom_y,
+		ch_size,
+		name = "tile_registration_marks"
 	)
 
 	gList(cm_grob, ps_grob, vline, reg_grob)
@@ -315,7 +249,7 @@ a5_coin_grob <- function(suit, cfg, front, arrangement, size) {
 	)
 
 	if (!front) {
-		df$piece_side = "coin_face"
+		df$piece_side <- "coin_face"
 		df$x <- A5W - df$x
 	} else {
 		# Rotate coin faces to desired direction
@@ -348,19 +282,13 @@ a5_coin_grob <- function(suit, cfg, front, arrangement, size) {
 	side_x <- if (front) xt1 - coin_width / 2 - 1 / 8 else A5W - xt1 + coin_width / 2 + 1 / 8
 	top_y <- yt6 + coin_width / 2 + 1 / 4
 	bottom_y <- yt1 - coin_width / 2 - 1 / 4
-	reg_grob <- gList(
-		circledSegmentsCrosshairGrob(
-			x = inch(side_x),
-			y = inch(top_y),
-			width = inch(ch_size),
-			height = inch(ch_size)
-		),
-		squaredSegmentsCrosshairGrob(
-			x = inch(side_x),
-			y = inch(bottom_y),
-			width = inch(ch_size),
-			height = inch(ch_size)
-		)
+	reg_grob <- reg_marks_grob(
+		side_x,
+		top_y,
+		side_x,
+		bottom_y,
+		ch_size,
+		name = "coin_registration_marks"
 	)
 
 	gList(cm_grob, ps_grob, vline, reg_grob)
@@ -368,18 +296,18 @@ a5_coin_grob <- function(suit, cfg, front, arrangement, size) {
 
 a5_die_grob <- function(suit, cfg, front, arrangement) {
 	die_width <- cfg$get_width("die_face")
-	xt1 <- 0.5 * 3 / 4 + 1 / 8 + 1 / 8
-	xt2 <- xt1 + 3 / 4 + 1 / 4 + 1 / 8
-	xt3 <- xt2 + 3 / 4 + 1 / 4 + 1 / 8
-	xt4 <- xt3 + 3 / 4 + 1 / 4 + 1 / 8
+	xt1 <- 0.5 * DIE_SLOT + 1 / 8 + 1 / 8
+	xt2 <- xt1 + DIE_SLOT + 1 / 4 + 1 / 8
+	xt3 <- xt2 + DIE_SLOT + 1 / 4 + 1 / 8
+	xt4 <- xt3 + DIE_SLOT + 1 / 4 + 1 / 8
 
-	content_height <- 5 * (3 / 4 + 1 / 4 + 1 / 8) + 3 / 4 + 1 / 4
-	yt1 <- 0.5 * 3 / 4 + 1 / 8 + (A5H - content_height) / 2
-	yt2 <- yt1 + 3 / 4 + 1 / 4 + 1 / 8
-	yt3 <- yt2 + 3 / 4 + 1 / 4 + 1 / 8
-	yt4 <- yt3 + 3 / 4 + 1 / 4 + 1 / 8
-	yt5 <- yt4 + 3 / 4 + 1 / 4 + 1 / 8
-	yt6 <- yt5 + 3 / 4 + 1 / 4 + 1 / 8
+	content_height <- 5 * (DIE_SLOT + 1 / 4 + 1 / 8) + DIE_SLOT + 1 / 4
+	yt1 <- 0.5 * DIE_SLOT + 1 / 8 + (A5H - content_height) / 2
+	yt2 <- yt1 + DIE_SLOT + 1 / 4 + 1 / 8
+	yt3 <- yt2 + DIE_SLOT + 1 / 4 + 1 / 8
+	yt4 <- yt3 + DIE_SLOT + 1 / 4 + 1 / 8
+	yt5 <- yt4 + DIE_SLOT + 1 / 4 + 1 / 8
+	yt6 <- yt5 + DIE_SLOT + 1 / 4 + 1 / 8
 
 	df <- tibble::tibble(
 		piece_side = "die_face",
@@ -400,7 +328,7 @@ a5_die_grob <- function(suit, cfg, front, arrangement) {
 		default.units = "in",
 		width = die_width,
 		height = die_width,
-		bleed = (3 / 4 - die_width) / 2 + 1 / 8,
+		bleed = (DIE_SLOT - die_width) / 2 + 1 / 8,
 		draw = FALSE
 	)
 	cm_grob2 <- pmap_piece(
@@ -408,8 +336,8 @@ a5_die_grob <- function(suit, cfg, front, arrangement) {
 		cropmarkGrob,
 		cfg = cfg,
 		default.units = "in",
-		width = 3 / 4,
-		height = 3 / 4,
+		width = DIE_SLOT,
+		height = DIE_SLOT,
 		bleed = 1 / 8,
 		draw = FALSE
 	)
@@ -418,7 +346,7 @@ a5_die_grob <- function(suit, cfg, front, arrangement) {
 		pieceGrob,
 		cfg = cfg,
 		default.units = "in",
-		bleed = (3 / 4 - die_width) / 2 + 1 / 8,
+		bleed = (DIE_SLOT - die_width) / 2 + 1 / 8,
 		draw = FALSE
 	)
 	gList(cm_grob1, cm_grob2, ps_grob)
@@ -483,31 +411,13 @@ a5_pawn_grob <- function(suit, cfg, front, arrangement) {
 	right_x <- x[length(x)] + pawn_width / 2
 	top_y <- ypt + pawn_height / 2 + 1 / 4
 	bottom_y <- ypb - pawn_height / 2 - 1 / 4
-	reg_grob <- gList(
-		circledSegmentsCrosshairGrob(
-			x = inch(left_x),
-			y = inch(top_y),
-			width = inch(ch_size),
-			height = inch(ch_size)
-		),
-		squaredSegmentsCrosshairGrob(
-			x = inch(right_x),
-			y = inch(top_y),
-			width = inch(ch_size),
-			height = inch(ch_size)
-		),
-		circledSegmentsCrosshairGrob(
-			x = inch(left_x),
-			y = inch(bottom_y),
-			width = inch(ch_size),
-			height = inch(ch_size)
-		),
-		squaredSegmentsCrosshairGrob(
-			x = inch(right_x),
-			y = inch(bottom_y),
-			width = inch(ch_size),
-			height = inch(ch_size)
-		)
+	reg_grob <- reg_marks_grob(
+		rep(left_x, 2),
+		c(top_y, bottom_y),
+		rep(right_x, 2),
+		c(top_y, bottom_y),
+		ch_size,
+		name = "pawn_registration_marks"
 	)
 
 	gList(cm_grob, ps_grob, hline, reg_grob)

@@ -2,6 +2,20 @@ LETTER_WIDTH <- 8.5
 LETTER_HEIGHT <- 11
 A4_WIDTH <- 8.27
 A4_HEIGHT <- 11.69
+# A5 pages are used in portrait mode, so the short side is their width
+A5_WIDTH <- A4_HEIGHT / 2
+A5_HEIGHT <- A4_WIDTH
+
+# Trim size `c(width, height)` in inches of a print-and-play page
+pnp_page_size <- function(size) {
+	switch(
+		size,
+		letter = c(LETTER_HEIGHT, LETTER_WIDTH),
+		A4 = c(A4_HEIGHT, A4_WIDTH),
+		A5 = c(A5_WIDTH, A5_HEIGHT),
+		`4x6` = c(6, 4)
+	)
+}
 
 #' Save piecepack print-and-play (PnP) file
 #'
@@ -21,9 +35,15 @@ A4_HEIGHT <- 11.69
 #' @param quietly Whether to hide messages about missing metadata
 #'                in the provided configuration.
 #' @param ... Currently ignored.
-#' @param bleed If `TRUE` produce a variant print-and-play file with "bleed" zones
-#'              and "crop marks" around game pieces.
-#'              Currently only supports `pieces = "piecepack"`.
+#' @param bleed Controls bleed zones and crop marks around game pieces.
+#'              `FALSE` or `"none"` produces a compact layout with no bleed.
+#'              `TRUE` or `"individual"` gives each piece its own 1/8" bleed zone and crop marks.
+#'              `"grouped"` gives same-type pieces a shared 1/8" bleed zone:
+#'              adjacent tiles share a cut line while coins and dice keep a gap
+#'              so each can be punched out or cut to size.
+#'              `"individual"` currently only supports `pieces = "piecepack"` and doesn't support `size = "4x6"`.
+#'              `"grouped"` only supports `pieces = "piecepack"` and
+#'              `arrangement = "single-sided"`, and doesn't support `size = "4x6"` or `size = "A5"`.
 #' @param size_bleed A list with names "top", "right", "bottom", "left"
 #'                   containing numeric values indicating the inches "bleed" to add to
 #'                   the `size` of the print-and-play layout.
@@ -71,7 +91,8 @@ save_print_and_play <- function(
 	opt <- options(piecepackr.op_scale = 0)
 	on.exit(options(opt), add = TRUE)
 
-	stopifnot(is.null(dev) || is.function(dev))
+	bleed <- normalize_pnp_bleed(bleed)
+	stopifnot("`dev` must be NULL or a function" = is.null(dev) || is.function(dev))
 	size <- match.arg(size)
 	if (size == "4x6") {
 		warn(
@@ -81,7 +102,7 @@ save_print_and_play <- function(
 	}
 	arrangement <- match.arg(arrangement)
 	if (is.null(pieces)) {
-		if (size == "4x6" || bleed) {
+		if (size == "4x6" || bleed != "none") {
 			pieces <- "piecepack"
 		} else {
 			pieces <- c("piecepack", "pyramids", "matchsticks")
@@ -104,16 +125,14 @@ save_print_and_play <- function(
 	)
 
 	cfg <- as_pp_cfg(cfg)
+	check_pnp_args(cfg, bleed, size, pieces, arrangement)
 	current_dev <- grDevices::dev.cur()
 	if (current_dev > 1) {
 		on.exit(grDevices::dev.set(current_dev), add = TRUE)
 	}
-	height <- switch(size, letter = LETTER_WIDTH, A4 = A4_WIDTH, A5 = A4_WIDTH, `4x6` = 4) +
-		size_bleed$top +
-		size_bleed$bottom
-	width <- switch(size, letter = LETTER_HEIGHT, A4 = A4_HEIGHT, A5 = A4_HEIGHT / 2, `4x6` = 6) +
-		size_bleed$right +
-		size_bleed$left
+	page <- pnp_page_size(size)
+	width <- page[1L] + size_bleed$left + size_bleed$right
+	height <- page[2L] + size_bleed$top + size_bleed$bottom
 
 	if (is.null(dev)) {
 		dev <- pp_device_fn(output_filename)
@@ -131,10 +150,17 @@ save_print_and_play <- function(
 		))
 	}
 	do.call(dev, args)
+	# Close the device if drawing fails partway so it isn't left open
+	pnp_dev <- grDevices::dev.cur()
+	on.exit(
+		if (pnp_dev %in% grDevices::dev.list()) grDevices::dev.off(pnp_dev),
+		add = TRUE,
+		after = FALSE
+	)
 
 	pl <- switch(
 		size,
-		`4x6` = print_and_play_4x6(cfg, pieces, quietly, bleed, size_bleed),
+		`4x6` = print_and_play_4x6(cfg, pieces, quietly, bleed == "individual", size_bleed),
 		print_and_play_paper(cfg, size, pieces, arrangement, quietly, bleed, size_bleed)
 	)
 
@@ -150,6 +176,68 @@ save_print_and_play <- function(
 				i = "These messages can be disabled via `options(piecepackr.metadata.inform = FALSE)`."
 			)
 			inform(msg, class = "piecepackr_embed_metadata")
+		}
+	}
+	invisible(NULL)
+}
+
+# Checked before opening the graphics device so an unsupported combination
+# doesn't leave it open
+check_pnp_args <- function(cfg, bleed, size, pieces, arrangement, call = rlang::caller_env()) {
+	bleed_arg <- if (bleed == "individual") "`bleed = TRUE`" else '`bleed = "grouped"`'
+	if (size == "4x6" && bleed != "none") {
+		abort(sprintf('`size = "4x6"` not supported for %s', bleed_arg), call = call)
+	}
+	if (size == "4x6" || bleed != "none") {
+		unsupported <- intersect(c("matchsticks", "pyramids", "subpack"), pieces)
+		if (length(unsupported) > 0L) {
+			abort(
+				sprintf(
+					'"%s" `pieces` not currently supported for %s',
+					unsupported[1L],
+					if (size == "4x6") '`size = "4x6"`' else bleed_arg
+				),
+				call = call
+			)
+		}
+	}
+	if (size == "4x6") {
+		return(invisible(NULL))
+	}
+	die_width <- cfg$get_width("die_face")
+	if (bleed != "none" && "piecepack" %in% pieces && die_width > DIE_SLOT + 1e-8) {
+		abort(
+			sprintf(
+				'`cfg$get_width("die_face")` must be at most 3/4" for `bleed = "%s"`, not %s"',
+				bleed,
+				format(die_width)
+			),
+			call = call
+		)
+	}
+	if (bleed == "grouped") {
+		if (size == "A5") {
+			abort('`size = "A5"` not supported for `bleed = "grouped"`', call = call)
+		}
+		# The two halves can be gutter-folded around the material, or cut apart and
+		# laid on opposite sides of it -- but they cannot be printed on opposite
+		# sides of the paper, since the dice, belt and pawns are printed once across
+		# the full width and would land back to back.
+		if (arrangement == "double-sided") {
+			abort(
+				c(
+					'`arrangement = "double-sided"` not supported for `bleed = "grouped"`',
+					i = paste(
+						"The dice, belt, and pawns are printed once across the full width,",
+						"so duplex printing would land them back to back."
+					),
+					i = paste(
+						"To mount the two halves on opposite sides of the target material,",
+						'cut the sheet apart along the "gutter" line instead.'
+					)
+				),
+				call = call
+			)
 		}
 	}
 	invisible(NULL)
@@ -216,10 +304,28 @@ add_pdf_metadata <- function(output_filename, cfg = pp_cfg(), pl = list()) {
 	}
 }
 
-print_and_play_paper <- function(cfg, size, pieces, arrangement, quietly, bleed, size_bleed) {
-	if (bleed) {
-		print_and_play_paper_bleed(cfg, size, pieces, arrangement, quietly, size_bleed)
-	} else {
-		print_and_play_paper_compact(cfg, size, pieces, arrangement, quietly, size_bleed)
+normalize_pnp_bleed <- function(bleed) {
+	if (isTRUE(bleed)) {
+		return("individual")
 	}
+	if (isFALSE(bleed)) {
+		return("none")
+	}
+	match.arg(bleed, c("none", "grouped", "individual"))
+}
+
+print_and_play_paper <- function(cfg, size, pieces, arrangement, quietly, bleed, size_bleed) {
+	switch(
+		bleed,
+		individual = print_and_play_paper_bleed(
+			cfg,
+			size,
+			pieces,
+			arrangement,
+			quietly,
+			size_bleed
+		),
+		grouped = print_and_play_paper_grouped(cfg, size, pieces, arrangement, quietly, size_bleed),
+		print_and_play_paper_compact(cfg, size, pieces, arrangement, quietly, size_bleed)
+	)
 }

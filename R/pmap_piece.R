@@ -5,7 +5,10 @@
 #'
 #' `pmap_piece()` differs from `purrr::pmap()` in a few ways:
 #' \enumerate{
-#'    \item{If `cfg` and/or `envir` are missing attempts to set reasonable defaults.}
+#'    \item{If `cfg` and/or `envir` are missing attempts to set reasonable
+#'          defaults.  A missing `envir` holds `cfg` (if given) under the name
+#'          `"piecepack"` plus just the game systems from [game_systems()]
+#'          that a `cfg` column of `.l` names.}
 #'    \item{If not `NULL` will first apply function `trans` to `.l`.}
 #'    \item{If the output of `.f` is a grid grob object then `pmap_piece`
 #'          will return a `gTree` object with
@@ -60,15 +63,19 @@ pmap_piece <- function(
 	if (length(.l) == 0L || (!is.null(nrow(.l)) && nrow(.l) == 0L)) {
 		return(list())
 	}
-	ce <- default_cfg_envir(cfg, envir)
-	cfg <- ce$cfg
-	envir <- ce$envir
+	ce <- default_cfg_envir(cfg, envir, cfg_lookups(.l))
 
 	.l <- update_name(.l)
 	if (is.function(trans)) {
-		.l <- trans(.l, ..., cfg = cfg, envir = envir)
+		.l <- trans(.l, ..., cfg = ce$cfg, envir = ce$envir)
 		.l <- update_name(.l)
+		# `trans` may add configuration names that a default `envir` lacks
+		if (is_default_envir(ce$envir)) {
+			ce$envir <- add_game_systems(ce$envir, cfg_lookups(.l))
+		}
 	}
+	cfg <- ce$cfg
+	envir <- ce$envir
 	if (hasName(.l, "cfg")) {
 		ll <- purrr::pmap(.l, .f, ..., envir = envir, draw = FALSE)
 	} else {
@@ -129,10 +136,51 @@ as.gList <- function(ll) {
 	gl
 }
 
-default_cfg_envir <- function(cfg = NULL, envir = NULL) {
+# The names of the configurations a `cfg` column of `.l` refers to by name
+# (as opposed to by `pp_cfg()` object), which must be looked up in `envir`
+cfg_lookups <- function(.l) {
+	cfgs <- .l[["cfg"]]
+	if (is.list(cfgs)) {
+		cfgs <- unlist(Filter(is.character, cfgs))
+	}
+	cfgs <- as.character(cfgs)
+	unique(cfgs[!is.na(cfgs)])
+}
+
+# A default `envir` holds `cfg` (if any) under the name "piecepack" plus the
+# game systems that `lookups` (see `cfg_lookups()`) name.  Building all of
+# `game_systems()` takes tens of milliseconds so we only build the ones named.
+# It is marked so that `pmap_piece()` can add any more that `trans` names.
+default_envir <- function(cfg = NULL, lookups = character()) {
+	envir <- if (is.null(cfg)) list() else list(piecepack = cfg)
+	add_game_systems(structure(envir, default = TRUE), lookups)
+}
+
+is_default_envir <- function(envir) {
+	isTRUE(attr(envir, "default"))
+}
+
+# Add the game systems that `lookups` name but a default `envir` lacks.
+# Unknown names are left for `get_cfg()` to fall back to a default `pp_cfg()`.
+add_game_systems <- function(envir, lookups) {
+	systems <- setdiff(intersect(lookups, names(game_systems_exprs)), names(envir))
+	if (length(systems)) {
+		envir <- structure(c(envir, game_systems(systems = systems)), default = TRUE)
+	}
+	envir
+}
+
+# If `systems` is `TRUE` a defaulted `cfg` is `game_systems()$piecepack`,
+# the look preferred for game diagrams, instead of `pp_cfg()`.
+default_cfg_envir <- function(cfg = NULL, envir = NULL, lookups = character(), systems = FALSE) {
 	if (is.null(cfg) && is.null(envir)) {
-		cfg <- pp_cfg()
-		envir <- game_systems()
+		if (systems) {
+			envir <- default_envir(NULL, c("piecepack", lookups))
+			cfg <- envir[["piecepack"]]
+		} else {
+			cfg <- pp_cfg()
+			envir <- default_envir(NULL, lookups)
+		}
 	} else if (is.null(cfg)) {
 		# and !is.null(envir)
 		if (hasName(envir, "piecepack")) {
@@ -143,8 +191,7 @@ default_cfg_envir <- function(cfg = NULL, envir = NULL) {
 	} else if (is.null(envir)) {
 		# and !is.null(cfg)
 		cfg <- get_cfg(cfg)
-		envir <- game_systems()
-		envir[["piecepack"]] <- cfg
+		envir <- default_envir(cfg, lookups)
 	}
 	list(cfg = cfg, envir = envir)
 }

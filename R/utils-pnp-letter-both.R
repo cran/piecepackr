@@ -2,7 +2,45 @@
 
 A5W <- 5 # 5.83"
 A5H <- 7.5 # 8.27"
+DIE_SLOT <- 3 / 4 # the bleed layouts center each die face in a slot this wide
+REG_SIZE <- 1 / 8 # registration mark (crosshair) size
 a5_vp <- function() viewport(width = unit(A5W, "in"), height = unit(A5H, "in"))
+
+# Viewports for the two A5 panels of a page (`vpl` and `vpr`; the same viewport
+# for `size = "A5"`, which has one panel per page).  The panels are centered on
+# the trim size of the page, so each panel's mirror image about the page's
+# vertical center line is the other panel (or, on A5, itself).  The back pages
+# mirror their pieces within the panel, so they land on their fronts when the
+# sheet is flipped about a vertical edge: a long-edge duplex flip for the
+# portrait A5 page but a short-edge flip for the landscape letter and A4 pages.
+a5_panel_viewports <- function(size, size_bleed) {
+	page <- pnp_page_size(size)
+	x <- page[1L] / 2 + size_bleed$left
+	y <- inch(page[2L] / 2 + size_bleed$bottom)
+	dx <- if (size == "A5") 0 else A5W / 2
+	vp <- function(x) viewport(x = inch(x), y = y, width = inch(A5W), height = inch(A5H))
+	list(vpl = vp(x - dx), vpr = vp(x + dx))
+}
+
+# Registration marks are circled on one side and squared on the other so the
+# sheet's orientation is never ambiguous.
+reg_marks_grob <- function(circled_x, circled_y, squared_x, squared_y, size, name = NULL) {
+	children <- gList(
+		circledSegmentsCrosshairGrob(
+			x = inch(circled_x),
+			y = inch(circled_y),
+			width = inch(size),
+			height = inch(size)
+		),
+		squaredSegmentsCrosshairGrob(
+			x = inch(squared_x),
+			y = inch(squared_y),
+			width = inch(size),
+			height = inch(size)
+		)
+	)
+	gTree(children = children, name = name)
+}
 
 draw_a5_page <- function(grob, vp) {
 	pushViewport(vp)
@@ -23,14 +61,126 @@ gp_title <- gpar(fontsize = 15, fontfamily = "sans", fontface = "bold")
 gp_header <- gpar(fontsize = 12, fontfamily = "sans", fontface = "bold")
 gp_text <- gpar(fontsize = 9, fontfamily = "sans")
 
-htg <- function(label, x, y, just = "center", ...) {
-	textGrob(label, x = inch(x), y = inch(y), just = just, gp = gp_header, ...)
-}
-tg <- function(label, x, y, just = "center", ...) {
-	textGrob(label, x = inch(x), y = inch(y), just = just, gp = gp_text, ...)
+n_indents <- function(x) {
+	lines <- str_split(x, "\n")[[1L]]
+	n_tabs <- str_count(lines, "\t")
+	n_tabs <- n_tabs[n_tabs > 0L]
+	if (length(n_tabs) == 0L) {
+		return(0L)
+	}
+	min(n_tabs)
 }
 
-a5_title_grob <- function(cfg, pieces, quietly, extra_credit = TRUE, bleed = FALSE) {
+# Trims leading and trailing whitespace from a string and then removes the
+# minimum number of leading tabs shared by all indented lines.
+trim_multistring <- function(x) {
+	x <- str_trim(x)
+	lines <- str_split(x, "\n")[[1L]]
+	lines <- str_replace(lines, str_glue("^\\t{{{n_indents(x)}}}"), "")
+	str_flatten(lines, "\n")
+}
+
+# Wrapped so tests can mock a missing {marquee}
+has_marquee <- function() {
+	requireNamespace("marquee", quietly = TRUE)
+}
+
+# Wrapped so tests can mock an older R
+r_supports_glyphs <- function() {
+	getRversion() >= "4.3.0"
+}
+
+device_supports_glyphs <- function() {
+	isTRUE(dev.capabilities()$glyphs)
+}
+
+# Converts the pre-markdown `cfg$credit` layout -- a "\u25cf " bullet line
+# followed by tab-indented detail lines -- into markdown list items with line
+# breaks, leaving any other markdown untouched.
+legacy_credit_to_md <- function(credit) {
+	lines <- unlist(str_split(paste(credit, collapse = "\n"), "\n"))
+	if (all(str_trim(lines) == "")) {
+		return(character(0L))
+	}
+	is_detail <- grepl("^\t", lines)
+	lines <- str_replace(lines, "^\u25cf\\s*", "* ")
+	lines[is_detail] <- paste0("  ", str_trim(lines[is_detail]))
+	followed_by_detail <- c(is_detail[-1L], FALSE)
+	lines[followed_by_detail] <- paste0(lines[followed_by_detail], "\\")
+	lines
+}
+
+pnp_marquee_style <- function() {
+	style <- marquee::classic_style(base_size = 9, body_font = "sans", header_font = "sans")
+	style <- marquee::modify_style(style, "base", lineheight = 1.25)
+	style <- marquee::modify_style(style, "p", margin = marquee::trbl(0))
+	style <- marquee::modify_style(style, "ul", margin = marquee::trbl(0))
+	style <- marquee::modify_style(style, "ol", margin = marquee::trbl(0))
+	style <- marquee::modify_style(style, "a", color = "black")
+	marquee::modify_style(
+		style,
+		"h2",
+		size = 12,
+		margin = marquee::trbl(0, 0, marquee::em(0.4)),
+		padding = marquee::trbl(0),
+		border_width = marquee::trbl(0)
+	)
+}
+
+# The settings a print-and-play layout was generated for, as a markdown list
+# item with a nested list, for the instructions page.  `bleed` is the
+# normalized `save_print_and_play()` argument.
+pnp_generated_for_md <- function(pieces, arrangement, size, bleed) {
+	components <- paste(paste0('"', pieces, '"'), collapse = ", ")
+	bleed <- if (bleed == "none") "no bleed zones" else sprintf('"%s" bleed zones', bleed)
+	paste(
+		"* This print-and-play layout was generated for:",
+		"",
+		sprintf("  * %s components", components),
+		sprintf('  * "%s" arrangement', arrangement),
+		sprintf('  * "%s" paper size', size),
+		sprintf("  * %s", bleed),
+		sep = "\n"
+	)
+}
+
+pnp_inst_grob <- function(md) {
+	pnp_md_grob(
+		md,
+		"instructions",
+		x = unit(0.5, "cm"),
+		y = unit(1, "npc") - unit(0.1, "in"),
+		width = unit(1, "npc") - unit(1, "cm")
+	)
+}
+
+# Renders the markdown `md` for the print-and-play front matter or omits it
+# (with a message) if {marquee} is missing or the device can't render glyphs.
+pnp_md_grob <- function(md, name, x, y, width) {
+	if (!has_marquee()) {
+		reason <- "{marquee} is not installed"
+	} else if (!r_supports_glyphs()) {
+		reason <- "R >= 4.3 is required for {marquee} glyph rendering"
+	} else if (!device_supports_glyphs()) {
+		reason <- "the graphics device doesn't support {marquee} glyph rendering"
+	} else {
+		reason <- NULL
+	}
+	if (!is.null(reason)) {
+		marquee_inform(name, reason)
+		return(nullGrob(name = name))
+	}
+	marquee::marquee_grob(
+		md,
+		pnp_marquee_style(),
+		x = x,
+		y = y,
+		width = width,
+		name = name
+	)
+}
+
+a5_title_grob <- function(cfg, pieces, quietly, extra_credit = TRUE, saucers = TRUE) {
 	# Title
 	y_title <- unit(1, "npc") - unit(0.2, "in")
 	if (is.null(cfg$title)) {
@@ -145,59 +295,62 @@ a5_title_grob <- function(cfg, pieces, quietly, extra_credit = TRUE, bleed = FAL
 			class = "piecepackr_missing_metadata"
 		)
 	}
-	credits <- c(
-		"\u25cf This print-and-play layout was generated by piecepackr.",
-		"\thttps://github.com/piecepackr/piecepackr"
+	credit_item <- function(text, url) sprintf("* %s\\\n  <%s>", text, url)
+	piecepack_credit <- credit_item(
+		'The piecepack was invented by James "Kyle" Droscha.\n\n  Public Domain.',
+		"https://ludism.org/ppwiki/AnatomyOfAPiecepack"
+	)
+	credits <- credit_item(
+		"This print-and-play layout was generated by piecepackr.",
+		"https://github.com/piecepackr/piecepackr"
 	)
 	if (extra_credit) {
 		if ("piecepack" %in% pieces) {
-			credits <- c(
-				credits,
-				'\u25cf The piecepack was invented by James "Kyle" Droscha. Public Domain.',
-				"\thttps://ludism.org/ppwiki/AnatomyOfAPiecepack"
-			)
+			credits <- c(credits, piecepack_credit)
 		}
-		if (!bleed && "piecepack" %in% pieces) {
+		if (saucers && "piecepack" %in% pieces) {
 			credits <- c(
 				credits,
-				"\u25cf Pawn saucers were invented by Karol M. Boyle. Public Domain.",
-				"\thttps://web.archive.org/web/2018/http://www.piecepack.org/Accessories.html"
+				credit_item(
+					"Pawn saucers were invented by Karol M. Boyle. Public Domain.",
+					"https://web.archive.org/web/2018/http://www.piecepack.org/Accessories.html"
+				)
 			)
 		}
 		if ("pyramids" %in% pieces) {
 			credits <- c(
 				credits,
-				"\u25cf Piecepack pyramids were invented by Tim Schutz. Public Domain.",
-				"\thttps://www.ludism.org/ppwiki/PiecepackPyramids"
+				credit_item(
+					"Piecepack pyramids were invented by Tim Schutz. Public Domain.",
+					"https://www.ludism.org/ppwiki/PiecepackPyramids"
+				)
 			)
 		}
 		if ("matchsticks" %in% pieces) {
 			credits <- c(
 				credits,
-				"\u25cf Piecepack matchsticks were invented by Dan Burkey. Public Domain.",
-				"\thttps://www.ludism.org/ppwiki/PiecepackMatchsticks"
+				credit_item(
+					"Piecepack matchsticks were invented by Dan Burkey.\n\n  Public Domain.",
+					"https://www.ludism.org/ppwiki/PiecepackMatchsticks"
+				)
 			)
 		}
 	} else {
-		credits <- c(
-			credits,
-			'\u25cf The piecepack was invented by James "Kyle" Droscha. Public Domain.',
-			"\thttps://ludism.org/ppwiki/AnatomyOfAPiecepack"
-		)
+		credits <- c(credits, piecepack_credit)
 	}
-	credits <- paste(c(credits, cfg$credit), collapse = "\n")
-	grob_credits <- gTree(
-		name = "credits",
-		children = gList(
-			textGrob("Credits", x = 0.1, y = y_credits, just = "left", gp = gp_header),
-			textGrob(
-				credits,
-				x = 0.1,
-				y = y_credits - unit(0.2, "in"),
-				just = c(0, 1),
-				gp = gp_text
-			)
-		)
+	md <- paste(credits, collapse = "\n")
+	credit <- legacy_credit_to_md(cfg$credit)
+	if (length(credit) > 0L) {
+		# A custom list continues the built-in list, anything else follows it
+		sep <- if (grepl("^[*+-] ", credit[1L])) "\n" else "\n\n"
+		md <- paste0(md, sep, paste(credit, collapse = "\n"))
+	}
+	grob_credits <- pnp_md_grob(
+		paste0("## Credits\n\n", md),
+		"credits",
+		x = unit(0.1, "npc"),
+		y = y_credits + unit(0.1, "in"),
+		width = unit(0.88, "npc")
 	)
 
 	grobTree(

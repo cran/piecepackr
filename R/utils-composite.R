@@ -3,10 +3,11 @@
 CompositePiece <- R6Class(
 	"pp_composite",
 	public = list(
-		initialize = function(df = tibble(), envir = list(), ref_side = "top") {
+		initialize = function(df = tibble(), envir = list(), ref_side = "top", portrait = FALSE) {
 			private$df <- df
 			private$envir <- envir
 			private$ref_side <- ref_side
+			private$portrait <- portrait
 		}
 	),
 	active = list(
@@ -74,7 +75,7 @@ CompositePiece <- R6Class(
 				filename <- gsub(paste0("\\.", ext, "$"), paste0("_%03d.", ext), filename)
 				filename <- rep(filename, length.out = nrow(df))
 				filename <- sprintf(filename, seq_along(filename))
-				stopifnot(!anyDuplicated(filename))
+				stopifnot("`filename` must not contain duplicates" = !anyDuplicated(filename))
 				df$filename <- filename
 				l <- pmap_piece(
 					df,
@@ -110,13 +111,43 @@ CompositePiece <- R6Class(
 				width <- convertX(width, "in", valueOnly = TRUE)
 				height <- convertY(height, "in", valueOnly = TRUE)
 				depth <- convertX(depth, "in", valueOnly = TRUE)
+				# pp_cfg() uses a "portrait" convention for pawn_face/back/left/right:
+				# height = pawn physical height (tall), not the generic token convention
+				# where height = piece depth. get_scaling_factors() reads h_sc from
+				# `depth` for top/base relative sides and from `width` for left/right,
+				# so we swap dimensions to put pawn height where h_sc is read.
+				if (private$portrait) {
+					side <- get_side(piece_side)
+					if (side %in% c("face", "back")) {
+						tmp <- height
+						height <- depth
+						depth <- tmp
+					} else if (side %in% c("left", "right")) {
+						tmp <- width
+						width <- height
+						height <- tmp
+					}
+				}
 				df <- private$relative_df(piece_side)
 				relative_side <- get_relative_side(piece_side, private$ref_side)
 				df <- scale_df(df, relative_side, width, height, depth)
 				df <- translate_df(df, relative_side, x, y, z, angle, width, height, depth)
+				# For portrait pieces viewed from the side (face/back/left/right),
+				# sort farthest-first using the oblique projection depth.  This is
+				# equivalent to projecting world (x, y) onto (cos, sin) of op_angle:
+				# larger projection = further from viewer = drawn first.  Adding the
+				# x·cos term breaks ties when rotation moves depth differences from y
+				# into x (e.g. angle=90° gives both pieces the same world y).
+				if (private$portrait && side %in% c("face", "back", "left", "right")) {
+					idx <- painter_order(
+						as_coord2d(x = df$x, y = df$y),
+						scale = 1,
+						alpha = degrees(op_angle)
+					)
+					df <- df[idx, ]
+				}
 				# adjust scale for proper adjustment of `cex` / `lex`
 				df <- adjust_scale_df(df, scale = scale)
-				#### in future need to re-order elements using `op_sort()`?
 				pmap_piece(
 					df,
 					suit = suit,
@@ -134,12 +165,17 @@ CompositePiece <- R6Class(
 		df = NULL,
 		envir = NULL,
 		ref_side = NULL,
+		portrait = NULL,
 		relative_df = function(piece_side) {
-			side = get_relative_side(piece_side, private$ref_side)
+			side <- get_relative_side(piece_side, private$ref_side)
 			switch(
 				side,
 				face = private$df,
 				back = back_df(private$df),
+				right = right_df(private$df),
+				left = left_df(private$df),
+				top = top_df(private$df),
+				base = base_df(private$df),
 				abort(paste("`CompositePiece()$relative_df()` can't handle relative side", side))
 			)
 		},
@@ -285,13 +321,18 @@ adjust_scale_df <- function(df, scale = 1) {
 	df
 }
 
-back_df = function(df) {
+map_piece_side <- function(piece_side, map) {
+	pieces <- vapply(piece_side, get_piece, character(1))
+	sides <- vapply(piece_side, get_side, character(1))
+	new_sides <- vapply(sides, function(s) map[[s]], character(1))
+	paste(pieces, new_sides, sep = "_")
+}
+
+back_df <- function(df) {
 	df$z <- 1 - df$z
-	pieces <- sapply(strsplit(df$piece_side, "_"), function(x) x[1])
-	sides <- sapply(strsplit(df$piece_side, "_"), function(x) x[2])
-	opposites <- sapply(sides, function(side) {
-		switch(
-			side,
+	df$piece_side <- map_piece_side(
+		df$piece_side,
+		list(
 			face = "back",
 			back = "face",
 			left = "right",
@@ -299,10 +340,124 @@ back_df = function(df) {
 			top = "base",
 			base = "top"
 		)
-	})
-	df$piece_side <- paste(pieces, opposites, sep = "_")
-	rev_df(df)
+	)
+	sort_df(df)
 }
+
+# new_x=x, new_y=z, new_z=1-y; new_width=w, new_height=d, new_depth=h
+top_df <- function(df) {
+	old_y <- df$y
+	old_z <- df$z
+	old_height <- df$height
+	old_depth <- df$depth
+	df$y <- old_z
+	df$z <- 1 - old_y
+	df$height <- old_depth
+	df$depth <- old_height
+	df$piece_side <- map_piece_side(
+		df$piece_side,
+		list(
+			face = "top",
+			back = "base",
+			left = "left",
+			right = "right",
+			top = "back",
+			base = "face"
+		)
+	)
+	sort_df(df)
+}
+
+# new_x=1-x, new_y=z, new_z=y; new_width=w, new_height=d, new_depth=h
+base_df <- function(df) {
+	old_x <- df$x
+	old_y <- df$y
+	old_z <- df$z
+	old_height <- df$height
+	old_depth <- df$depth
+	df$x <- 1 - old_x
+	df$y <- old_z
+	df$z <- old_y
+	df$height <- old_depth
+	df$depth <- old_height
+	df$piece_side <- map_piece_side(
+		df$piece_side,
+		list(
+			face = "base",
+			back = "top",
+			left = "right",
+			right = "left",
+			top = "face",
+			base = "back"
+		)
+	)
+	sort_df(df)
+}
+
+# new_x=1-y, new_y=z, new_z=x; new_width=h, new_height=d, new_depth=w
+right_df <- function(df) {
+	old_x <- df$x
+	old_y <- df$y
+	old_z <- df$z
+	old_width <- df$width
+	old_height <- df$height
+	old_depth <- df$depth
+	df$x <- 1 - old_y
+	df$y <- old_z
+	df$z <- old_x
+	df$width <- old_height
+	df$height <- old_depth
+	df$depth <- old_width
+	df$piece_side <- map_piece_side(
+		df$piece_side,
+		list(
+			face = "right",
+			back = "left",
+			left = "face",
+			right = "back",
+			top = "top",
+			base = "base"
+		)
+	)
+	sort_df(df)
+}
+
+# new_x=y, new_y=z, new_z=1-x; new_width=h, new_height=d, new_depth=w
+left_df <- function(df) {
+	old_x <- df$x
+	old_y <- df$y
+	old_z <- df$z
+	old_width <- df$width
+	old_height <- df$height
+	old_depth <- df$depth
+	df$x <- old_y
+	df$y <- old_z
+	df$z <- 1 - old_x
+	df$width <- old_height
+	df$height <- old_depth
+	df$depth <- old_width
+	df$piece_side <- map_piece_side(
+		df$piece_side,
+		list(
+			face = "left",
+			back = "right",
+			left = "back",
+			right = "face",
+			top = "top",
+			base = "base"
+		)
+	)
+	sort_df(df)
+}
+
+sort_df <- function(df) {
+	if (hasName(df, "order")) {
+		df[order(df$z, df$order), ]
+	} else {
+		df[order(df$z), ]
+	}
+}
+
 rev_df <- function(df) {
 	if (nrow(df) > 1L) {
 		df[nrow(df):1, ]

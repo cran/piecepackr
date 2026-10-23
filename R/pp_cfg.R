@@ -47,7 +47,7 @@
 #'   \item{`cache_op_fn`}{Whether we should cache the oblique projection functions}
 #'   \item{`cache_obj_fn`}{Whether we should cache any 3D rendering functions}
 #'   \item{`copyright`}{Design copyright information}
-#'   \item{`credit`}{Design credits}
+#'   \item{`credit`}{Design credits (markdown) shown by `save_print_and_play()`}
 #'   \item{`description`}{Design description}
 #'   \item{`fontfamily`}{Main font family}
 #'   \item{`has_bits`}{Whether we should assume this supports "bit" pieces}
@@ -266,7 +266,11 @@ Config <- R6Class(
 			piece <- get_piece(piece_side)
 			if (grepl("_left$|_right$", piece_side) && piece != "pyramid") {
 				ps <- paste0(piece, "_face")
-				return(self$get_height(ps, suit = suit, rank = rank))
+				if (piece == "pawn") {
+					return(self$get_depth(ps, suit = suit, rank = rank))
+				} else {
+					return(self$get_height(ps, suit = suit, rank = rank))
+				}
 			}
 			default <- switch(
 				piece,
@@ -304,7 +308,7 @@ Config <- R6Class(
 				pyramid_diagonal <- sqrt(pyramid_height^2 + (0.5 * pyramid_width)^2)
 				return(2 * pyramid_diagonal)
 			}
-			if (grepl("pyramid_top", piece_side)) {
+			if (piece_side == "pyramid_top") {
 				pyramid_width <- self$get_width("pyramid_face", rank = rank)
 				return(pyramid_width)
 			}
@@ -319,7 +323,11 @@ Config <- R6Class(
 			piece <- get_piece(piece_side)
 			if (grepl("_top$|_base$|_left$|_right$", piece_side) && piece != "pyramid") {
 				ps <- paste0(piece, "_face")
-				return(self$get_depth(ps, suit = suit, rank = rank))
+				if (piece_side %in% c("pawn_left", "pawn_right")) {
+					return(self$get_height(ps, suit = suit, rank = rank))
+				} else {
+					return(self$get_depth(ps, suit = suit, rank = rank))
+				}
 			}
 			width <- self$get_width(piece_side, suit, rank)
 			if (piece == "matchstick") {
@@ -662,7 +670,12 @@ Config <- R6Class(
 				if (grepl("tile|coin|pawn|matchstick|bit|board|card|saucer", piece_side)) {
 					default_fn <- save_2s_obj
 				} else if (grepl("die", piece_side)) {
-					default_fn <- save_die_obj
+					opt <- self$get_piece_opt(piece_side, suit, rank)
+					default_fn <- if (opt$shape == "roundrect") {
+						save_rounded_die_obj
+					} else {
+						save_die_obj
+					}
 				} else if (piece_side == "pyramid_top") {
 					default_fn <- save_pt_obj
 				} else if (grepl("pyramid", piece_side)) {
@@ -712,7 +725,7 @@ Config <- R6Class(
 			if (missing(value)) {
 				private$cfg$annotation_color %||% "black"
 			} else {
-				stopifnot(is.character(value))
+				stopifnot("`annotation_color` must be a character string" = is.character(value))
 				private$cfg$annotation_color <- value
 			}
 		},
@@ -762,7 +775,7 @@ Config <- R6Class(
 			if (missing(value)) {
 				private$cfg$copyright
 			} else {
-				stopifnot(is.character(value))
+				stopifnot("`copyright` must be a character string" = is.character(value))
 				private$cfg$copyright <- value
 			}
 		},
@@ -770,7 +783,7 @@ Config <- R6Class(
 			if (missing(value)) {
 				private$cfg$credit
 			} else {
-				stopifnot(is.character(value))
+				stopifnot("`credit` must be a character string" = is.character(value))
 				private$cfg$credit <- value
 			}
 		},
@@ -778,7 +791,7 @@ Config <- R6Class(
 			if (missing(value)) {
 				private$cfg$description
 			} else {
-				stopifnot(is.character(value))
+				stopifnot("`description` must be a character string" = is.character(value))
 				private$cfg$description <- value
 			}
 		},
@@ -786,7 +799,7 @@ Config <- R6Class(
 			if (missing(value)) {
 				private$cfg$die_arrangement %||% "counter_down"
 			} else {
-				stopifnot(is.character(value))
+				stopifnot("`die_arrangement` must be a character string" = is.character(value))
 				private$cfg$die_arrangement <- value
 			}
 		},
@@ -801,7 +814,7 @@ Config <- R6Class(
 			if (missing(value)) {
 				self$has_coins && self$has_tiles && self$has_pawns && self$has_dice
 			} else {
-				stopifnot(is.logical(value))
+				stopifnot("`has_piecepack` must be a logical value" = is.logical(value))
 				self$has_coins <- value
 				self$has_tiles <- value
 				self$has_pawns <- value
@@ -840,7 +853,7 @@ Config <- R6Class(
 			if (missing(value)) {
 				private$cfg$spdx_id
 			} else {
-				stopifnot(is.character(value))
+				stopifnot("`spdx_id` must be a character string" = is.character(value))
 				check_spdx_id(value)
 				private$cfg$spdx_id <- value
 			}
@@ -849,7 +862,7 @@ Config <- R6Class(
 			if (missing(value)) {
 				private$cfg$title
 			} else {
-				stopifnot(is.character(value))
+				stopifnot("`title` must be a character string" = is.character(value))
 				private$cfg$title <- value
 			}
 		}

@@ -2,6 +2,38 @@ test_that("no regressions in `game_systems()`", {
 	expect_error(game_systems("boobear"), "Don't have a customized configuration for font")
 })
 
+test_that("`game_systems(systems = )` builds just the named systems", {
+	expect_named(game_systems(systems = c("dice", "checkers1")), c("dice", "checkers1"))
+	expect_named(game_systems(systems = factor(c("dice", "dice"))), "dice")
+	opts <- function(cfg) Filter(Negate(is.function), cfg$as_list())
+	expect_identical(opts(game_systems(systems = "subpack")$subpack), opts(game_systems()$subpack))
+	expect_snapshot(error = TRUE, game_systems(systems = c("piecepack", "boobear")))
+})
+
+test_that("`game_systems(border = FALSE)` affects every system", {
+	cfgs <- game_systems(border = FALSE)
+	expect_all_equal(
+		vapply(cfgs, function(cfg) as.list(cfg)$border_color, character(1)),
+		"transparent"
+	)
+	expect_all_equal(vapply(cfgs, function(cfg) as.list(cfg)$border_lex, double(1)), 0)
+})
+
+test_that("`to_hexpack()` inherits the border width of `cfg`", {
+	expect_equal(as.list(to_hexpack(game_systems()$piecepack))$border_lex, 4)
+	expect_equal(as.list(to_hexpack(game_systems(border = FALSE)$piecepack))$border_lex, 0)
+})
+
+test_that("CompositePiece grob_fn works for all 6 sides", {
+	cfg_peg <- game_systems(pawn = "peg-doll")$piecepack
+	cfg_joy <- game_systems(pawn = "joystick")$piecepack
+	sides <- c("pawn_top", "pawn_face", "pawn_right", "pawn_left", "pawn_back", "pawn_base")
+	for (side in sides) {
+		expect_no_error(pieceGrob(side, suit = 2, rank = 1, cfg = cfg_peg))
+		expect_no_error(pieceGrob(side, suit = 2, rank = 1, cfg = cfg_joy))
+	}
+})
+
 
 test_that("removed `style` argument errors", {
 	expect_snapshot(error = TRUE, game_systems(style = "dejavu3d"))
@@ -645,4 +677,37 @@ test_that("no regressions in `game_systems()` figures", {
 			cfg = envir$cubes
 		)
 	})
+
+	# peg-doll pawns with belt (requires svglite alpha mask fix)
+	skip_if_not_installed("svglite", "2.2.2.9000")
+	cfg <- game_systems(font = "dejavu", pawn = "peg-doll")$piecepack
+	df <- tibble(piece_side = "pawn_top", x = 4:1, y = 1, suit = 4:1, angle = 180)
+	expect_doppelganger(
+		"peg-doll-op",
+		function() {
+			pmap_piece(df, default.units = "in", cfg = cfg, op_scale = 0.5)
+		},
+		writer = write_svg_bleeding_edge
+	)
+	df_face <- tibble(piece_side = "pawn_face", x = 4:1, y = 1, suit = 4:1)
+	expect_doppelganger(
+		"peg-doll-face",
+		function() {
+			pmap_piece(df_face, default.units = "in", cfg = cfg)
+		},
+		writer = write_svg_bleeding_edge
+	)
+	df_sides <- tibble(
+		piece_side = c("pawn_face", "pawn_back", "pawn_left", "pawn_right", "pawn_base"),
+		x = 1:5,
+		y = 1,
+		suit = 1:5
+	)
+	expect_doppelganger(
+		"peg-doll-op-sides",
+		function() {
+			pmap_piece(df_sides, default.units = "in", cfg = cfg, op_scale = 0.5)
+		},
+		writer = write_svg_bleeding_edge
+	)
 })

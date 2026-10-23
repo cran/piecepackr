@@ -174,7 +174,7 @@ test_that("pp_cfg querying variables work as expected", {
 	expect_false(cfg$has_saucers)
 	expect_false(cfg$has_pyramids)
 	expect_false(cfg$has_matchsticks)
-	expect_error(cfg$has_piecepack <- 3, "is.logical\\(value)\\ is not TRUE")
+	expect_snapshot(error = TRUE, cfg$has_piecepack <- 3)
 
 	expect_true(cfg$cache_grob)
 	cfg$cache_grob <- FALSE
@@ -187,4 +187,73 @@ test_that("pp_cfg querying variables work as expected", {
 	expect_false(cfg$cache_obj_fn)
 	cfg$cache_op_fn <- FALSE
 	expect_false(cfg$cache_op_fn)
+})
+
+test_that("`pp_cfg()` warns about unrecognized configuration names", {
+	expect_all_true(is_legit_cfg_style(c(
+		"cex",
+		"cex.s1",
+		"cex.r1",
+		"cex.tile",
+		"cex.suited.r1",
+		"cex.s1.tile",
+		"cex.r1.tile",
+		"cex.s1.r1.tile",
+		"grob_fn.s5.card_face"
+	)))
+	expect_all_equal(
+		is_legit_cfg_style(c(
+			"bogus",
+			"cex.foo",
+			"cex.tile.s1",
+			"cex.s1.r1.tile.x",
+			"cex.",
+			"",
+			NA,
+			"cex.s1x",
+			"cex.tiles1",
+			"cex.border1",
+			"cex.sr1",
+			"cex.s1.r1x.tile"
+		)),
+		FALSE
+	)
+	expect_equal(is_legit_cfg_style(NULL), logical(0))
+	expect_snapshot(cfg <- pp_cfg(list(bogus = 1, cex.s1.r1.tile.x = 2, suit_color = "red")))
+	expect_snapshot(cfg <- pp_cfg(list(cex.s1x = 1, cex.tiles1 = 2, cex.s10.r12.tile = 3)))
+})
+
+test_that("`get_style_element()` tries the affixes in priority order", {
+	expect_equal(
+		style_affixes("tile_face", 2, 3, TRUE),
+		c(
+			".s2.r3.tile_face",
+			".suited.r3.tile_face",
+			".r3.tile_face",
+			".s2.tile_face",
+			".suited.tile_face",
+			".tile_face",
+			".s2.r3.tile",
+			".suited.r3.tile",
+			".r3.tile",
+			".s2.tile",
+			".suited.tile",
+			".tile",
+			".s2.r3",
+			".suited.r3",
+			".r3",
+			".s2",
+			".suited",
+			""
+		)
+	)
+	cfg <- list(cex = 1, cex.tile = 2, cex.suited.tile = 3, cex.s2.r3.tile_face = 4, n_suits = 4)
+	expect_equal(get_style_element("cex", "tile_face", cfg, suit = 2, rank = 3), 4)
+	expect_equal(get_style_element("cex", "tile_back", cfg, suit = 2, rank = 3), 3)
+	expect_equal(get_style_element("cex", "coin_face", cfg, suit = 2, rank = 3), 1)
+	expect_null(get_style_element("ps_r", "tile_face", cfg))
+	cfg$cex.s2.r3.tile_face <- NULL
+	cfg["cex.suited.tile"] <- list(NULL)
+	expect_equal(get_style_element("cex", "tile_face", cfg, suit = 2, rank = 3), 2)
+	expect_snapshot(error = TRUE, get_style_element("cex", "tile_face", cfg, suit = 1:2))
 })

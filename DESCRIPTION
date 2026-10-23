@@ -2,7 +2,7 @@ Encoding: UTF-8
 Package: piecepackr
 Type: Package
 Title: Board Game Graphics
-Version: 1.16.1
+Version: 1.17.1
 Description: Functions to make board game graphics with the 'ggplot2', 'grid', 'rayrender', 'rayvertex', and 'rgl' packages.  Specializes in game diagrams, animations, and "Print & Play" layouts for the 'piecepack' <https://www.ludism.org/ppwiki> but can make graphics for other board game systems.  Includes configurations for several public domain game systems such as checkers, (double-18) dominoes, go, 'piecepack', playing cards, etc.
 Authors@R: c(person("Trevor L.", "Davis", role=c("aut", "cre"),
              email="trevor.l.davis@gmail.com",
@@ -20,17 +20,18 @@ URL: https://trevorldavis.com/piecepackr/ (blog),
 BugReports: https://github.com/piecepackr/piecepackr/issues
 LazyData: true
 LazyLoad: yes
+Depends: R (>= 4.1)
 Imports: affiner (>= 0.3.1), grid, gridGeometry, grImport2, grDevices,
         purrr, jpeg, png, R6, rlang, stringr, tibble, tools, utils
-Suggests: animation (>= 2.7), ggplot2, gifski, gridpattern, magick,
-        pdftools, rayrender (>= 0.34.3), rayvertex (>= 0.10.4), readobj
-        (>= 0.4.0), rgl (>= 0.106.8), scales (>= 0.5.0), svglite (>=
-        2.2.2), systemfonts, testthat, tweenr, vdiffr, xmpdf (>=
-        0.1.1), XML (>= 3.99-0.9)
+Suggests: animation (>= 2.7), ggplot2, gifski, marquee, gridpattern,
+        magick, pdftools, rayrender (>= 0.34.3), rayvertex (>= 0.10.4),
+        readobj (>= 0.4.0), rgl (>= 0.106.8), scales (>= 0.5.0),
+        svglite (>= 2.2.2), systemfonts, testthat, tweenr, vdiffr,
+        xmpdf (>= 0.1.1), XML (>= 3.99-0.9)
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.0.0
 NeedsCompilation: no
-Packaged: 2026-05-12 04:08:55 UTC; trevorld
+Packaged: 2026-10-23 05:31:12 UTC; trevorld
 Author: Trevor L. Davis [aut, cre] (ORCID:
     <https://orcid.org/0000-0001-6341-4639>),
   Linux Foundation [dtc] (Uses some data from the "SPDX License List"
@@ -42,6 +43,5 @@ Author: Trevor L. Davis [aut, cre] (ORCID:
     from Creative Commons to describe the generated print-and-play
     file's license)
 Maintainer: Trevor L. Davis <trevor.l.davis@gmail.com>
-Depends: R (>= 2.10)
 Repository: CRAN
-Date/Publication: 2026-05-12 05:40:02 UTC
+Date/Publication: 2026-10-23 09:10:20 UTC

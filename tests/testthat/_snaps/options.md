@@ -1,0 +1,36 @@
+# pp_cfg querying variables work as expected
+
+    Code
+      cfg$has_piecepack <- 3
+    Condition
+      Error:
+      ! `has_piecepack` must be a logical value
+
+# `pp_cfg()` warns about unrecognized configuration names
+
+    Code
+      cfg <- pp_cfg(list(bogus = 1, cex.s1.r1.tile.x = 2, suit_color = "red"))
+    Condition
+      Warning:
+      bogus is not a recognized configuration
+      Warning:
+      cex.s1.r1.tile.x is not a recognized configuration
+
+---
+
+    Code
+      cfg <- pp_cfg(list(cex.s1x = 1, cex.tiles1 = 2, cex.s10.r12.tile = 3))
+    Condition
+      Warning:
+      cex.s1x is not a recognized configuration
+      Warning:
+      cex.tiles1 is not a recognized configuration
+
+# `get_style_element()` tries the affixes in priority order
+
+    Code
+      get_style_element("cex", "tile_face", cfg, suit = 1:2)
+    Condition
+      Error in `get_style_element()`:
+      ! `piece_side`, `suit`, and `rank` must each be a single value
+

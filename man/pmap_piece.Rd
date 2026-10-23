@@ -55,7 +55,10 @@ applying \code{.f} to each row (usually \code{grid.piece}).
 \details{
 \code{pmap_piece()} differs from \code{purrr::pmap()} in a few ways:
 \enumerate{
-\item{If \code{cfg} and/or \code{envir} are missing attempts to set reasonable defaults.}
+\item{If \code{cfg} and/or \code{envir} are missing attempts to set reasonable
+defaults.  A missing \code{envir} holds \code{cfg} (if given) under the name
+\code{"piecepack"} plus just the game systems from \code{\link[=game_systems]{game_systems()}}
+that a \code{cfg} column of \code{.l} names.}
 \item{If not \code{NULL} will first apply function \code{trans} to \code{.l}.}
 \item{If the output of \code{.f} is a grid grob object then \code{pmap_piece}
 will return a \code{gTree} object with

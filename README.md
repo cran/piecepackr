@@ -111,8 +111,7 @@ dominoes](https://www.pagat.com/class/domino.html#chinese).
     envir <- game_systems(round = TRUE)
     pmap_piece(df, default.units="in", envir=envir, op_scale=0.5, trans=op_transform)
 
-![Double-18 dominoes and standard dice in a variety of
-colors](man/figures/README-dominoes-1.png)
+![Double-18 dominoes in a variety of colors](man/figures/README-dominoes-1.png)
 
 ### Go
 
@@ -702,50 +701,50 @@ universe](#piecepackr-universe)):
 
 Suggested R packages:
 
-**animation**  
+**animation**
 `animate_piece()` uses the `{animation}` package to save "html" and
 "video" (e.g. mp4 and avi) animations. Additionally, if the `{gifski}`
 package is not installed `animate_piece()` will fall back to using
 `{animation}` to make "gif" animations.
 
-**ggplot2**  
+**ggplot2**
 Required by the `{ggplot2}` bindings `geom_piece()` and its helper
 functions `aes_piece()`, `scale_x_piece()`, and `scale_y_piece()`.
 
-**gifski**  
+**gifski**
 `animate_piece()` preferably uses the `{gifski}` package to save "gif"
 animations. If `{gifski}` is not available then `animate_piece()` can
 fall back on `{animation}` to make "gif" animations.
 
-**gridpattern**  
+**gridpattern**
 The `pp_shape()` object's `pattern()` method uses `{gridpattern}` to
 make patterned shapes. In particular can be used to make patterned board
 game pieces.
 
-**magick**  
+**magick**
 `file2grob()` uses `magick::image_read()` to import images that are not
 "png", "jpg/jpeg", or "svg/svgz".
 
-**pdftools**  
+**pdftools**
 `get_embedded_font()` uses `pdftools::pdf_fonts()`. It also requires R
 compiled with Cairo support (i.e. `capabilities("cairo") == TRUE`). If
 the suggested R package `{systemfonts}` is not installed then
 `has_font()` can also fall back on using `get_embedded_font()`.
 
-**rayrender**  
+**rayrender**
 Required for the `{rayrender}` binding `piece()` and the `pp_cfg()`
 object's `rayrender_fn()` method.
 
-**rayvertex**  
+**rayvertex**
 Required for the `{rayvertex}` binding `piece_mesh()` and the `pp_cfg()`
 object's `rayvertex_fn()` method.
 
-**readobj**  
+**readobj**
 Allows the `{rgl}` bindings to support more game piece shapes; in
 particular the "meeple", "halma", and "roundrect" shaped token game
 pieces.
 
-**rgl**  
+**rgl**
 Required for the `{rgl}` binding `piece3d()` and the `pp_cfg()` object's
 `rgl_fn()` method. Also required for the `obj_fn()` method for game
 pieces with ellipsoid shapes (in particular this may effect
@@ -758,16 +757,16 @@ installing `{readobj}` which allows the `{rgl}` bindings to support more
 game piece shapes; in particular the "meeple", "halma", and "roundrect"
 shaped token game pieces.
 
-**systemfonts**  
+**systemfonts**
 `has_font()` preferably uses `{systemfonts}` to determine if a given
 font is available. If `{systemfonts}` is not available then `has_font()`
 can fall back on `{pdftools}` if `capabilities("cairo") == TRUE`.
 
-**tweenr**  
+**tweenr**
 `animate_piece()` needs `{tweenr}` to do animation transitions (i.e. its
 `n_transitions` argument is greater than the default zero).
 
-**xmpdf**  
+**xmpdf**
 `save_print_and_play()` can use `{xmpdf}` to embed bookmarks,
 documentation info, and XMP metadata into pdf print-and-play files. You
 may also need the system tools <span
@@ -784,25 +783,25 @@ install them use:
     # install.packages("piecepackr")
     piecepackr::install_ppverse(free_libre_only = TRUE)
 
-**ppcli**  
+**ppcli**
 Functions to visualize board games in plaintext. Provides colorization
 support for the terminal and HTML via `cli`.
 
-**ppdf**  
+**ppdf**
 Generate `tibble` data frames indicating how to set up over a hundred
 board games playable with public domain game systems. Data format can be
 used by `piecepackr` to generate graphics or by `ppcli` to generate
 plaintext graphics with `cli`.
 
-**ppgamer**  
+**ppgamer**
 Functions that provide players for piecepack games like a solver for
 "Fuji-san".
 
-**ppn**  
+**ppn**
 Parses "Portable Piecepack Notation" files. This allows you to visualize
 the moves for over one hundred board games using `piecepackr`.
 
-**pprules**  
+**pprules**
 Functions to generate piecepack game rulesets and books.
 
 ### Other suggested software

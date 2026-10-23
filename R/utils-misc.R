@@ -38,7 +38,7 @@ inch <- function(inches) unit(inches, "in")
 #' @param color if `TRUE` convert empty strings to `"transparent"`
 #' @export
 cleave <- function(s, sep = ",", float = FALSE, color = FALSE) {
-	vec <- str_split(s, sep)
+	vec <- str_split_sep(s, sep)
 	if (length(vec)) {
 		vec <- vec[[1]]
 	}
@@ -49,6 +49,21 @@ cleave <- function(s, sep = ",", float = FALSE, color = FALSE) {
 	} else {
 		vec
 	}
+}
+
+# Split on `sep` as a fixed string when it is a plain one (as it always is
+# internally) since the regex engine costs about ten times more.  Unlike
+# `str_split()`, `strsplit()` drops a trailing empty string and splits "" into
+# nothing so we put those back (e.g. `col_cleave("red,")` is still transparent).
+str_split_sep <- function(s, sep) {
+	if (!nzchar(sep) || grepl("[][\\\\^$.|?*+(){}]", sep)) {
+		return(str_split(s, sep))
+	}
+	s <- as.character(s)
+	vec <- strsplit(s, sep, fixed = TRUE)
+	trailing <- which(!is.na(s) & (s == "" | endsWith(s, sep)))
+	vec[trailing] <- lapply(vec[trailing], c, "")
+	vec
 }
 
 cleave2 <- function(s, sep = ",", ...) {
@@ -214,17 +229,20 @@ as_fill_stroke_grob <- function(grob, fill, col = "black", lwd = 1.5) {
 	}
 }
 
+has_alpha_masks <- function() {
+	isTRUE("alpha" %in% dev.capabilities("masks")$masks)
+}
+
 has_transformations <- function() {
-	getRversion() >= '4.2.0' && isTRUE(dev.capabilities()$transformations)
+	getRversion() >= '4.2.0' && isTRUE(dev.capabilities("transformations")$transformations)
 }
 
 has_fill_strokes <- function() {
-	getRversion() >= '4.2.0' && isTRUE(dev.capabilities()$paths)
+	getRversion() >= '4.2.0' && isTRUE(dev.capabilities("paths")$paths)
 }
 
 has_radial_gradients <- function() {
-	getRversion() >= '4.1.0' &&
-		isTRUE("RadialGradient" %in% dev.capabilities("patterns")$patterns)
+	isTRUE("RadialGradient" %in% dev.capabilities("patterns")$patterns)
 }
 
 at_inform <- function(fallback = "picture") {
@@ -292,6 +310,28 @@ fs_inform <- function() {
 	inform(msg, class = "piecepackr_fill_stroke")
 }
 
+am_inform <- function() {
+	if (isFALSE(getOption("piecepackr.am.inform"))) {
+		return(invisible(NULL))
+	}
+
+	msg <- paste(
+		"Alpha mask support not detected in the active graphics device.",
+		"Falling back to rendering the peg-doll belt with several `grid::polygonGrob()`."
+	)
+	msg <- c(
+		msg,
+		i = '`"alpha"` not in `dev.capabilities()$masks`.',
+		i = "Perhaps try one of the cairo devices like `png(..., type='cairo')` or `cairo_pdf()`."
+	)
+	msg <- c(
+		msg,
+		i = "These messages can be disabled via `options(piecepackr.am.inform = FALSE)`.",
+		i = 'These messages can be suppressed via `suppressMessages(expr, classes = "piecepackr_alpha_mask")`.'
+	)
+	inform(msg, class = "piecepackr_alpha_mask")
+}
+
 rgr_inform <- function() {
 	if (isFALSE(getOption("piecepackr.rgr.inform"))) {
 		return(invisible(NULL))
@@ -301,23 +341,28 @@ rgr_inform <- function() {
 		"Radial gradient support not detected in the active graphics device.",
 		"Falling back to rendering without a gradient."
 	)
-	if (getRversion() < '4.1.0') {
-		msg <- c(
-			msg,
-			i = paste("Current R is version `%s`", getRversion()),
-			i = "Radial gradient support requires R version 4.1 or greater."
-		)
-	} else {
-		msg <- c(
-			msg,
-			i = '`"RadialGradient" not in `dev.capabilities()$patterns`.',
-			i = "Perhaps try one of the cairo devices like `png(..., type='cairo')` or `cairo_pdf()`."
-		)
-	}
+	msg <- c(
+		msg,
+		i = '`"RadialGradient" not in `dev.capabilities()$patterns`.',
+		i = "Perhaps try one of the cairo devices like `png(..., type='cairo')` or `cairo_pdf()`."
+	)
 	msg <- c(
 		msg,
 		i = "These messages can be disabled via `options(piecepackr.rgr.inform = FALSE)`.",
 		i = 'These messages can be suppressed via `suppressMessages(expr, classes = "piecepackr_radial_gradient")`.'
 	)
 	inform(msg, class = "piecepackr_radial_gradient")
+}
+
+marquee_inform <- function(name, reason) {
+	if (isFALSE(getOption("piecepackr.marquee.inform"))) {
+		return(invisible(NULL))
+	}
+
+	msg <- c(
+		x = sprintf("Omitting %s since %s", name, reason),
+		i = "These messages can be disabled via `options(piecepackr.marquee.inform = FALSE)`.",
+		i = 'These messages can be suppressed via `suppressMessages(expr, classes = "piecepackr_marquee")`.'
+	)
+	inform(msg, class = "piecepackr_marquee")
 }

@@ -40,6 +40,9 @@ test_that("`save_print_and_play()` works as expected", {
 	pdf_deck_filename_4x6 <- file.path(pdf_deck_dir, "piecepack_deck_4x6.pdf")
 	on.exit(unlink(pdf_deck_filename_4x6), add = TRUE)
 	pdf_deck_filename_bleed <- file.path(pdf_deck_dir, "piecepack_deck_bleed.pdf")
+	on.exit(unlink(pdf_deck_filename_bleed), add = TRUE)
+	pdf_deck_filename_shared <- file.path(pdf_deck_dir, "piecepack_deck_shared.pdf")
+	on.exit(unlink(pdf_deck_filename_shared), add = TRUE)
 	cfg_5s <- list(
 		suit_text = "♥,★,♣,♦,♠,꩜",
 		suit_color = "darkred,gold,darkgreen,darkblue,black,grey"
@@ -72,6 +75,7 @@ test_that("`save_print_and_play()` works as expected", {
 	)
 
 	save_print_and_play(cfg_default, pdf_deck_filename_bleed, bleed = TRUE, quietly = TRUE)
+	save_print_and_play(cfg_default, pdf_deck_filename_shared, bleed = "grouped", quietly = TRUE)
 
 	expect_true(file.exists(pdf_deck_filename))
 
@@ -82,6 +86,357 @@ test_that("`save_print_and_play()` works as expected", {
 	expect_equal(xmpdf::n_pages(pdf_deck_filename_a5), 14, ignore_attr = "names")
 	expect_equal(xmpdf::n_pages(pdf_deck_filename_4x6), 13, ignore_attr = "names")
 	expect_equal(xmpdf::n_pages(pdf_deck_filename_bleed), 7, ignore_attr = "names")
+	expect_equal(xmpdf::n_pages(pdf_deck_filename_shared), 5, ignore_attr = "names")
+})
+
+test_that("`save_print_and_play()` bookmarks match the double-sided page counts", {
+	skip_on_cran()
+	skip_if_not(capabilities("cairo"))
+	f <- tempfile(fileext = ".pdf")
+	on.exit(unlink(f))
+	save_print_and_play(
+		cfg_default,
+		f,
+		pieces = "all",
+		arrangement = "double-sided",
+		quietly = TRUE
+	)
+
+	skip_if_not_installed("qpdf")
+	skip_if_not_installed("xmpdf")
+	skip_if_not(xmpdf::supports_get_bookmarks())
+	expect_equal(xmpdf::n_pages(f), 12, ignore_attr = "names")
+	bookmarks <- xmpdf::get_bookmarks(f)[[1]]
+	expect_equal(
+		bookmarks$title,
+		c("Front Matter", "Piecepack", "Matchsticks", "Pyramids", "Subpack")
+	)
+	# The {pdftools} fallback doesn't report bookmark page numbers
+	skip_if_not(xmpdf::supports_pdftk())
+	expect_equal(bookmarks$page, c(1, 3, 7, 9, 11))
+})
+
+test_that('`save_print_and_play()` errors for unsupported `bleed = "grouped"` combinations', {
+	skip_if_not(capabilities("cairo"))
+	f <- tempfile(fileext = ".pdf")
+	on.exit(unlink(f))
+	expect_snapshot(
+		error = TRUE,
+		save_print_and_play(cfg_default, f, size = "A5", bleed = "grouped", quietly = TRUE)
+	)
+	expect_snapshot(
+		error = TRUE,
+		save_print_and_play(
+			cfg_default,
+			f,
+			arrangement = "double-sided",
+			bleed = "grouped",
+			quietly = TRUE
+		)
+	)
+	expect_snapshot(
+		error = TRUE,
+		save_print_and_play(cfg_default, f, size = "4x6", bleed = "grouped", quietly = TRUE)
+	)
+	expect_snapshot(
+		error = TRUE,
+		save_print_and_play(cfg_default, f, size = "4x6", bleed = TRUE, quietly = TRUE)
+	)
+})
+
+test_that("`save_print_and_play()` doesn't leave its device open on error", {
+	skip_if_not(capabilities("cairo"))
+	f <- tempfile(fileext = ".pdf")
+	on.exit(unlink(f))
+	devs <- grDevices::dev.list()
+	expect_snapshot(
+		error = TRUE,
+		save_print_and_play(cfg_default, f, size = "A5", bleed = "grouped")
+	)
+	expect_equal(grDevices::dev.list(), devs)
+	expect_equal(file.exists(f), FALSE)
+	local_mocked_bindings(print_and_play_paper = function(...) abort("mid-draw"))
+	expect_snapshot(error = TRUE, save_print_and_play(cfg_default, f, quietly = TRUE))
+	expect_equal(grDevices::dev.list(), devs)
+})
+
+test_that("`a5_title_grob()` credits pawn saucers only when they're printed", {
+	local_mocked_bindings(pnp_md_grob = function(md, name, ...) textGrob(md, name = name))
+	credits <- function(...) {
+		g <- a5_title_grob(cfg_default, "piecepack", quietly = TRUE, ...)
+		g$children$credits$label
+	}
+	expect_match(credits(), "Pawn saucers")
+	expect_no_match(credits(saucers = FALSE), "Pawn saucers")
+})
+
+test_that('`save_print_and_play(bleed = "grouped")` band spans the printer safe zone', {
+	band <- band_grob_grouped(1L, cfg_default)
+	sep <- Filter(function(g) identical(g$name, "pnp_separator"), band)[[1]]
+	expect_equal(as.numeric(sep$x), c(0.25, 10.75))
+})
+
+test_that("`bleed_rect()` fills each zone with its piece side's bleed color", {
+	cfg <- pp_cfg(list(border_color.die_face = "red", border_color.belt_face = "blue"))
+	g <- bleed_rect(1:2, 1, 1, 1, c("die_face", "belt_face"), 1L, cfg)
+	expect_equal(g$gp$fill, c("red", "blue"))
+})
+
+test_that('`save_print_and_play(bleed = "grouped")` pawn registration marks mirror about the gutter', {
+	band <- band_grob_grouped(1L, cfg_default)
+	named <- function(name) Filter(function(g) identical(g$name, name), band)[[1]]
+	x_gutter <- as.numeric(named("pnp_pawn_gutter")$x[1])
+	circled <- named("pawn_registration_marks")$children[[1]]$children
+	x_reg <- vapply(circled, function(g) as.numeric(g$vp$x), numeric(1), USE.NAMES = FALSE)
+	expect_equal(x_reg - x_gutter, c(-1, 1) * (x_gutter - x_reg[1]))
+	expect_gt(x_reg[1], 0.25)
+	expect_lt(x_reg[2], 10.75)
+})
+
+test_that('`save_print_and_play(bleed = "grouped")` fits larger dice in the shared band', {
+	skip_if_not(capabilities("cairo"))
+	f <- tempfile(fileext = ".pdf")
+	on.exit(unlink(f))
+	cfg <- pp_cfg(list(width.die_face = 0.75))
+	save_print_and_play(cfg, f, bleed = "grouped", quietly = TRUE)
+
+	skip_if_not_installed("qpdf")
+	skip_if_not_installed("xmpdf")
+	expect_equal(xmpdf::n_pages(f), 5, ignore_attr = "names")
+})
+
+test_that("`save_print_and_play()` errors if dice are wider than 3/4\" with bleed", {
+	f <- tempfile(fileext = ".pdf")
+	on.exit(unlink(f))
+	cfg <- pp_cfg(list(width.die_face = 0.8))
+	expect_snapshot(
+		error = TRUE,
+		save_print_and_play(cfg, f, bleed = "grouped", quietly = TRUE)
+	)
+	expect_snapshot(
+		error = TRUE,
+		save_print_and_play(cfg, f, bleed = TRUE, quietly = TRUE)
+	)
+})
+
+test_that('`save_print_and_play(bleed = TRUE)` wording follows `size`', {
+	label <- function(size) a5_inst_md_bleed("piecepack", "single-sided", size)
+	expect_match(label("A5"), 'a page of tile "faces" then a page of tile "backs"')
+	expect_no_match(label("A5"), 'Central "gutter" line')
+	expect_match(label("letter"), '"faces" on left and "backs" on right')
+})
+
+test_that("`a5_inst_md_compact()` only describes the requested pieces", {
+	md <- function(pieces, cfg = cfg_default) {
+		a5_inst_md_compact(cfg, pieces, "single-sided", "letter")
+	}
+	expect_snapshot(cat(md(c("piecepack", "pyramids", "matchsticks"))))
+	expect_no_match(md("piecepack"), "pyramid|matchstick|subpack")
+	expect_match(md("pyramids"), "spare pawn layout in half")
+	expect_no_match(md("pyramids"), "tiles, coins, and saucers")
+	expect_match(md("subpack"), "tiles, coins, and saucers")
+	expect_match(md("matchsticks"), "spare fold-up dice layouts")
+	expect_no_match(md("matchsticks", pp_cfg(list(width.die_face = 0.7))), "dice layouts")
+})
+
+test_that("`a5_inst_md_compact()` wording follows `size` and `arrangement`", {
+	md <- function(arrangement, size) {
+		a5_inst_md_compact(cfg_default, "piecepack", arrangement, size)
+	}
+	expect_match(md("single-sided", "letter"), 'fold it along the "gutter"')
+	expect_match(md("double-sided", "letter"), "flip on the short edge")
+	expect_match(md("double-sided", "A5"), "flip on the long edge")
+	expect_no_match(md("double-sided", "A5"), "registration marks")
+	expect_match(md("single-sided", "A5"), "page of fronts and the page of backs after it")
+})
+
+test_that("`pnp_generated_for_md()` names the bleed setting", {
+	md <- function(bleed) {
+		pnp_generated_for_md(c("piecepack", "pyramids"), "single-sided", "A4", bleed)
+	}
+	expect_match(md("none"), '"piecepack", "pyramids" components', fixed = TRUE)
+	expect_match(md("none"), "no bleed zones")
+	expect_match(md("grouped"), '"grouped" bleed zones', fixed = TRUE)
+	grouped <- a5_inst_md_grouped("piecepack", "single-sided", "letter")
+	expect_match(grouped, '"grouped" bleed zones', fixed = TRUE)
+	bleed <- a5_inst_md_bleed("piecepack", "single-sided", "letter")
+	expect_match(bleed, '"individual" bleed zones', fixed = TRUE)
+})
+
+test_that("`save_print_and_play()` A5 panels mirror about the page center", {
+	size_bleed <- list(top = 0, right = 0, bottom = 0, left = 0)
+	sizes <- c("letter", "A4", "A5")
+	page_width <- vapply(sizes, function(size) pnp_page_size(size)[1L], numeric(1))
+	x <- function(size, panel) as.numeric(a5_panel_viewports(size, size_bleed)[[panel]]$x)
+	xl <- vapply(names(page_width), x, numeric(1), panel = "vpl")
+	xr <- vapply(names(page_width), x, numeric(1), panel = "vpr")
+	expect_equal(page_width - xl, xr)
+
+	vp <- a5_panel_viewports("A5", size_bleed)$vpl
+	expect_gte(as.numeric(vp$x) - A5W / 2, 0.25)
+	expect_gte(as.numeric(vp$y) - A5H / 2, 0.25)
+})
+
+test_that("`save_print_and_play(bleed = FALSE)` registration marks flank the tiles", {
+	marks <- function(front) {
+		reg <- a5_piecepack_reg_grob(cfg_default, front)
+		unname(lapply(reg$children, function(crosshair) {
+			vp <- crosshair$children[[1]]$vp
+			as.numeric(c(vp$x, vp$y))
+		}))
+	}
+	expect_equal(marks(TRUE), list(c(-1 / 8, 6), c(-1 / 8, 0)))
+	expect_equal(marks(FALSE), list(c(A5W + 1 / 8, 6), c(A5W + 1 / 8, 0)))
+})
+
+# The grobs drawn on each piecepack page of the compact layout
+compact_pages <- function(size) {
+	drawn <- list()
+	local_mocked_bindings(draw_a5_page = function(grob, vp) {
+		drawn[[length(drawn) + 1L]] <<- grob
+	})
+	grDevices::pdf(NULL)
+	on.exit(invisible(grDevices::dev.off()), add = TRUE)
+	print_and_play_paper_compact(
+		cfg_default,
+		size,
+		"piecepack",
+		"single-sided",
+		TRUE,
+		list(top = 0, right = 0, bottom = 0, left = 0)
+	)
+	drawn[-(1:2)] # drop the front matter
+}
+
+test_that("`save_print_and_play(bleed = FALSE)` marks the piecepack pages of letter and A4 only", {
+	mark_x <- function(page) {
+		reg <- Filter(function(g) identical(g$name, "tile_registration_marks"), page)
+		vapply(reg, function(g) as.numeric(g$children[[1]]$children[[1]]$vp$x), numeric(1))
+	}
+	letter <- lapply(compact_pages("letter"), mark_x)
+	expect_all_equal(unlist(letter[c(TRUE, FALSE)]), -1 / 8)
+	expect_all_equal(unlist(letter[c(FALSE, TRUE)]), A5W + 1 / 8)
+	expect_length(unlist(lapply(compact_pages("A4"), mark_x)), 8L)
+	expect_length(unlist(lapply(compact_pages("A5"), mark_x)), 0L)
+})
+
+test_that("`save_print_and_play(bleed = FALSE)` rules off the top row and stops the gutter there", {
+	expect_equal(a5_piecepack_rule_y(cfg_default), 6 + 1 / 8)
+	# Larger dice come down to the tiles, so the rule only just clears the registration mark
+	expect_equal(a5_piecepack_rule_y(pp_cfg(list(width.die = 0.7))), 6 + 1 / 16)
+
+	count <- function(pages, name) {
+		lengths(lapply(pages, function(page) Filter(function(g) identical(g$name, name), page)))
+	}
+	letter <- compact_pages("letter")
+	expect_all_equal(count(letter, "pnp_separator"), 1L)
+	expect_equal(count(letter, "pnp_gutter"), rep(0:1, 4))
+	gutter <- Filter(function(g) identical(g$name, "pnp_gutter"), letter[[2]])[[1]]
+	expect_equal(as.numeric(gutter$x), c(0, 0))
+	expect_equal(as.numeric(gutter$y), c(0, 6 + 1 / 8))
+	a5 <- compact_pages("A5")
+	expect_all_equal(count(a5, "pnp_separator"), 1L)
+	expect_all_equal(count(a5, "pnp_gutter"), 0L)
+})
+
+test_that("`save_print_and_play()` bookmark pages sum to the page count", {
+	skip_if_not(capabilities("cairo"))
+	f <- tempfile(fileext = ".pdf")
+	on.exit(unlink(f))
+	page_list <- function(arrangement) {
+		grDevices::cairo_pdf(f, width = 11, height = 8.5, onefile = TRUE)
+		on.exit(invisible(grDevices::dev.off()), add = TRUE)
+		print_and_play_paper_compact(
+			cfg_default,
+			"letter",
+			c("piecepack", "pyramids", "matchsticks"),
+			arrangement,
+			TRUE,
+			list(top = 0, right = 0, bottom = 0, left = 0)
+		)
+	}
+
+	expect_equal(
+		unlist(page_list("single-sided")),
+		c(`Front Matter` = 1, Piecepack = 4, Matchsticks = 1, Pyramids = 1)
+	)
+	# each group of suits takes two pages when double-sided
+	expect_equal(
+		unlist(page_list("double-sided")),
+		c(`Front Matter` = 2, Piecepack = 4, Matchsticks = 2, Pyramids = 2)
+	)
+
+	skip_if_not_installed("qpdf")
+	skip_if_not_installed("xmpdf")
+	expect_equal(sum(unlist(page_list("double-sided"))), xmpdf::n_pages(f), ignore_attr = "names")
+})
+
+test_that("`save_print_and_play()` omits credits and instructions without {marquee}", {
+	skip_if_not(capabilities("cairo"))
+	f <- tempfile(fileext = ".pdf")
+	on.exit(unlink(f))
+	cfg <- pp_cfg(list(
+		title = "",
+		description = "",
+		spdx_id = "CC-BY-4.0",
+		copyright = "",
+		credit = ""
+	))
+	local_mocked_bindings(has_marquee = function() FALSE)
+	rlang::local_options(piecepackr.metadata.inform = FALSE)
+	expect_snapshot(save_print_and_play(cfg, f, bleed = "grouped"))
+	expect_no_message(suppressMessages(
+		save_print_and_play(cfg, f, bleed = "grouped"),
+		classes = "piecepackr_marquee"
+	))
+	rlang::local_options(piecepackr.marquee.inform = FALSE)
+	expect_no_message(save_print_and_play(cfg, f, bleed = "grouped"))
+})
+
+test_that("`save_print_and_play()` omits credits and instructions without glyph support", {
+	skip_if_not(capabilities("cairo"))
+	f <- tempfile(fileext = ".pdf")
+	on.exit(unlink(f))
+	cfg <- pp_cfg(list(
+		title = "",
+		description = "",
+		spdx_id = "CC-BY-4.0",
+		copyright = "",
+		credit = ""
+	))
+	local_mocked_bindings(device_supports_glyphs = function() FALSE)
+	rlang::local_options(piecepackr.metadata.inform = FALSE)
+	expect_snapshot(save_print_and_play(cfg, f, bleed = TRUE))
+})
+
+test_that("`save_print_and_play()` omits credits and instructions on R < 4.3", {
+	skip_if_not(capabilities("cairo"))
+	f <- tempfile(fileext = ".pdf")
+	on.exit(unlink(f))
+	cfg <- pp_cfg(list(
+		title = "",
+		description = "",
+		spdx_id = "CC-BY-4.0",
+		copyright = "",
+		credit = ""
+	))
+	local_mocked_bindings(r_supports_glyphs = function() FALSE)
+	rlang::local_options(piecepackr.metadata.inform = FALSE)
+	expect_snapshot(save_print_and_play(cfg, f, bleed = TRUE))
+})
+
+test_that("`legacy_credit_to_md()` converts the pre-markdown credit layout", {
+	expect_equal(
+		legacy_credit_to_md(c("\u25cf A", "\thttps://a", "\u25cf B")),
+		c("* A\\", "  https://a", "* B")
+	)
+	expect_equal(legacy_credit_to_md("* A\n\n*B*"), c("* A", "", "*B*"))
+	expect_equal(legacy_credit_to_md(""), character(0L))
+	expect_equal(legacy_credit_to_md(NULL), character(0L))
+})
+
+test_that("`trim_multistring()` removes common indentation", {
+	expect_equal(trim_multistring("\n\t\ta\n\t\t\tb\n\t\tc\n\t"), "a\n\tb\nc")
 })
 
 test_that('`save_print_and_play(size = "4x6")` is deprecated', {
@@ -104,9 +459,9 @@ test_that("`save_piece_images()` works as expected", {
 	}
 
 	current_dev <- grDevices::dev.cur()
-	expect_error(save_piece_images(cfg_default, directory), "dir.exists\\(directory\\) is not TRUE")
+	expect_snapshot(error = TRUE, save_piece_images(cfg_default, directory))
 	expect_error(grid.piece("tile_back", cfg = cfg), "Couldn't find suitable")
-	grDevices::dev.off()
+	suppressWarnings(grDevices::dev.off())
 	if (current_dev > 1) {
 		grDevices::dev.set(current_dev)
 	}
@@ -147,7 +502,7 @@ test_that("no regressions in figures", {
 		tmpfile <- tempfile(fileext = ".svg")
 		on.exit(unlink(tmpfile))
 		svg(tmpfile)
-		on.exit(dev.off(), add = TRUE)
+		on.exit(suppressWarnings(dev.off()), add = TRUE)
 		grid.piece(..., default.units = "npc")
 	}
 	# tile back
